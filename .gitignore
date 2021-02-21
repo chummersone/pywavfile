@@ -1,0 +1,5 @@
+.idea/
+tests/tmp.wav
+venv/
+wavfile.egg-info/
+wavfile/__pycache__/
