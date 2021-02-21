@@ -1,6 +1,8 @@
 import builtins
 from abc import ABC
 
+import wavfile
+
 
 class WavFile(ABC):
     """Abstract base class for wave file read/write"""
