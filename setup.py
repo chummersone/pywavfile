@@ -18,7 +18,7 @@ setup(
     description="Read/write wave audio files to/from lists of native Python types.",
     long_description=README,
     long_description_content_type="text/markdown",
-    url="https://github.com/chummersone/wavfile",
+    url="https://github.com/chummersone/pywavfile",
     author="Christopher Hummersone",
     author_email="chummersone@users.noreply.github.com",
     license="MIT",
