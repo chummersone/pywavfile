@@ -132,11 +132,12 @@ class WavWrite(WavFile):
             self._byte_rate = self._block_align * self._sample_rate
 
         # set up format converters
-        write = self._write_signed_int
+        if self._bits_per_sample == 8:
+            write = self._write_unsigned_int
+        else:
+            write = self._write_signed_int
         if isinstance(audio[0][0], float):
             if self._bits_per_sample == 8:
-                write = self._write_unsigned_int
-
                 def convert(x):
                     return int(round(((x + 1.0) / 2.0) * (2.0 ** self._bits_per_sample)))
             else:
