@@ -6,6 +6,7 @@ import wavfile
 class TestWavfileRead(unittest.TestCase):
 
     filename = "osc_tri.wav"
+    filename_unsigned = "osc_tri_unsigned.wav"
 
     def test_file_open_filename(self):
         wfp = wavfile.open(self.filename)
@@ -86,6 +87,13 @@ class TestWavfileRead(unittest.TestCase):
                     break
                 else:
                     self.assertTrue(len(audio) == num_frames or len(audio) == (wfp.num_frames % num_frames))
+
+    def test_read_short(self):
+        with wavfile.open(self.filename_unsigned) as wfp:
+            audio = wfp.read_int()
+            for i in range(0, len(audio)):
+                for j in range(0, len(audio[0])):
+                    self.assertTrue(audio[i][j] < 2**8)
 
 
 if __name__ == '__main__':
