@@ -59,6 +59,11 @@ class WavRead(WavFile):
 
         # Read the file
         while True:
+            # Ensure chunksize alignment
+            offset = self._fp.tell() % self.chunksize
+            if offset:
+                self._fp.seek(offset, 1)
+
             chk_id, chk_size = self._read_chunk_header(self.chunksize)
 
             # Check for EOF

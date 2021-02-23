@@ -161,6 +161,12 @@ class WavWrite(WavFile):
         """Close the file."""
 
         if self._is_open:
+            # pad data section
+            num_pad_bytes = self._data_size % self.chunksize
+            if num_pad_bytes > 0:
+                self._fp.seek(self._data_end)
+                self._fp.write(int(0).to_bytes(num_pad_bytes, 'little'))
+
             # write data chunk size
             self._fp.seek(self._data_chunk_ptr + self.chunksize)
             self._write_signed_int(self._data_size)
