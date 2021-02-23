@@ -1,3 +1,5 @@
+![python-package](https://github.com/chummersone/pywavfile/actions/workflows/python-package.yml/badge.svg)
+
 # wavfile
 
 A lightweight library to read/write wave audio files to/from
