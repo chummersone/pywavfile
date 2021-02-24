@@ -1,4 +1,5 @@
 ![python-package](https://github.com/chummersone/pywavfile/actions/workflows/python-package.yml/badge.svg)
+![python-publish](https://github.com/chummersone/pywavfile/actions/workflows/python-publish.yml/badge.svg)
 
 # wavfile
 
