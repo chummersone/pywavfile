@@ -111,7 +111,8 @@ class WavWrite(WavFile):
     @staticmethod
     def _data_are_floats(data):
         """Check for any floats in data"""
-        return any([any([isinstance(y, float) for y in x]) for x in data])
+        return any([any([isinstance(y, float) for y in x]) for x in data]) or \
+            WavFile._buffer_max_abs(data) <= 1.0
 
     def write(self, audio):
         """

@@ -69,6 +69,11 @@ class WavFile(ABC):
         """Number of audio frames in the file"""
         return self._num_frames
 
+    @staticmethod
+    def _buffer_max_abs(data):
+        """Max(Abs(X)) for an audio buffer"""
+        return max([max([abs(y) for y in x]) for x in data])
+
     def seek(self, frame_number):
         """
         Move to the specified frame number.
