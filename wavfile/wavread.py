@@ -51,7 +51,7 @@ class WavRead(WavFile):
         integer.
         :return: The integer value.
         """
-        return int.from_bytes(self._read_chunk(nbytes), byteorder='little', signed=True)
+        return int.from_bytes(self._read_chunk(nbytes), byteorder=self.endianness, signed=True)
 
     def _init_file(self):
         """Read the file and initialise the object properties."""
@@ -131,7 +131,7 @@ class WavRead(WavFile):
             signed = True
 
         def read_sample():
-            return int.from_bytes(self._read_chunk(self._bytes_per_sample), byteorder='little', signed=signed)
+            return int.from_bytes(self._read_chunk(self._bytes_per_sample), byteorder=self.endianness, signed=signed)
 
         if num_frames is None or num_frames < 0:
             # read all remaining frames

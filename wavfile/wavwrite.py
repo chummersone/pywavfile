@@ -65,7 +65,7 @@ class WavWrite(WavFile):
             data = max_unsigned_int
         if data < min_unsigned_int:
             data = min_unsigned_int
-        byte_data = data.to_bytes(nbytes, byteorder='little', signed=False)
+        byte_data = data.to_bytes(nbytes, byteorder=self.endianness, signed=False)
         self._write_chunk(byte_data)
 
     def _write_signed_int(self, data, nbytes=None):
@@ -78,7 +78,7 @@ class WavWrite(WavFile):
             data = max_signed_int
         if data < min_signed_int:
             data = min_signed_int
-        byte_data = data.to_bytes(nbytes, byteorder='little', signed=True)
+        byte_data = data.to_bytes(nbytes, byteorder=self.endianness, signed=True)
         self._write_chunk(byte_data)
 
     def _init_file(self):
@@ -171,7 +171,7 @@ class WavWrite(WavFile):
             num_pad_bytes = self._data_size % self.chunksize
             if num_pad_bytes > 0:
                 self._fp.seek(self._data_end)
-                self._fp.write(int(0).to_bytes(num_pad_bytes, 'little'))
+                self._write_chunk(int(0).to_bytes(num_pad_bytes, self.endianness))
 
             # write data chunk size
             self._fp.seek(self._data_chunk_ptr + self.chunksize)

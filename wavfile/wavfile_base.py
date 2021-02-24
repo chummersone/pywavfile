@@ -8,6 +8,7 @@ class WavFile(ABC):
     """Abstract base class for wave file read/write"""
 
     chunksize = 4
+    endianness = 'little'
 
     # audio sample format
     WAVE_FORMAT_PCM = 0x0001
