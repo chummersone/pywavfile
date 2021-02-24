@@ -13,6 +13,11 @@ class TestWavfileWrite(unittest.TestCase):
                           bits_per_sample=bits_per_sample,
                           num_channels=num_channels) as wfp:
             wfp.write(audio_data_in)
+            self.assertEqual(wfp.tell(), len(audio_data_in))
+            # test overwriting the data
+            wfp.seek(0)
+            wfp.write(audio_data_in)
+            self.assertEqual(wfp.tell(), len(audio_data_in))
 
         with wavfile.open(filename, 'r') as wfp:
             audio_out = getattr(wfp, read_callback)()

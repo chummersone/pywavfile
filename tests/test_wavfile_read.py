@@ -59,6 +59,7 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_tell(self):
         with wavfile.open(self.filename) as wfp:
+            self.assertEqual(wfp.tell(), 0)
             wfp.read_int()
             self.assertEqual(wfp.tell(), 4096)
 
@@ -93,7 +94,7 @@ class TestWavfileRead(unittest.TestCase):
             audio = wfp.read_int()
             for i in range(0, len(audio)):
                 for j in range(0, len(audio[0])):
-                    self.assertTrue(audio[i][j] < 2**8)
+                    self.assertTrue(0 <= audio[i][j] < 2**8)
 
 
 if __name__ == '__main__':
