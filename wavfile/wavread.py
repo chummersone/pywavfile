@@ -131,7 +131,8 @@ class WavRead(WavFile):
             signed = True
 
         def read_sample():
-            return int.from_bytes(self._read_chunk(self._bytes_per_sample), byteorder=self.endianness, signed=signed)
+            return int.from_bytes(self._read_chunk(self._bytes_per_sample),
+                                  byteorder=self.endianness, signed=signed)
 
         if num_frames is None or num_frames < 0:
             # read all remaining frames

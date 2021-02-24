@@ -75,15 +75,26 @@ class WavFile(ABC):
         """Max(Abs(X)) for an audio buffer"""
         return max([max([abs(y) for y in x]) for x in data])
 
-    def seek(self, frame_number):
+    def seek(self, frame_number, whence=0):
         """
         Move to the specified frame number.
         :param frame_number: The frame number.
+        :param whence: The frame positioning mode; 0 (default) = absolute positioning, 1 = relative
+        to current position, 3 = relative to end of last frame.
         :return: The method returns the object.
         """
         if frame_number > self._num_frames:
             raise wavfile.Error('Frame number exceeds number of frames in file')
-        self._fp.seek(self._data_start + (frame_number * self._block_align))
+        relative_pos = self._data_start
+        if whence == 0:
+            pass
+        elif whence == 1:
+            relative_pos = self._fp.tell()
+        elif whence == 2:
+            relative_pos = self._data_start + self._data_size
+        else:
+            wavfile.Error('Invalid whence parameter')
+        self._fp.seek(relative_pos + (frame_number * self._block_align))
         return self
 
     def tell(self):

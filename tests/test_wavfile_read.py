@@ -66,7 +66,35 @@ class TestWavfileRead(unittest.TestCase):
     def test_seek(self):
         with wavfile.open(self.filename) as wfp:
             wfp.read_int()
+            self.assertEqual(wfp.tell(), 4096)
             wfp.seek(0)
+            self.assertEqual(wfp.tell(), 0)
+            wfp.seek(4096)
+            self.assertEqual(wfp.tell(), 4096)
+
+    def test_seek_whence_0(self):
+        with wavfile.open(self.filename) as wfp:
+            wfp.read_int()
+            self.assertEqual(wfp.tell(), 4096)
+            wfp.seek(0, 0)
+            self.assertEqual(wfp.tell(), 0)
+            wfp.seek(4096, 0)
+            self.assertEqual(wfp.tell(), 4096)
+
+    def test_seek_whence_1(self):
+        with wavfile.open(self.filename) as wfp:
+            self.assertEqual(wfp.tell(), 0)
+            wfp.read_int()
+            wfp.seek(-1, 1)
+            self.assertEqual(wfp.tell(), 4095)
+            wfp.seek(-4095, 1)
+            self.assertEqual(wfp.tell(), 0)
+
+    def test_seek_whence_2(self):
+        with wavfile.open(self.filename) as wfp:
+            wfp.seek(0, 2)
+            self.assertEqual(wfp.tell(), 4096)
+            wfp.seek(-4096, 2)
             self.assertEqual(wfp.tell(), 0)
 
     def test_read_int_blocks(self):
