@@ -108,6 +108,11 @@ class WavWrite(WavFile):
         self._write_signed_int(0)  # data size
         self._data_start = self._fp.tell()
 
+    @staticmethod
+    def _data_are_floats(data):
+        """Check for any floats in data"""
+        return any([any([isinstance(y, float) for y in x]) for x in data])
+
     def write(self, audio):
         """
         Write audio data to the file. The data should be a list of lists with
@@ -136,7 +141,7 @@ class WavWrite(WavFile):
             write = self._write_unsigned_int
         else:
             write = self._write_signed_int
-        if isinstance(audio[0][0], float):
+        if self._data_are_floats(audio):
             if self._bits_per_sample == 8:
                 def convert(x):
                     return int(round(((x + 1.0) / 2.0) * (2.0 ** self._bits_per_sample)))
