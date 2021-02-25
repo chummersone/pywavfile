@@ -51,7 +51,7 @@ where `sample_rate` is the sampling rate for the new file,
 `bits_per_sample` is the number of bits used to encode each
 sample. If `num_channels` is unspecified it will be determined
 automatically from the first block of samples that are written
-(see below). This returns a `wavfile.wavread.WavWrite` object.
+(see below). This returns a `wavfile.wavwrite.WavWrite` object.
 The object shares its properties with the
 `wavfile.wavread.WavRead` class. The object also offers the same
 `seek()`, `tell()`, and `close()` methods. In addition, the
