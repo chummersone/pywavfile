@@ -27,11 +27,12 @@ stream. A frame is a block of samples, one for each channel,
 corresponding to a single sampling point.
 
 The object also has the following methods:
-* `read_int(N)` - Read, at most, `N` frames from the audio stream
+* `read_int([N])` - Read, at most, `N` frames from the audio stream
 in their unmodified integer format. The method returns a list of
 lists with size `(N,C)`, where `C` is the number of audio channels.
-Choosing `N = None` or `N < 0` will read all remaining samples.
-* `read_float(N)` - This method is identical to read_int() except
+Excluding `N`, choosing `N = None` or `N < 0` will read all
+remaining samples.
+* `read_float(N)` - This method is identical to `read_int()` except
 that it returns the samples as floats in the range [-1, 1).
 * `seek(N [, whence])` - Move to the `N`<sup>th</sup> frame in the
 audio stream; `whence` sets the positioning: 0 (default) =
