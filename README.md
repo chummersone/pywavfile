@@ -32,7 +32,7 @@ in their unmodified integer format. The method returns a list of
 lists with size `(N,C)`, where `C` is the number of audio channels.
 Excluding `N`, choosing `N = None` or `N < 0` will read all
 remaining samples.
-* `read_float(N)` - This method is identical to `read_int()` except
+* `read_float([N])` - This method is identical to `read_int()` except
 that it returns the samples as floats in the range [-1, 1).
 * `seek(N [, whence])` - Move to the `N`<sup>th</sup> frame in the
 audio stream; `whence` sets the positioning: 0 (default) =
@@ -60,8 +60,9 @@ The object shares its properties with the
 `wavfile.wavread.WavRead` class. The object also offers the same
 `seek()`, `tell()`, and `close()` methods. In addition, the
 following methods are provided for writing audio data:
-* `write(N)` - Write `N` frames of data to the audio file.
+* `write(audio)` - Write frames of audio data to the audio file.
 The data should be contained in a list of lists with size `(N,C)`,
-where `C` is the number of audio channels. If the data are floats
-then they should be in the range [-1, 1). They will be converted
-automatically. Integers will be written directly.
+where `N` is the number of frames and `C` is the number of audio
+channels. If the data are floats then they should be in the range
+[-1, 1). They will be converted automatically. Integers will be
+written directly.
