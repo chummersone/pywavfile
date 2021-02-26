@@ -80,7 +80,7 @@ class WavFile(ABC):
         Move to the specified frame number.
         :param frame_number: The frame number.
         :param whence: The frame positioning mode; 0 (default) = absolute positioning, 1 = relative
-        to current position, 3 = relative to end of last frame.
+        to current position, 2 = relative to end of last frame.
         :return: The method returns the object.
         """
         if frame_number > self._num_frames:

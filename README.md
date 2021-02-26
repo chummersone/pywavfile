@@ -36,7 +36,7 @@ remaining samples.
 that it returns the samples as floats in the range [-1, 1).
 * `seek(N [, whence])` - Move to the `N`<sup>th</sup> frame in the
 audio stream; `whence` sets the positioning: 0 (default) =
-absolute positioning, 1 = relative to current position, 3 =
+absolute positioning, 1 = relative to current position, 2 =
 relative to end of last frame.
 * `tell()` - Return the current frame in the audio stream.
 * `close()` - Close the instance.
