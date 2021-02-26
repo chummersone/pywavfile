@@ -67,3 +67,20 @@ where `N` is the number of frames and `C` is the number of audio
 channels. If the data are floats then they should be in the range
 [-1, 1). They will be converted automatically. Integers will be
 written directly.
+
+## Installation
+
+From source:
+```
+python -m pip install -e --user .
+```
+
+From PyPI:
+```
+python -m pip install --user wavfile
+```
+
+## License
+
+`wavfile` is available under the MIT license. See LICENSE.txt for
+more information.
