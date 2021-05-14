@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Provides test cases for reading a wave audio file.
+"""
+
 import unittest
 
 import wavfile

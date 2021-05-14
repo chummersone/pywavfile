@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Provides the WavRead class for reading wave files.
+
+The WavRead class is returned by wavfile.open() when opening a file in read
+mode.
+"""
+
 from wavfile.wavfile_base import WavFile
 import wavfile
 

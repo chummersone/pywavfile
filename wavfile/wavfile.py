@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+The main API for reading and writing wav files.
+
+This module provides a builtin-style open() function for reading and writing
+audio files.
+"""
+
 import wavfile.wavread
 import wavfile.wavwrite
 

@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Provides the WavWrite class for writing wave files.
+
+The WavWrite class is returned by wavfile.open() when opening a file in write
+mode.
+"""
+
 from wavfile.wavfile_base import WavFile
 import wavfile
 

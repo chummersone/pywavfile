@@ -1,3 +1,13 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Provides the WavFile abstract class for working with wave files.
+
+The WavFile class is the abstract base class for WavWrite and WavRead. It
+provides the main API for those classes, implements common methods, and
+defines a number of constants.
+"""
+
 import builtins
 from abc import ABC
 
