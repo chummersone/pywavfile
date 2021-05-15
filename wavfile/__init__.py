@@ -27,6 +27,10 @@ The object also has the following methods:
                         remaining samples.
     read_float(N)    -- This method is identical to read_int() except that it
                         returns the samples as floats in the range [-1, 1).
+    iter_int(N)      -- Similar to read_int() but used in iterator contexts to
+                        read successive groups of audio frames.
+    iter_float(N)    -- Similar to read_float() but used in iterator contexts
+                        to read successive groups of audio frames.
     seek(N)          -- Move to the Nth frame in the audio stream.
     tell()           -- Return the current frame in the audio stream.
     close()          -- Close the instance.

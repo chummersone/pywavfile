@@ -111,7 +111,30 @@ class TestWavfileRead(unittest.TestCase):
                 if len(audio) == 0:
                     break
                 else:
-                    self.assertTrue(len(audio) == num_frames or len(audio) == (wfp.num_frames % num_frames))
+                    self.assertTrue(len(audio) == num_frames or
+                                    len(audio) == (wfp.num_frames % num_frames))
+
+    def test_iter_int_blocks(self):
+        with wavfile.open(self.filename) as wfp:
+            num_frames = 33
+            buffer = wfp.iter_int(num_frames)
+            for audio in buffer:
+                self.assertTrue(len(audio) == num_frames or
+                                len(audio) == (wfp.num_frames % num_frames))
+
+    def test_iter_int_next(self):
+        with wavfile.open(self.filename) as wfp:
+            num_frames = 31
+            buffer = wfp.iter_int(num_frames)
+            audio = next(buffer)
+            self.assertTrue(len(audio) == num_frames)
+
+    def test_remaining(self):
+        with wavfile.open(self.filename) as wfp:
+            self.assertEqual(wfp.tell(), 0)
+            wfp.read_int()
+            end = wfp.read_int()
+            self.assertEqual(len(end), 0)
 
     def test_read_float_blocks(self):
         with wavfile.open(self.filename) as wfp:
@@ -121,7 +144,23 @@ class TestWavfileRead(unittest.TestCase):
                 if len(audio) == 0:
                     break
                 else:
-                    self.assertTrue(len(audio) == num_frames or len(audio) == (wfp.num_frames % num_frames))
+                    self.assertTrue(len(audio) == num_frames or
+                                    len(audio) == (wfp.num_frames % num_frames))
+
+    def test_iter_float_blocks(self):
+        with wavfile.open(self.filename) as wfp:
+            num_frames = 29
+            buffer = wfp.iter_float(num_frames)
+            for audio in buffer:
+                self.assertTrue(len(audio) == num_frames or
+                                len(audio) == (wfp.num_frames % num_frames))
+
+    def test_iter_float_next(self):
+        with wavfile.open(self.filename) as wfp:
+            num_frames = 27
+            buffer = wfp.iter_float(num_frames)
+            audio = next(buffer)
+            self.assertTrue(len(audio) == num_frames)
 
     def test_read_short(self):
         with wavfile.open(self.filename_unsigned) as wfp:

@@ -26,9 +26,11 @@ class WavRead(WavFile):
         # read the file header
         try:
             self._init_file()
-        except:
+        except BaseException:
             self.close()
             raise
+
+        self._fp.seek(self._data_start)
 
     def _read_chunk(self, chunksize):
         """Read a chunk of data from the file"""
@@ -159,6 +161,20 @@ class WavRead(WavFile):
 
         return audio
 
+    def iter_int(self, num_frames=None):
+        """
+        This method is equivalent to read_int(), except that it returns a generator rather than
+        a block of sample.
+        :param num_frames:
+        :return: A generator to yield the next frame(s) of audio.
+        """
+        while True:
+            audio = self.read_int(num_frames=num_frames)
+            if len(audio) > 0:
+                yield audio
+            else:
+                break
+
     def _convert_unsigned_int_to_float(self, x):
         """Convert unsigned int to float [-1, 1)"""
         adjust = 2.0 ** (self._bits_per_sample - 1.0)
@@ -187,3 +203,17 @@ class WavRead(WavFile):
                 audio[i][j] = convert(audio[i][j])
 
         return audio
+
+    def iter_float(self, num_frames=None):
+        """
+        This method is equivalent to read_float(), except that it returns a generator rather than
+        a block of samples.
+        :param num_frames:
+        :return: A generator to yield the next frame(s) of audio.
+        """
+        while True:
+            audio = self.read_float(num_frames=num_frames)
+            if len(audio) > 0:
+                yield audio
+            else:
+                break
