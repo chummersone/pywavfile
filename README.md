@@ -35,6 +35,10 @@ Excluding `N`, choosing `N = None` or `N < 0` will read all
 remaining samples.
 * `read_float([N])` - This method is identical to `read_int()` except
 that it returns the samples as floats in the range [-1, 1).
+* `iter_int([N])` - Similar to `read_int()` but used in iterator
+contexts to read successive groups of audio frames.
+* `iter_float([N])` - Similar to `read_float()` but used in iterator
+contexts to read successive groups of audio frames.
 * `seek(N [, whence])` - Move to the `N`<sup>th</sup> frame in the
 audio stream; `whence` sets the positioning: 0 (default) =
 absolute positioning, 1 = relative to current position, 2 =
