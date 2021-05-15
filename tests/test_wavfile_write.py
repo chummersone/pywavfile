@@ -167,6 +167,17 @@ class TestWavfileWrite(unittest.TestCase):
         self.run_test(audio_data_in, read_callback, sample_rate,
                       bits_per_sample, len(audio_data_in[0]))
 
+    def test_incorrect_channel_count(self):
+        filename = "tmp.wav"
+        with wavfile.open(filename, 'w',
+                          sample_rate=44100,
+                          bits_per_sample=16,
+                          num_channels=2) as wfp:
+            try:
+                wfp.write([[0]])
+            except BaseException as e:
+                self.assertTrue(isinstance(e, wavfile.Error))
+
 
 if __name__ == '__main__':
     unittest.main()

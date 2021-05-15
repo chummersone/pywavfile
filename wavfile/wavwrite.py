@@ -40,9 +40,11 @@ class WavWrite(WavFile):
         self._init_fp(f, 'wb')
         try:
             self._init_file()
-        except:
+        except BaseException:
             self.close()
             raise
+
+        self._fp.seek(self._data_start)
 
     def _write_chunk(self, data):
         """Write a chunk of data to the file"""
@@ -164,6 +166,9 @@ class WavWrite(WavFile):
 
         # write the audio data
         for i in range(0, len(audio)):
+            if len(audio[i]) != self._num_channels:
+                raise wavfile.Error('Incorrect number of channels. Expected %d but found %d' %
+                                    (self._num_channels, len(audio[i])))
             for j in range(0, self._num_channels):
                 sample = convert(audio[i][j])
                 write(sample, self._bytes_per_sample)

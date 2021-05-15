@@ -31,7 +31,10 @@ The object also has the following methods:
                         read successive groups of audio frames.
     iter_float(N)    -- Similar to read_float() but used in iterator contexts
                         to read successive groups of audio frames.
-    seek(N)          -- Move to the Nth frame in the audio stream.
+    seek(N, [W])     -- Move to the Nth frame in the audio stream. The
+                        position mode can be changed by setting W: 0 (default)
+                        = absolute positioning, 1 = relative to current
+                        position, 2 = relative to end of last frame.
     tell()           -- Return the current frame in the audio stream.
     close()          -- Close the instance.
 
