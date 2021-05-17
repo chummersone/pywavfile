@@ -169,6 +169,14 @@ class TestWavfileRead(unittest.TestCase):
                 for j in range(0, len(audio[0])):
                     self.assertTrue(0 <= audio[i][j] < 2**8)
 
+    def test_seek_error(self):
+        with wavfile.open(self.filename) as wfp:
+            self.assertRaises(wavfile.Error, wfp.seek, wfp.num_frames + 1)
+
+    def test_whence_error(self):
+        with wavfile.open(self.filename) as wfp:
+            self.assertRaises(wavfile.Error, wfp.seek, 0, 3)
+
 
 if __name__ == '__main__':
     unittest.main()

@@ -173,10 +173,16 @@ class TestWavfileWrite(unittest.TestCase):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            try:
-                wfp.write([[0]])
-            except BaseException as e:
-                self.assertTrue(isinstance(e, wavfile.Error))
+            self.assertRaises(wavfile.Error, wfp.write, [[0]])
+
+    def test_write_after_close(self):
+        filename = "tmp.wav"
+        with wavfile.open(filename, 'w',
+                          sample_rate=44100,
+                          bits_per_sample=16,
+                          num_channels=2) as wfp:
+            wfp.write([[0, 0]])
+        self.assertRaises(wavfile.Error, wfp.write, [[0, 0]])
 
 
 if __name__ == '__main__':

@@ -103,7 +103,7 @@ class WavFile(ABC):
         elif whence == 2:
             relative_pos = self._data_start + self._data_size
         else:
-            wavfile.Error('Invalid whence parameter')
+            raise wavfile.Error('Invalid whence parameter')
         self._fp.seek(relative_pos + (frame_number * self._block_align))
         return self
 
