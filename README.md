@@ -46,6 +46,13 @@ relative to end of last frame.
 * `tell()` - Return the current frame in the audio stream.
 * `close()` - Close the instance.
 
+Alternatively, the following shortcut function is provided:
+
+    audio, sample_rate, bits_per_sample = wavfile.read(file, fmt='int')
+
+where `fmt` is `'int'` or `'float'`, and `audio` is the audio data. The
+function reads all audio data in the file.
+
 ## Usage: writing wave files
 
 ```
@@ -71,6 +78,12 @@ where `N` is the number of frames and `C` is the number of audio
 channels. If the data are floats then they should be in the range
 [-1, 1). They will be converted automatically. Integers will be
 written directly.
+  
+Alternatively, the following shortcut function is provided:
+
+    wavfile.write(file, audio, sample_rate=44100, bits_per_sample=16)
+
+where `audio` is the audio data to write to the file.
 
 ## Installation
 
