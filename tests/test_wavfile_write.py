@@ -184,6 +184,26 @@ class TestWavfileWrite(unittest.TestCase):
             wfp.write([[0, 0]])
         self.assertRaises(wavfile.Error, wfp.write, [[0, 0]])
 
+    def test_shortcut_write(self):
+        filename = "tmp.wav"
+        audio_data_in = [
+            [0],
+            [256],
+            [512],
+            [-256],
+            [-512],
+        ]
+        sample_rate_in = 48000
+        bits_per_sample_in = 24
+        wavfile.write(filename,
+                      audio_data_in,
+                      sample_rate=sample_rate_in,
+                      bits_per_sample=bits_per_sample_in)
+        audio_data_out, sample_rate_out, bits_per_sample_out = wavfile.read(filename)
+        self.assertEqual(sample_rate_in, sample_rate_out)
+        self.assertEqual(bits_per_sample_in, bits_per_sample_out)
+        self.assertListEqual(audio_data_in, audio_data_out)
+
 
 if __name__ == '__main__':
     unittest.main()

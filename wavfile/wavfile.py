@@ -43,3 +43,43 @@ def open(f, mode=None, sample_rate=44100, num_channels=None, bits_per_sample=16)
                                          bits_per_sample=bits_per_sample)
     else:
         raise Error("mode must be 'r', 'rb', 'w', or 'wb'")
+
+
+def read(path, fmt='int'):
+    """
+    Shortcut function to read a wave file.
+    :param path: Path to the wave audio file.
+    :param fmt: Read the file as 'int' or 'float'.
+    :return: The audio data, the sample rate, and the bit depth.
+    """
+    with wavfile.open(path, 'r') as wf:
+        fs = wf.sample_rate
+        bits_per_sample = wf.bits_per_sample
+        fmt_methods = {
+            'int': wf.read_int,
+            'float': wf.read_float,
+        }
+        audio_data = None
+        try:
+            audio_data = fmt_methods.get(fmt)()
+        except KeyError:
+            Error('Unknown format. Options are: ' + ', '.join(fmt_methods.keys()))
+
+    return audio_data, fs, bits_per_sample
+
+
+def write(path, audio_data, sample_rate=44100, bits_per_sample=16):
+    """
+    Shortcut function to write a wave file.
+    :param path: Path to the newly created wave file.
+    :param audio_data: The data to be written to the file. The data should be
+    contained in a list of lists with size (N,C), where C is the number of
+    audio channels. If the data are floats then they should be in the range
+    [-1, 1). They will be converted automatically. Integers will be written
+    directly.
+    :param sample_rate: The sample rate for the new file.
+    :param bits_per_sample: The number of bits to encode each audio sample. Only
+    applicable when writing an audio file.
+    """
+    with wavfile.open(path, 'w', sample_rate=sample_rate, bits_per_sample=bits_per_sample) as wf:
+        wf.write(audio_data)

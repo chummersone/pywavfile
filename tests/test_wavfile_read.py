@@ -177,6 +177,13 @@ class TestWavfileRead(unittest.TestCase):
         with wavfile.open(self.filename) as wfp:
             self.assertRaises(wavfile.Error, wfp.seek, 0, 3)
 
+    def test_shortcut_read(self):
+        audio_data, fs, bits_per_sample = wavfile.read(self.filename)
+        self.assertEqual(44100, fs)
+        self.assertEqual(16, bits_per_sample)
+        self.assertEqual(4096, len(audio_data))
+        self.assertEqual(1, len(audio_data[0]))
+
 
 if __name__ == '__main__':
     unittest.main()

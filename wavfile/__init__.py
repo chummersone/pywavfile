@@ -38,6 +38,13 @@ The object also has the following methods:
     tell()           -- Return the current frame in the audio stream.
     close()          -- Close the instance.
 
+Alternatively, the following shortcut function is provided:
+
+    audio, sample_rate, bits_per_sample = wavfile.read(file, fmt='int')
+
+where fmt is 'int' or 'float', and audio is the audio data. The function reads
+all audio data in the file.
+
 Usage: writing wave files.
 
     f = wavfile.open(file, 'w', sample_rate=44100, num_channels=None,
@@ -58,7 +65,13 @@ writing audio data:
                         [-1, 1). They will be converted automatically. Integers
                         will be written directly.
 
+Alternatively, the following shortcut function is provided:
+
+    wavfile.write(file, audio, sample_rate=44100, bits_per_sample=16)
+
+where audio is the audio data to write to the file.
+
 """
 
-from wavfile.wavfile import Error, open
+from wavfile.wavfile import Error, open, read, write
 from wavfile.version import __VERSION__
