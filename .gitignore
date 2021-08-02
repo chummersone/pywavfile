@@ -1,5 +1,6 @@
 .idea/
 tests/tmp.wav
+dist/
 venv/
 wavfile.egg-info/
 wavfile/__pycache__/
