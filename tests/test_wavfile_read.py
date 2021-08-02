@@ -184,6 +184,27 @@ class TestWavfileRead(unittest.TestCase):
         self.assertEqual(4096, len(audio_data))
         self.assertEqual(1, len(audio_data[0]))
 
+    def test_read_test_file_1(self):
+        audio_data, fs, bits_per_sample = wavfile.read('test-file-1.wav')
+        self.assertEqual(44100, fs)
+        self.assertEqual(24, bits_per_sample)
+        self.assertEqual(44100 * 4, len(audio_data))
+        self.assertEqual(2, len(audio_data[0]))
+
+    def test_read_test_file_2(self):
+        audio_data, fs, bits_per_sample = wavfile.read('test-file-2.wav')
+        self.assertEqual(96000, fs)
+        self.assertEqual(32, bits_per_sample)
+        self.assertEqual(96000, len(audio_data))
+        self.assertEqual(1, len(audio_data[0]))
+
+    def test_read_test_file_3(self):
+        audio_data, fs, bits_per_sample = wavfile.read('test-file-3.wav')
+        self.assertEqual(48000, fs)
+        self.assertEqual(24, bits_per_sample)
+        self.assertEqual(48000, len(audio_data))
+        self.assertEqual(5, len(audio_data[0]))
+
 
 if __name__ == '__main__':
     unittest.main()
