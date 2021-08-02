@@ -7,11 +7,10 @@ The WavRead class is returned by wavfile.open() when opening a file in read
 mode.
 """
 
-from wavfile.wavfile_base import WavFile
-import wavfile
+import wavfile.base
 
 
-class WavRead(WavFile):
+class WavRead(wavfile.base.WavFile):
     """Class for reading a wave file"""
 
     def __init__(self, f):
@@ -19,7 +18,7 @@ class WavRead(WavFile):
         Initialise the WavRead object.
         :param f: Either a path to a wave file or a pointer to an open file.
         """
-        WavFile.__init__(self)
+        wavfile.base.WavFile.__init__(self)
 
         self._init_fp(f, 'rb')
 

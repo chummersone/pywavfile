@@ -7,11 +7,10 @@ The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
 
-from wavfile.wavfile_base import WavFile
-import wavfile
+import wavfile.base
 
 
-class WavWrite(WavFile):
+class WavWrite(wavfile.base.WavFile):
     """Class for writing a wave file"""
 
     def __init__(self, f, sample_rate=44100, num_channels=None, bits_per_sample=16):
@@ -25,7 +24,7 @@ class WavWrite(WavFile):
         :param bits_per_sample: The number of bits to encode each audio sample.
         """
 
-        WavFile.__init__(self)
+        wavfile.base.WavFile.__init__(self)
         self._sample_rate = sample_rate
         self._num_channels = num_channels
         self._bits_per_sample = bits_per_sample
@@ -123,7 +122,7 @@ class WavWrite(WavFile):
     def _data_are_floats(data):
         """Check for any floats in data"""
         return any([any([isinstance(y, float) for y in x]) for x in data]) or \
-            WavFile._buffer_max_abs(data) <= 1.0
+            wavfile.base.WavFile._buffer_max_abs(data) <= 1.0
 
     def write(self, audio):
         """
