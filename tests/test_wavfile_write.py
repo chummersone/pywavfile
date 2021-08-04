@@ -204,6 +204,19 @@ class TestWavfileWrite(unittest.TestCase):
         self.assertEqual(bits_per_sample_in, bits_per_sample_out)
         self.assertListEqual(audio_data_in, audio_data_out)
 
+    def test_before_write(self):
+        filename = "tmp.wav"
+        with wavfile.open(filename, 'w',
+                          sample_rate=44100,
+                          bits_per_sample=16) as wfp:
+            self.assertEqual(wfp.tell(), 0)
+            self.assertRaises(wavfile.Error, wfp.seek, 1)
+            self.assertEqual(wfp.bits_per_sample, 16)
+            self.assertEqual(wfp.num_channels, None)
+            self.assertEqual(wfp.sample_rate, 44100)
+            self.assertEqual(wfp.chunksize, 4)
+            self.assertEqual(wfp.num_frames, 0)
+
 
 if __name__ == '__main__':
     unittest.main()
