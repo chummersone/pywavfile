@@ -5,6 +5,7 @@ Provides test cases for reading a wave audio file.
 """
 
 import copy
+import itertools
 import unittest
 
 import wavfile
@@ -36,3 +37,11 @@ class TestWavfileCopy(unittest.TestCase):
             self.assertEqual(wfp._fp.tell(), wfc._fp.tell())
             self.assertEqual(wfp.tell(), wfc.tell())
             wfc.close()
+
+    def test_copy_read_content(self):
+        with wavfile.open(self.filename) as wfp:
+            wfc = copy.copy(wfp)
+            num_frames = 1
+            for x, y in itertools.zip_longest(wfp.iter_int(num_frames),
+                                              wfc.iter_int(num_frames)):
+                self.assertListEqual(x[0], y[0])
