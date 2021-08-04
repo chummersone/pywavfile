@@ -45,11 +45,6 @@ class WavWrite(wavfile.base.WavFile):
 
         self._fp.seek(self._data_start)
 
-    def __copy__(self):
-        """Create a shallow copy of the WavWrite object"""
-        newobj = type(self)(self._fp.name)
-        return self._update_copy(newobj)
-
     def _write_chunk(self, data):
         """Write a chunk of data to the file"""
         return self._fp.write(data)

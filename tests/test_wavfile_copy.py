@@ -28,16 +28,6 @@ class TestWavfileCopy(unittest.TestCase):
             self.assertEqual(wfp.num_frames, wfc.num_frames)
             wfc.close()
 
-    def test_basic_copy_write(self):
-        filename = 'tmp.wav'
-        with wavfile.open(filename, 'w', sample_rate=44100, bits_per_sample=16) as wfp:
-            wfc = copy.copy(wfp)
-            self.assertTrue(wfc._should_close_file)
-            self.assertEqual(wfp._fp.name, wfc._fp.name)
-            self.assertEqual(wfp._fp.tell(), wfc._fp.tell())
-            self.assertEqual(wfp.tell(), wfc.tell())
-            wfc.close()
-
     def test_copy_read_content(self):
         with wavfile.open(self.filename) as wfp:
             wfc = copy.copy(wfp)

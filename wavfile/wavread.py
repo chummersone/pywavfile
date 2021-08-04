@@ -34,7 +34,10 @@ class WavRead(wavfile.base.WavFile):
     def __copy__(self):
         """Create a shallow copy of the WavRead object"""
         newobj = type(self)(self._fp.name)
-        return self._update_copy(newobj)
+        newobj.__dict__.update({key: value for key, value in self.__dict__.items()
+                                if key not in '_fp'})
+        newobj._fp.seek(self._fp.tell())
+        return newobj
 
     def _read_chunk(self, chunksize):
         """Read a chunk of data from the file"""
