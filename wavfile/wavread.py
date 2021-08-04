@@ -128,6 +128,15 @@ class WavRead(wavfile.base.WavFile):
         if self._data_start == 0:
             raise wavfile.Error('Cannot find any audio data')
 
+    def _block_iterator(self, method, num_frames):
+        """Read blocks of frames using an iterator"""
+        while True:
+            audio = getattr(self, method)(num_frames=num_frames)
+            if len(audio) > 0:
+                yield audio
+            else:
+                break
+
     def close(self):
         """Close the file."""
         if self._should_close_file:
@@ -175,12 +184,7 @@ class WavRead(wavfile.base.WavFile):
         :param num_frames:
         :return: A generator to yield the next frame(s) of audio.
         """
-        while True:
-            audio = self.read_int(num_frames=num_frames)
-            if len(audio) > 0:
-                yield audio
-            else:
-                break
+        return self._block_iterator('read_int', num_frames)
 
     def _convert_unsigned_int_to_float(self, x):
         """Convert unsigned int to float [-1, 1)"""
@@ -218,9 +222,4 @@ class WavRead(wavfile.base.WavFile):
         :param num_frames:
         :return: A generator to yield the next frame(s) of audio.
         """
-        while True:
-            audio = self.read_float(num_frames=num_frames)
-            if len(audio) > 0:
-                yield audio
-            else:
-                break
+        return self._block_iterator('read_float', num_frames)
