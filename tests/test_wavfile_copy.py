@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-Provides test cases for reading a wave audio file.
+Provides test cases for copying a WavRead object.
 """
 
 import copy
@@ -11,11 +11,11 @@ import unittest
 import wavfile
 
 
-class TestWavfileCopy(unittest.TestCase):
+class TestWavReadCopy(unittest.TestCase):
 
     filename = "test-file-1.wav"
 
-    def test_basic_copy_read(self):
+    def test_basic_copy(self):
         with wavfile.open(self.filename) as wfp:
             wfc = copy.copy(wfp)
             self.assertTrue(wfc._should_close_file)
@@ -28,7 +28,7 @@ class TestWavfileCopy(unittest.TestCase):
             self.assertEqual(wfp.num_frames, wfc.num_frames)
             wfc.close()
 
-    def test_copy_read_content(self):
+    def test_copy_content(self):
         with wavfile.open(self.filename) as wfp:
             wfc = copy.copy(wfp)
             num_frames = 1
