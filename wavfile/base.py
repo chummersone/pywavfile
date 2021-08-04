@@ -54,6 +54,15 @@ class WavFile(ABC):
         else:
             self._fp = f
 
+    def _update_copy(self, newobj):
+        """Helper method to copy a WavFile object"""
+        if not isinstance(newobj, type(self)):
+            raise TypeError('_update_copy must be called on a WavFile object')
+        newobj.__dict__.update({key: value for key, value in self.__dict__.items()
+                                if key not in '_fp'})
+        newobj._fp.seek(self._fp.tell())
+        return newobj
+
     @property
     def _bytes_per_sample(self):
         """Number of bytes per audio sample"""
@@ -108,7 +117,10 @@ class WavFile(ABC):
 
     def tell(self):
         """Get the current frame number."""
-        return (self._fp.tell() - self._data_start) // self._block_align
+        if self._block_align == 0:
+            return 0
+        else:
+            return (self._fp.tell() - self._data_start) // self._block_align
 
     def close(self):
         pass

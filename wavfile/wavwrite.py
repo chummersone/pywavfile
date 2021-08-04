@@ -45,6 +45,11 @@ class WavWrite(wavfile.base.WavFile):
 
         self._fp.seek(self._data_start)
 
+    def __copy__(self):
+        """Create a shallow copy of the WavWrite object"""
+        newobj = type(self)(self._fp.name)
+        return self._update_copy(newobj)
+
     def _write_chunk(self, data):
         """Write a chunk of data to the file"""
         return self._fp.write(data)
@@ -180,22 +185,25 @@ class WavWrite(wavfile.base.WavFile):
         """Close the file."""
 
         if self._is_open:
-            # pad data section
-            num_pad_bytes = self._data_size % self.chunksize
-            if num_pad_bytes > 0:
-                self._fp.seek(self._data_end)
-                self._write_chunk(int(0).to_bytes(num_pad_bytes, self.endianness))
+            if self._data_size > 0:
+                # update the header only if there are data
 
-            # write data chunk size
-            self._fp.seek(self._data_chunk_ptr + self.chunksize)
-            self._write_signed_int(self._data_size)
+                # pad data section
+                num_pad_bytes = self._data_size % self.chunksize
+                if num_pad_bytes > 0:
+                    self._fp.seek(self._data_end)
+                    self._write_chunk(int(0).to_bytes(num_pad_bytes, self.endianness))
 
-            # write fmt data
-            self._fp.seek(self._fmt_chunk_ptr + (2 * self.chunksize) + (self.chunksize // 2))
-            self._write_signed_int(self._num_channels, self.chunksize // 2)
-            self._fp.seek(self.chunksize, 1)  # skip sample rate
-            self._write_signed_int(self._byte_rate)
-            self._write_signed_int(self._block_align, self.chunksize // 2)
+                # write data chunk size
+                self._fp.seek(self._data_chunk_ptr + self.chunksize)
+                self._write_signed_int(self._data_size)
+
+                # write fmt data
+                self._fp.seek(self._fmt_chunk_ptr + (2 * self.chunksize) + (self.chunksize // 2))
+                self._write_signed_int(self._num_channels, self.chunksize // 2)
+                self._fp.seek(self.chunksize, 1)  # skip sample rate
+                self._write_signed_int(self._byte_rate)
+                self._write_signed_int(self._block_align, self.chunksize // 2)
 
             self._is_open = False
 
