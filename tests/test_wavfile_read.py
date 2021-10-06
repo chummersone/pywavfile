@@ -18,13 +18,13 @@ class TestWavfileRead(unittest.TestCase):
         wfp = wavfile.open(self.filename)
         self.assertEqual(wfp.sample_rate, 44100)
         wfp.close()
-        self.assertTrue(wfp._fp.closed)
+        self.assertTrue(wfp.fp.closed)
 
     def test_file_open_filename_with(self):
         with wavfile.open(self.filename) as wfp:
             fp = wfp
             self.assertEqual(wfp.sample_rate, 44100)
-        self.assertTrue(fp._fp.closed)
+        self.assertTrue(fp.fp.closed)
 
     def test_file_open_file(self):
         with open(self.filename, "rb") as fp:

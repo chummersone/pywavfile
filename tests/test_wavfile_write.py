@@ -182,7 +182,7 @@ class TestWavfileWrite(unittest.TestCase):
                           bits_per_sample=16,
                           num_channels=2) as wfp:
             wfp.write([[0, 0]])
-        self.assertRaises(wavfile.Error, wfp.write, [[0, 0]])
+        self.assertRaises(ValueError, wfp.write, [[0, 0]])
 
     def test_shortcut_write(self):
         filename = "tmp.wav"
@@ -212,9 +212,8 @@ class TestWavfileWrite(unittest.TestCase):
             self.assertEqual(wfp.tell(), 0)
             self.assertRaises(wavfile.Error, wfp.seek, 1)
             self.assertEqual(wfp.bits_per_sample, 16)
-            self.assertEqual(wfp.num_channels, None)
+            self.assertEqual(wfp.num_channels, 0)
             self.assertEqual(wfp.sample_rate, 44100)
-            self.assertEqual(wfp.chunksize, 4)
             self.assertEqual(wfp.num_frames, 0)
 
 

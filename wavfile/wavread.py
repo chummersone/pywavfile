@@ -10,7 +10,7 @@ mode.
 import wavfile.base
 
 
-class WavRead(wavfile.base.WavFile):
+class WavRead(wavfile.base.Wavfile):
     """Class for reading a wave file"""
 
     def __init__(self, f):
@@ -18,8 +18,7 @@ class WavRead(wavfile.base.WavFile):
         Initialise the WavRead object.
         :param f: Either a path to a wave file or a pointer to an open file.
         """
-        wavfile.base.WavFile.__init__(self)
-
+        wavfile.base.Wavfile.__init__(self)
         self._init_fp(f, 'rb')
 
         # read the file header
@@ -29,107 +28,56 @@ class WavRead(wavfile.base.WavFile):
             self.close()
             raise
 
-        self._fp.seek(self._data_start)
-
-    def __copy__(self):
-        """Create a shallow copy of the WavRead object"""
-        newobj = type(self)(self._fp.name)
-        newobj.__dict__.update({key: value for key, value in self.__dict__.items()
-                                if key not in '_fp'})
-        newobj._fp.seek(self._fp.tell())
-        return newobj
-
-    def _read_chunk(self, chunksize):
-        """Read a chunk of data from the file"""
-        return self._fp.read(chunksize)
-
-    def _read_chunk_header(self, chunksize):
-        """Read the chunk header"""
-        chk_id = self._read_chunk(chunksize)
-        chk_size = self._read_signed_int(chunksize)
-        return chk_id, chk_size
-
-    def _read_required_chunk(self, chunksize, requirement):
-        """
-        Read a chunk and check that its content meets a requirement.
-        :param chunksize: Number of bytes to read.
-        :param requirement: The expected value.
-        :return: The read data.
-        """
-        data = self._read_chunk(chunksize)
-        if data != requirement:
-            raise wavfile.Error('Invalid wave file')
-        return data
-
-    def _read_signed_int(self, nbytes):
-        """
-        Read a signed integer from the specified number of bytes of the input
-        file.
-        :param nbytes: Number of bytes from the input to interpret as a signed
-        integer.
-        :return: The integer value.
-        """
-        return int.from_bytes(self._read_chunk(nbytes), byteorder=self.endianness, signed=True)
+        self.fp.seek(self._data_chunk.content_start)
 
     def _init_file(self):
-        """Read the file and initialise the object properties."""
-        self._fp.seek(0)
+        """
+        Read the file and initialise the object properties.
+        """
+        self.fp.seek(0)
+        fmt_chunk = None
 
         # Read the file
         while True:
-            # Ensure chunksize alignment
-            offset = self._fp.tell() % self.chunksize
-            if offset:
-                self._fp.seek(offset, 1)
+            chunk = wavfile.base.Chunk(self.fp)
 
-            chk_id, chk_size = self._read_chunk_header(self.chunksize)
-
-            # Check for EOF
-            if len(chk_id) == 0:
+            if len(chunk.chunk_id) == 0:
                 break
 
-            # Interpret chunks
-            if chk_id == self.WAVE_CHUNK_ID_RIFF:
-                # Read RIFF chunk
-                self._filesize = chk_size
-                self._read_required_chunk(self.chunksize, self.WAVE_CHUNK_ID_WAVE)
+            # rewind to chunk start
+            self.fp.seek(-wavfile.base.Chunk.offset, 1)
 
-            elif chk_id == self.WAVE_CHUNK_ID_FMT:
-                # Read fmt chunk
-                _num_fmt_bytes = 16
-                self._fmt_size = chk_size
-                if chk_id != self.WAVE_CHUNK_ID_FMT:
-                    raise wavfile.Error('Invalid wave file')
-                self._audio_fmt = self._read_signed_int(self.chunksize // 2)
-                if self._audio_fmt not in self.valid_formats:
-                    raise wavfile.Error('Invalid audio format.')
-                self._num_channels = self._read_signed_int(self.chunksize // 2)
-                self._sample_rate = self._read_signed_int(self.chunksize)
-                self._byte_rate = self._read_signed_int(self.chunksize)
-                self._block_align = self._read_signed_int(self.chunksize // 2)
-                self._bits_per_sample = self._read_signed_int(self.chunksize // 2)
-                if (self._bits_per_sample % 8) != 0:
-                    raise wavfile.Error('Invalid bits per sample.')
-                remaining = self._fmt_size - _num_fmt_bytes
-                if remaining > 0:
-                    self._read_chunk(remaining)
+            # interpret each chunk
+            if chunk.chunk_id == wavfile.base.ChunkID.RIFF_CHUNK.value:
+                self._riff_chunk = wavfile.base.RiffChunk(self.fp)
+            elif chunk.chunk_id == wavfile.base.ChunkID.FMT_CHUNK.value:
+                fmt_chunk = wavfile.base.WavFmtChunk(self.fp)
+            elif chunk.chunk_id == wavfile.base.ChunkID.DATA_CHUNK.value:
+                if fmt_chunk is None:
+                    raise wavfile.Error('DATA chunk read before FMT chunk')
+                self._data_chunk = wavfile.base.WavDataChunk(self.fp, fmt_chunk)
 
-            elif chk_id == self.WAVE_CHUNK_ID_DATA:
-                # Start to read data chunk
-                self._data_size = chk_size
-                self._num_frames = self._data_size // self._block_align
-                self._data_start = self._fp.tell()
-                break
+            # skip superfluous bytes
+            if chunk.chunk_id != wavfile.base.ChunkID.RIFF_CHUNK.value:
+                chunk.skip()
 
-            else:
-                # Throw chunk away
-                self._read_chunk(chk_size)
+        # go to data chunk content start ready to read samples
+        self.fp.seek(self._data_chunk.content_start)
 
-        if self._data_start == 0:
-            raise wavfile.Error('Cannot find any audio data')
+    def __copy__(self):
+        """
+        Create a shallow copy of the WavRead object.
+        """
+        newobj = type(self)(self.fp.name)
+        newobj.__dict__.update({key: value for key, value in self.__dict__.items()
+                                if key not in ('fp', '_riff_chunk', '_data_chunk')})
+        newobj.fp.seek(self.fp.tell())
+        return newobj
 
     def _block_iterator(self, method, num_frames):
-        """Read blocks of frames using an iterator"""
+        """
+        Read blocks of frames using an iterator.
+        """
         while True:
             audio = getattr(self, method)(num_frames=num_frames)
             if len(audio) > 0:
@@ -138,9 +86,12 @@ class WavRead(wavfile.base.WavFile):
                 break
 
     def close(self):
-        """Close the file."""
+        """
+        Close the wav file.
+        """
+        wavfile.base.Wavfile.close(self)
         if self._should_close_file:
-            self._fp.close()
+            self.fp.close()
         self._should_close_file = False
 
     def read_int(self, num_frames=None):
@@ -152,48 +103,17 @@ class WavRead(wavfile.base.WavFile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
-        if self._bytes_per_sample == 1:
-            signed = False
-        else:
-            signed = True
 
-        def read_sample():
-            return int.from_bytes(self._read_chunk(self._bytes_per_sample),
-                                  byteorder=self.endianness, signed=signed)
-
-        if num_frames is None or num_frames < 0:
-            # read all remaining frames
-            num_frames = self._num_frames
-
-        # do not try to read past the end
-        num_frames = min(num_frames, self._num_frames - self.tell())
-        audio = [[0] * self._num_channels for _ in range(num_frames)]
-
-        if num_frames > 0:
-            # read the audio
-            for i in range(0, num_frames):
-                for j in range(0, self._num_channels):
-                    audio[i][j] = read_sample()
-
-        return audio
+        return self._data_chunk.read_frames(num_frames)
 
     def iter_int(self, num_frames=None):
         """
         This method is equivalent to read_int(), except that it returns a generator rather than
         a block of sample.
-        :param num_frames:
+        :param num_frames: Number of frames to read on each iteration.
         :return: A generator to yield the next frame(s) of audio.
         """
         return self._block_iterator('read_int', num_frames)
-
-    def _convert_unsigned_int_to_float(self, x):
-        """Convert unsigned int to float [-1, 1)"""
-        adjust = 2.0 ** (self._bits_per_sample - 1.0)
-        return (x - adjust) / adjust
-
-    def _convert_signed_int_to_float(self, x):
-        """Convert signed int to float [-1, 1)"""
-        return x / (2.0 ** (self._bits_per_sample - 1.0))
 
     def read_float(self, num_frames=None):
         """
@@ -219,7 +139,7 @@ class WavRead(wavfile.base.WavFile):
         """
         This method is equivalent to read_float(), except that it returns a generator rather than
         a block of samples.
-        :param num_frames:
+        :param num_frames: Number of frames to read on each iteration.
         :return: A generator to yield the next frame(s) of audio.
         """
         return self._block_iterator('read_float', num_frames)

@@ -19,8 +19,8 @@ class TestWavReadCopy(unittest.TestCase):
         with wavfile.open(self.filename) as wfp:
             wfc = copy.copy(wfp)
             self.assertTrue(wfc._should_close_file)
-            self.assertEqual(wfp._fp.name, wfc._fp.name)
-            self.assertEqual(wfp._fp.tell(), wfc._fp.tell())
+            self.assertEqual(wfp.fp.name, wfc.fp.name)
+            self.assertEqual(wfp.fp.tell(), wfc.fp.tell())
             self.assertEqual(wfp.tell(), wfc.tell())
             self.assertEqual(wfp.num_channels, wfc.num_channels)
             self.assertEqual(wfp.sample_rate, wfc.sample_rate)
