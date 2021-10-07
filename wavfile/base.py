@@ -33,21 +33,6 @@ class Wavfile(ABC):
         else:
             self.fp = f
 
-    @property
-    def _max_signed_int(self):
-        """Maximum signed integer"""
-        return (2 ** (self.bits_per_sample - 1)) - 1
-
-    @property
-    def _min_signed_int(self):
-        """Minimum signed integer"""
-        return -self._max_signed_int - 1
-
-    @property
-    def _max_unsigned_int(self):
-        """Maximum unsigned integer"""
-        return (2 ** self.bits_per_sample) - 1
-
     def _convert_unsigned_int_to_float(self, x):
         """
         Convert unsigned int to float [-1, 1).
@@ -65,23 +50,13 @@ class Wavfile(ABC):
         """
         Convert float [-1, 1) to unsigned int.
         """
-        val = int(round(((x + 1.0) / 2.0) * (2.0 ** self.bits_per_sample)))
-        if val > self._max_unsigned_int:
-            val = self._max_unsigned_int
-        elif val < 0:
-            val = 0
-        return val
+        return int(round(((x + 1.0) / 2.0) * (2.0 ** self.bits_per_sample)))
 
     def _convert_float_to_signed_int(self, x):
         """
         Convert float [-1, 1) to signed int.
         """
-        val = int(round(x * (2.0 ** (self.bits_per_sample - 1.0))))
-        if val > self._max_signed_int:
-            val = self._max_signed_int
-        elif val < self._min_signed_int:
-            val = self._min_signed_int
-        return val
+        return int(round(x * (2.0 ** (self.bits_per_sample - 1.0))))
 
     @property
     def _bytes_per_sample(self):

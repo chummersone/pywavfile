@@ -4,6 +4,7 @@
 Chunk-based helper classes for working with RIFF files.
 """
 
+import sys
 from enum import Enum
 
 import wavfile
@@ -310,6 +311,7 @@ class WavDataChunk(Chunk):
 
         Chunk.__init__(self, fp, bigendian=False)
 
+        self.__did_warn = False
         self.fmt_chunk = fmt_chunk
 
         if 'r' in self.fp.mode:
@@ -364,11 +366,68 @@ class WavDataChunk(Chunk):
 
         return audio
 
+    @property
+    def _max_signed_int(self):
+        """Maximum signed integer"""
+        return (2 ** (self.fmt_chunk.bits_per_sample - 1)) - 1
+
+    @property
+    def _min_signed_int(self):
+        """Minimum signed integer"""
+        return -self._max_signed_int - 1
+
+    @property
+    def _max_unsigned_int(self):
+        """Maximum unsigned integer"""
+        return (2 ** self.fmt_chunk.bits_per_sample) - 1
+
+    def __saturation_warning(self):
+        """
+        Print a warning to stderr about out-of-range sample values.
+        """
+        if not self.__did_warn:
+            self.__did_warn = True
+            print('Saturating one of more sample values that are out-of-range', file=sys.stderr)
+
+    def _saturate_signed(self, val):
+        """
+        Saturate out-of-range signed sample values.
+        """
+        if val > self._max_signed_int:
+            val = self._max_signed_int
+            self.__saturation_warning()
+        elif val < self._min_signed_int:
+            val = self._min_signed_int
+            self.__saturation_warning()
+        return val
+
+    def _saturate_unsigned(self, val):
+        """
+        Saturate out-of-range unsigned sample values.
+        """
+        if val > self._max_unsigned_int:
+            val = self._max_unsigned_int
+            self.__saturation_warning()
+        elif val < 0:
+            val = 0
+            self.__saturation_warning()
+        return val
+
+    def _saturate(self, val):
+        """
+        Saturate out-of-range sample values.
+        """
+        if self.fmt_chunk.signed:
+            return self._saturate_signed(val)
+        else:
+            return self._saturate_unsigned(val)
+
     def write_sample(self, sample):
         """
         Write a sample to the chunk.
         :param sample: An audio sample.
         """
+        sample = self._saturate(sample)
         self.write_int(sample, self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
 
     def write_frames(self, audio):

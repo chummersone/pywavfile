@@ -148,6 +148,52 @@ class TestWavfileWrite(unittest.TestCase):
         self.run_test(audio_data_in, read_callback, sample_rate,
                       bits_per_sample, len(audio_data_in[0]))
 
+    def test_write_out_of_range_signed(self):
+        audio_data_in = [
+            [2 ** 15],
+            [(-2 ** 15) - 1],
+            [512],
+            [-256],
+            [-512],
+            [0],
+        ]
+        clipped = [
+            [(2 ** 15) - 1],
+            [-2 ** 15],
+            [512],
+            [-256],
+            [-512],
+            [0],
+        ]
+        read_callback = "read_int"
+        sample_rate = 32000
+        bits_per_sample = 16
+        self.run_test(audio_data_in, read_callback, sample_rate,
+                      bits_per_sample, len(audio_data_in[0]), clipped)
+
+    def test_write_out_of_range_unsigned(self):
+        audio_data_in = [
+            [256],
+            [-1],
+            [128],
+            [-64],
+            [-128],
+            [0],
+        ]
+        clipped = [
+            [255],
+            [0],
+            [128],
+            [0],
+            [0],
+            [0],
+        ]
+        read_callback = "read_int"
+        sample_rate = 32000
+        bits_per_sample = 8
+        self.run_test(audio_data_in, read_callback, sample_rate,
+                      bits_per_sample, len(audio_data_in[0]), clipped)
+
     def test_read_write_audio_int24_6channel(self):
         audio_data_in = [
             [0, 1, 2, 3, 4, 5],
