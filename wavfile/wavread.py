@@ -9,6 +9,11 @@ mode.
 
 import wavfile.base
 
+from .chunk import RiffChunk
+from .chunk import WavFmtChunk
+from .chunk import WavDataChunk
+from .chunk import ChunkID
+
 
 class WavRead(wavfile.base.Wavfile):
     """Class for reading a wave file"""
@@ -48,17 +53,17 @@ class WavRead(wavfile.base.Wavfile):
             self.fp.seek(-wavfile.base.Chunk.offset, 1)
 
             # interpret each chunk
-            if chunk.chunk_id == wavfile.base.ChunkID.RIFF_CHUNK.value:
-                self._riff_chunk = wavfile.base.RiffChunk(self.fp)
-            elif chunk.chunk_id == wavfile.base.ChunkID.FMT_CHUNK.value:
-                fmt_chunk = wavfile.base.WavFmtChunk(self.fp)
-            elif chunk.chunk_id == wavfile.base.ChunkID.DATA_CHUNK.value:
+            if chunk.chunk_id == ChunkID.RIFF_CHUNK.value:
+                self._riff_chunk = RiffChunk(self.fp)
+            elif chunk.chunk_id == ChunkID.FMT_CHUNK.value:
+                fmt_chunk = WavFmtChunk(self.fp)
+            elif chunk.chunk_id == ChunkID.DATA_CHUNK.value:
                 if fmt_chunk is None:
                     raise wavfile.Error('DATA chunk read before FMT chunk')
-                self._data_chunk = wavfile.base.WavDataChunk(self.fp, fmt_chunk)
+                self._data_chunk = WavDataChunk(self.fp, fmt_chunk)
 
             # skip superfluous bytes
-            if chunk.chunk_id != wavfile.base.ChunkID.RIFF_CHUNK.value:
+            if chunk.chunk_id != ChunkID.RIFF_CHUNK.value:
                 chunk.skip()
 
         # go to data chunk content start ready to read samples

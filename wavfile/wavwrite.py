@@ -9,6 +9,11 @@ mode.
 
 import wavfile.base
 
+from .chunk import RiffChunk
+from .chunk import WavFmtChunk
+from .chunk import WavDataChunk
+from .chunk import RiffFormat
+
 
 class WavWrite(wavfile.base.Wavfile):
     """Class for writing a wave file"""
@@ -29,10 +34,10 @@ class WavWrite(wavfile.base.Wavfile):
         self._init_fp(fp, 'wb')
 
         # initialise each of the riff chunk
-        self._riff_chunk = wavfile.base.RiffChunk(self.fp)
-        self._riff_chunk.format = wavfile.base.RiffFormat.WAVE.value
-        fmt_chunk = wavfile.base.WavFmtChunk(self.fp)
-        self._data_chunk = wavfile.base.WavDataChunk(self.fp, fmt_chunk)
+        self._riff_chunk = RiffChunk(self.fp)
+        self._riff_chunk.format = RiffFormat.WAVE.value
+        fmt_chunk = WavFmtChunk(self.fp)
+        self._data_chunk = WavDataChunk(self.fp, fmt_chunk)
         self._data_chunk.fmt_chunk.sample_rate = sample_rate
         if num_channels is not None:
             self._data_chunk.fmt_chunk.num_channels = num_channels
