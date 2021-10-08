@@ -262,6 +262,28 @@ class TestWavfileWrite(unittest.TestCase):
             self.assertEqual(wfp.sample_rate, 44100)
             self.assertEqual(wfp.num_frames, 0)
 
+    def test_wav_data_aligned(self):
+        audio_data_in = [
+            [255],
+            [0],
+            [128],
+            [64],
+            [32],
+        ]
+        audio_data_aligned = [
+            [255],
+            [0],
+            [128],
+            [64],
+            [32],
+            [0],
+        ]
+        read_callback = "read_int"
+        sample_rate = 44100
+        bits_per_sample = 8
+        self.run_test(audio_data_in, read_callback, sample_rate,
+                      bits_per_sample, len(audio_data_in[0]), audio_data_aligned)
+
 
 if __name__ == '__main__':
     unittest.main()

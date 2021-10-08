@@ -409,7 +409,7 @@ class WavDataChunk(Chunk):
             self.fmt_chunk.byte_rate = self.fmt_chunk.block_align * self.fmt_chunk.sample_rate
 
         for n in range(len(audio)):
-            for m in range(num_channels):
+            for m in range(len(audio[n])):
                 self.write_sample(audio[n][m])
 
     def seek(self, frame_number, whence=0):
