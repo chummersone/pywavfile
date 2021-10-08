@@ -10,55 +10,17 @@ from enum import Enum
 import wavfile
 
 
-def _required_type_attr(_type):
-
-    class _Attr:
-
-        def __get__(self, instance, owner=None):
-            return self.value
-
-        def __set__(self, instance, value):
-            if not isinstance(value, _type) and value is not None:
-                raise TypeError(f'value should be a {type(_type):s} object')
-            self.value = value
-
-    return _Attr
-
-
-class _Enum(Enum):
-
-    @classmethod
-    def check_value_exists(cls, value):
-        return value in (val.value for val in cls.__members__.values())
-
-
-def _enum_attr(_enum):
-
-    class _EnumAttr:
-
-        def __get__(self, instance, owner=None):
-            return self.value
-
-        def __set__(self, instance, value):
-            if not _enum.check_value_exists(value):
-                raise ValueError('Value does not exist in enum class')
-            self.value = value
-
-    return _EnumAttr
-
-
-class RiffFormat(_Enum):
+class RiffFormat(Enum):
     WAVE = b'WAVE'
 
 
-class ChunkID(_Enum):
-    NONE_CHUNK = b'none'
+class ChunkID(Enum):
     RIFF_CHUNK = b'RIFF'
     FMT_CHUNK = b'fmt '
     DATA_CHUNK = b'data'
 
 
-class WavFormat(_Enum):
+class WavFormat(Enum):
     PCM = 0x0001
 
 
@@ -77,7 +39,8 @@ class Chunk:
         """
         self.fp = fp
         self.bigendian = bigendian
-        self.chunk_id = None
+        if not hasattr(self, 'chunk_id'):
+            self.chunk_id = None
         self.size = 0
         self.start = self.fp.tell()
         self._header_is_written = False
@@ -86,6 +49,8 @@ class Chunk:
             self.chunk_id = self.fp.read(4)
             if len(self.chunk_id) > 0:
                 self.size = self.read_int(4, signed=True)
+        else:
+            self.write_header()
 
     @property
     def endianness(self):
@@ -212,8 +177,6 @@ class RiffChunk(Chunk):
                 raise wavfile.Error('Chunk is not a RIFF chunk')
             self.format = self.read(4)
         else:
-            self.chunk_id = ChunkID.RIFF_CHUNK.value
-            self.write_header()
             self.write(RiffFormat.WAVE.value)
 
     def close(self):
@@ -264,8 +227,6 @@ class WavFmtChunk(Chunk):
             self.block_align = self.read_int(self._block_align_size, signed=False)
             self.bits_per_sample = self.read_int(self._bits_per_sample_size, signed=False)
         else:
-            self.chunk_id = ChunkID.FMT_CHUNK.value
-            self.write_header()
             self.write_fmt()
 
     @property
@@ -309,6 +270,8 @@ class WavDataChunk(Chunk):
         :param fmt_chunk: The associated format chunk.
         """
 
+        self.chunk_id = ChunkID.DATA_CHUNK.value
+
         Chunk.__init__(self, fp, bigendian=False)
 
         self.__did_warn = False
@@ -317,9 +280,6 @@ class WavDataChunk(Chunk):
         if 'r' in self.fp.mode:
             if self.chunk_id != ChunkID.DATA_CHUNK.value:
                 raise wavfile.Error('Chunk is not a DATA chunk')
-        else:
-            self.chunk_id = ChunkID.DATA_CHUNK.value
-            self.write_header()
 
     @property
     def num_frames(self):
