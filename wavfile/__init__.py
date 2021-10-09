@@ -73,13 +73,11 @@ where audio is the audio data to write to the file.
 
 """
 
-import wavfile.wavread
-import wavfile.wavwrite
+from . import chunk
+from . import wavread
+from . import wavwrite
+from .exception import Error
 from .version import __VERSION__
-
-
-class Error(Exception):
-    pass
 
 
 def open(f, mode=None, sample_rate=44100, num_channels=None, bits_per_sample=16):
@@ -104,10 +102,10 @@ def open(f, mode=None, sample_rate=44100, num_channels=None, bits_per_sample=16)
         else:
             mode = 'rb'
     if mode in ('r', 'rb'):
-        return wavfile.wavread.WavRead(f)
+        return wavread.WavRead(f)
     elif mode in ('w', 'wb'):
-        return wavfile.wavwrite.WavWrite(f, sample_rate=sample_rate, num_channels=num_channels,
-                                         bits_per_sample=bits_per_sample)
+        return wavwrite.WavWrite(f, sample_rate=sample_rate, num_channels=num_channels,
+                                 bits_per_sample=bits_per_sample)
     else:
         raise Error("mode must be 'r', 'rb', 'w', or 'wb'")
 

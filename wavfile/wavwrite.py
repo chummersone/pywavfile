@@ -7,16 +7,11 @@ The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
 
-import wavfile.base
-
-from .chunk import Chunk
-from .chunk import RiffChunk
-from .chunk import WavFmtChunk
-from .chunk import WavDataChunk
-from .chunk import RiffFormat
+from . import base
+from . import chunk
 
 
-class WavWrite(wavfile.base.Wavfile):
+class WavWrite(base.Wavfile):
     """Class for writing a wave file"""
 
     def __init__(self, fp, sample_rate=44100, num_channels=None, bits_per_sample=16):
@@ -29,16 +24,16 @@ class WavWrite(wavfile.base.Wavfile):
         samples.
         :param bits_per_sample: The number of bits to encode each audio sample.
         """
-        wavfile.base.Wavfile.__init__(self)
+        base.Wavfile.__init__(self)
 
         self._is_open = True
         self._init_fp(fp, 'wb')
 
         # initialise each of the riff chunk
-        self._riff_chunk = RiffChunk(self.fp)
-        self._riff_chunk.format = RiffFormat.WAVE.value
-        fmt_chunk = WavFmtChunk(self.fp)
-        self._data_chunk = WavDataChunk(self.fp, fmt_chunk)
+        self._riff_chunk = chunk.RiffChunk(self.fp)
+        self._riff_chunk.format = chunk.RiffFormat.WAVE.value
+        fmt_chunk = chunk.WavFmtChunk(self.fp)
+        self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
         self._data_chunk.fmt_chunk.sample_rate = sample_rate
         if num_channels is not None:
             self._data_chunk.fmt_chunk.num_channels = num_channels
@@ -53,7 +48,7 @@ class WavWrite(wavfile.base.Wavfile):
         Check for any floats in data.
         """
         return any([any([isinstance(y, float) for y in x]) for x in data]) or \
-            wavfile.base.Wavfile._buffer_max_abs(data) <= 1.0
+            base.Wavfile._buffer_max_abs(data) <= 1.0
 
     def write(self, audio):
         """
@@ -79,11 +74,11 @@ class WavWrite(wavfile.base.Wavfile):
         """
         Close the file.
         """
-        num_align_bytes = self._data_chunk.size % Chunk.align
+        num_align_bytes = self._data_chunk.size % chunk.Chunk.align
         if num_align_bytes > 0:
             self._data_chunk.skip()
             self._data_chunk.write(bytearray(num_align_bytes))
-        wavfile.base.Wavfile.close(self)
+        base.Wavfile.close(self)
         if self._should_close_file:
             self.fp.close()
         self._should_close_file = False

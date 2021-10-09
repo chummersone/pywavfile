@@ -7,15 +7,13 @@ The WavRead class is returned by wavfile.open() when opening a file in read
 mode.
 """
 
-import wavfile.base
+from . import base
+from . import chunk
 
-from .chunk import RiffChunk
-from .chunk import WavFmtChunk
-from .chunk import WavDataChunk
-from .chunk import ChunkID
+from .exception import Error
 
 
-class WavRead(wavfile.base.Wavfile):
+class WavRead(base.Wavfile):
     """Class for reading a wave file"""
 
     def __init__(self, f):
@@ -23,7 +21,7 @@ class WavRead(wavfile.base.Wavfile):
         Initialise the WavRead object.
         :param f: Either a path to a wave file or a pointer to an open file.
         """
-        wavfile.base.Wavfile.__init__(self)
+        base.Wavfile.__init__(self)
         self._init_fp(f, 'rb')
 
         # read the file header
@@ -44,27 +42,27 @@ class WavRead(wavfile.base.Wavfile):
 
         # Read the file
         while True:
-            chunk = wavfile.base.Chunk(self.fp)
+            chnk = chunk.Chunk(self.fp)
 
-            if len(chunk.chunk_id) == 0:
+            if len(chnk.chunk_id) == 0:
                 break
 
             # rewind to chunk start
-            self.fp.seek(-wavfile.base.Chunk.offset, 1)
+            self.fp.seek(-chunk.Chunk.offset, 1)
 
             # interpret each chunk
-            if chunk.chunk_id == ChunkID.RIFF_CHUNK.value:
-                self._riff_chunk = RiffChunk(self.fp)
-            elif chunk.chunk_id == ChunkID.FMT_CHUNK.value:
-                fmt_chunk = WavFmtChunk(self.fp)
-            elif chunk.chunk_id == ChunkID.DATA_CHUNK.value:
+            if chnk.chunk_id == chunk.ChunkID.RIFF_CHUNK.value:
+                self._riff_chunk = chunk.RiffChunk(self.fp)
+            elif chnk.chunk_id == chunk.ChunkID.FMT_CHUNK.value:
+                fmt_chunk = chunk.WavFmtChunk(self.fp)
+            elif chnk.chunk_id == chunk.ChunkID.DATA_CHUNK.value:
                 if fmt_chunk is None:
-                    raise wavfile.Error('DATA chunk read before FMT chunk')
-                self._data_chunk = WavDataChunk(self.fp, fmt_chunk)
+                    raise Error('DATA chunk read before FMT chunk')
+                self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
 
             # skip superfluous bytes
-            if chunk.chunk_id != ChunkID.RIFF_CHUNK.value:
-                chunk.skip()
+            if chnk.chunk_id != chunk.ChunkID.RIFF_CHUNK.value:
+                chnk.skip()
 
         # go to data chunk content start ready to read samples
         self.fp.seek(self._data_chunk.content_start)
@@ -94,7 +92,7 @@ class WavRead(wavfile.base.Wavfile):
         """
         Close the wav file.
         """
-        wavfile.base.Wavfile.close(self)
+        base.Wavfile.close(self)
         if self._should_close_file:
             self.fp.close()
         self._should_close_file = False

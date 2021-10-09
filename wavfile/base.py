@@ -7,7 +7,7 @@ The main API for reading and writing wav files.
 import builtins
 from abc import ABC
 
-from .chunk import Chunk
+from . import chunk
 
 
 class Wavfile(ABC):
@@ -116,8 +116,8 @@ class Wavfile(ABC):
         Close the wav file.
         """
         total_size = \
-            self._data_chunk.size + Chunk.offset + \
-            self._data_chunk.fmt_chunk.size + Chunk.offset + \
+            self._data_chunk.size + chunk.Chunk.offset + \
+            self._data_chunk.fmt_chunk.size + chunk.Chunk.offset + \
             4  # riff chunk contains four bytes indicating the format
         self._riff_chunk.size = total_size
         self._data_chunk.close()

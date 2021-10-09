@@ -7,7 +7,7 @@ Chunk-based helper classes for working with RIFF files.
 import sys
 from enum import Enum
 
-import wavfile
+from .exception import Error
 
 
 class RiffFormat(Enum):
@@ -70,7 +70,7 @@ class Chunk:
         Skip to the end of the chunk.
         """
         if self.size == 0:
-            raise wavfile.Error('Chunk has no payload to skip')
+            raise Error('Chunk has no payload to skip')
         self.fp.seek(self.content_start + self.size)
 
     def read(self, nbytes):
@@ -150,7 +150,7 @@ class Chunk:
         Close the chunk and update the header.
         """
         if self.size < self._min_size:
-            raise wavfile.Error('Required data have not been written to the file')
+            raise Error('Required data have not been written to the file')
         if 'w' in self.fp.mode and not self.fp.closed:
             self._header_is_written = False
             self.write_header()
@@ -174,7 +174,7 @@ class RiffChunk(Chunk):
 
         if 'r' in self.fp.mode:
             if self.chunk_id != ChunkID.RIFF_CHUNK.value:
-                raise wavfile.Error('Chunk is not a RIFF chunk')
+                raise Error('Chunk is not a RIFF chunk')
             self.format = self.read(4)
         else:
             self.write(RiffFormat.WAVE.value)
@@ -184,7 +184,7 @@ class RiffChunk(Chunk):
         Close the chunk and update the header.
         """
         if self.format is None:
-            raise wavfile.Error('RIFF format is not set')
+            raise Error('RIFF format is not set')
         Chunk.close(self)
 
 
@@ -217,10 +217,10 @@ class WavFmtChunk(Chunk):
 
         if 'r' in self.fp.mode:
             if self.chunk_id != ChunkID.FMT_CHUNK.value:
-                raise wavfile.Error('Chunk is not a FMT chunk')
+                raise Error('Chunk is not a FMT chunk')
             self.audio_fmt = self.read_int(self._audio_fmt_size, signed=False)
             if self.audio_fmt != WavFormat.PCM.value:
-                raise wavfile.Error('Unknown audio format')
+                raise Error('Unknown audio format')
             self.num_channels = self.read_int(self._num_channels_size, signed=False)
             self.sample_rate = self.read_int(self._sample_rate_size, signed=False)
             self.byte_rate = self.read_int(self._byte_rate_size, signed=False)
@@ -279,7 +279,7 @@ class WavDataChunk(Chunk):
 
         if 'r' in self.fp.mode:
             if self.chunk_id != ChunkID.DATA_CHUNK.value:
-                raise wavfile.Error('Chunk is not a DATA chunk')
+                raise Error('Chunk is not a DATA chunk')
 
     @property
     def num_frames(self):
@@ -401,7 +401,7 @@ class WavDataChunk(Chunk):
             if self.fmt_chunk.num_channels == 0:
                 self.fmt_chunk.num_channels = num_channels
             else:
-                raise wavfile.Error('Number of channels does not match the format chunk')
+                raise Error('Number of channels does not match the format chunk')
 
         if self.fmt_chunk.block_align == 0:
             self.fmt_chunk.block_align = \
@@ -421,7 +421,7 @@ class WavDataChunk(Chunk):
         :return: The method returns the object.
         """
         if frame_number > self.num_frames:
-            raise wavfile.Error('Frame number exceeds number of frames in file')
+            raise Error('Frame number exceeds number of frames in file')
         relative_pos = self.content_start
         if whence == 0:
             pass
@@ -430,7 +430,7 @@ class WavDataChunk(Chunk):
         elif whence == 2:
             relative_pos = self.content_start + self.size
         else:
-            raise wavfile.Error('Invalid whence parameter')
+            raise Error('Invalid whence parameter')
         self.fp.seek(relative_pos + (frame_number * self.fmt_chunk.block_align))
         return self
 
