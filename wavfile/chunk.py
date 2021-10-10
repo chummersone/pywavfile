@@ -11,16 +11,19 @@ from . import exception
 
 
 class RiffFormat(Enum):
+    """RIFF file format"""
     WAVE = b'WAVE'
 
 
 class ChunkID(Enum):
+    """RIFF chunk identifiers"""
     RIFF_CHUNK = b'RIFF'
     FMT_CHUNK = b'fmt '
     DATA_CHUNK = b'data'
 
 
 class WavFormat(Enum):
+    """Wav audio data format"""
     PCM = 0x0001
 
 
