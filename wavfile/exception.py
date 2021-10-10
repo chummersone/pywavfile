@@ -7,3 +7,11 @@ Package exceptions.
 
 class Error(Exception):
     pass
+
+
+class ReadError(Error):
+    pass
+
+
+class WriteError(Error):
+    pass

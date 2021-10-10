@@ -10,7 +10,7 @@ mode.
 from . import base
 from . import chunk
 
-from .exception import Error
+from . import exception
 
 
 class WavRead(base.Wavfile):
@@ -57,7 +57,7 @@ class WavRead(base.Wavfile):
                 fmt_chunk = chunk.WavFmtChunk(self.fp)
             elif chnk.chunk_id == chunk.ChunkID.DATA_CHUNK.value:
                 if fmt_chunk is None:
-                    raise Error('DATA chunk read before FMT chunk')
+                    raise exception.ReadError('DATA chunk read before FMT chunk')
                 self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
 
             # skip superfluous bytes
