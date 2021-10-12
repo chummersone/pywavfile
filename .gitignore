@@ -2,5 +2,5 @@
 tests/tmp.wav
 dist/
 venv/
-wavfile.egg-info/
-wavfile/__pycache__/
+*.egg-info/
+*/__pycache__/

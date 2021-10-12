@@ -34,10 +34,10 @@ class WavWrite(base.Wavfile):
         self._riff_chunk.format = chunk.RiffFormat.WAVE.value
         fmt_chunk = chunk.WavFmtChunk(self.fp)
         self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
-        self._data_chunk.fmt_chunk.sample_rate = sample_rate
+        self._data_chunk.fmt_chunk.sample_rate = int(sample_rate)
         if num_channels is not None:
-            self._data_chunk.fmt_chunk.num_channels = num_channels
-        self._data_chunk.fmt_chunk.bits_per_sample = bits_per_sample
+            self._data_chunk.fmt_chunk.num_channels = int(num_channels)
+        self._data_chunk.fmt_chunk.bits_per_sample = int(bits_per_sample)
 
         # go to data chunk content start ready to write samples
         self.fp.seek(self._data_chunk.content_start)
