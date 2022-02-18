@@ -104,7 +104,7 @@ class Wavfile(ABC):
         to current position, 2 = relative to end of last frame.
         :return: The method returns the object.
         """
-        self._data_chunk.seek(int(frame_number), whence)
+        self._data_chunk.seek(frame_number, whence)
         return self
 
     def tell(self):

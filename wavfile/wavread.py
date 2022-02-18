@@ -106,7 +106,7 @@ class WavRead(base.Wavfile):
         :return: The audio samples as a list of lists.
         """
 
-        return self._data_chunk.read_frames(int(num_frames))
+        return self._data_chunk.read_frames(num_frames)
 
     def iter_int(self, num_frames=None):
         """
@@ -115,7 +115,7 @@ class WavRead(base.Wavfile):
         :param num_frames: Number of frames to read on each iteration.
         :return: A generator to yield the next frame(s) of audio.
         """
-        return self._block_iterator('read_int', int(num_frames))
+        return self._block_iterator('read_int', num_frames)
 
     def read_float(self, num_frames=None):
         """
@@ -126,7 +126,7 @@ class WavRead(base.Wavfile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
-        audio = self.read_int(int(num_frames))
+        audio = self.read_int(num_frames)
         if self._bytes_per_sample == 1:
             convert = self._convert_unsigned_int_to_float
         else:
@@ -144,4 +144,4 @@ class WavRead(base.Wavfile):
         :param num_frames: Number of frames to read on each iteration.
         :return: A generator to yield the next frame(s) of audio.
         """
-        return self._block_iterator('read_float', int(num_frames))
+        return self._block_iterator('read_float', num_frames)
