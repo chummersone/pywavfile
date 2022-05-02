@@ -67,7 +67,7 @@ where audio is the audio data to write to the file.
 from . import chunk
 from . import wavread
 from . import wavwrite
-from .exception import Error
+from .exception import Error, WriteError
 from .version import __VERSION__
 
 
@@ -96,7 +96,7 @@ def open(f, mode=None, sample_rate=44100, num_channels=None, bits_per_sample=16,
         return wavread.WavRead(f)
     elif mode in ('w', 'wb'):
         if not isinstance(fmt, chunk.WavFormat):
-            raise exception.WriteError('Invalid format')
+            raise WriteError('Invalid format')
         return wavwrite.WavWrite(f, sample_rate=sample_rate, num_channels=num_channels,
                                  bits_per_sample=bits_per_sample, fmt=fmt)
     else:
