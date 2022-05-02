@@ -14,15 +14,21 @@ from . import chunk
 class WavWrite(base.Wavfile):
     """Class for writing a wave file"""
 
-    def __init__(self, fp, sample_rate=44100, num_channels=None, bits_per_sample=16):
+    def __init__(self, fp, sample_rate=44100, num_channels=None, bits_per_sample=16,
+                 fmt=chunk.WavFormat.PCM):
         """
         Initialise the WavWrite object.
+
         :param fp: Either a path to a wave file or a pointer to an open file.
+        :type fp: Union[str, os.PathLike, typing.IO]
         :param sample_rate: The sample rate for the new file.
-        :param num_channels: The number of audio channels for the new file. If
-        unspecified, the parameter will be determined from the first block of
-        samples.
+        :type sample_rate: int
+        :param num_channels: The number of audio channels for the new file.
+        :type num_channels: int
         :param bits_per_sample: The number of bits to encode each audio sample.
+        :type bits_per_sample: int
+        :param fmt: The audio format (chunk.WavFormat.PCM, chunk.WavFormat.IEEE_FLOAT)
+        :type fmt: wavfile.chunk.WavFormat
         """
         base.Wavfile.__init__(self)
 
@@ -31,8 +37,9 @@ class WavWrite(base.Wavfile):
 
         # initialise each of the riff chunk
         self._riff_chunk = chunk.RiffChunk(self.fp)
-        self._riff_chunk.format = chunk.RiffFormat.WAVE.value
+        self._riff_chunk.format = chunk.RiffFormat.WAVE
         fmt_chunk = chunk.WavFmtChunk(self.fp)
+        fmt_chunk.audio_fmt = fmt
         self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
         self._data_chunk.fmt_chunk.sample_rate = int(sample_rate)
         if num_channels is not None:
@@ -52,21 +59,29 @@ class WavWrite(base.Wavfile):
 
     def write(self, audio):
         """
-        Write audio data to the file. The data should be a list of lists with
-        dimensions (N,C), where N is the number of frames and C is the number of
-        audio channels. The data maybe int or float. Integer data are written
-        directly. Float data should be in the range [-1,1) and are converted
-        automatically.
-        :param audio: Audio frames to write.
-        """
+        Write audio data to the file. The data should be a list of lists with dimensions (N,C),
+        where N is the number of frames and C is the number of audio channels. The data may be int
+        or float. The data may be converted if they do match the format of the destination file.
 
-        if self._data_are_floats(audio):
+        :param audio: Audio frames to write.
+        :type audio: list[list[Union[int, float]]]
+        """
+        if self._data_are_floats(audio) and \
+                self.format == chunk.WavFormat.PCM:
+            # data are floats but we are writing integers
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
                     if self._data_chunk.fmt_chunk.signed:
                         audio[n][m] = self._convert_float_to_signed_int(audio[n][m])
                     else:
                         audio[n][m] = self._convert_float_to_unsigned_int(audio[n][m])
+        elif not self._data_are_floats(audio) and \
+                self.format == chunk.WavFormat.IEEE_FLOAT:
+            # data are integers but we are writing floats
+            gain = 1.0 / ((2 ** (self._data_chunk.fmt_chunk.bits_per_sample - 1)) - 1)
+            for n in range(len(audio)):
+                for m in range(len(audio[n])):
+                    audio[n][m] *= gain
 
         self._data_chunk.write_frames(audio)
 

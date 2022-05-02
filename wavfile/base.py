@@ -5,6 +5,7 @@ The main API for reading and writing wav files.
 """
 
 import builtins
+import os
 from abc import ABC
 
 from . import chunk
@@ -27,7 +28,7 @@ class Wavfile(ABC):
         Initialise the file pointer.
         """
         # open the file
-        if isinstance(f, str):
+        if isinstance(f, (str, os.PathLike)):
             self.fp = builtins.open(f, mode)
             self._should_close_file = True
         else:
@@ -79,6 +80,11 @@ class Wavfile(ABC):
         return self._data_chunk.fmt_chunk.bits_per_sample
 
     @property
+    def format(self):
+        """Audio sample format"""
+        return self._data_chunk.fmt_chunk.audio_fmt
+
+    @property
     def num_frames(self):
         """Number of audio frames in the file"""
         try:
@@ -98,11 +104,15 @@ class Wavfile(ABC):
 
     def seek(self, frame_number, whence=0):
         """
-        Move to the specified frame number.
+        Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
+        absolute positioning, 1 = relative to current position, 2 = relative to end of last frame.
+
         :param frame_number: The frame number.
-        :param whence: The frame positioning mode; 0 (default) = absolute positioning, 1 = relative
-        to current position, 2 = relative to end of last frame.
+        :type frame_number: int
+        :param whence: The frame positioning mode.
+        :type whence: int
         :return: The method returns the object.
+        :rtype: Wavfile
         """
         self._data_chunk.seek(frame_number, whence)
         return self

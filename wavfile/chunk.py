@@ -4,6 +4,7 @@
 Chunk-based helper classes for working with RIFF files.
 """
 
+import struct
 import sys
 from enum import Enum
 
@@ -20,11 +21,13 @@ class ChunkID(Enum):
     RIFF_CHUNK = b'RIFF'
     FMT_CHUNK = b'fmt '
     DATA_CHUNK = b'data'
+    UNKNOWN_CHUNK = b'    '
 
 
 class WavFormat(Enum):
     """Wav audio data format"""
     PCM = 0x0001
+    IEEE_FLOAT = 0x0003
 
 
 class Chunk:
@@ -37,8 +40,11 @@ class Chunk:
     def __init__(self, fp, bigendian=False):
         """
         Initialise the chunk from a file pointer.
+
         :param fp: Open file pointer.
+        :type fp: typing.IO
         :param bigendian: Is the file bid endian?
+        :type bigendian: bool
         """
         self.fp = fp
         self.bigendian = bigendian
@@ -49,8 +55,12 @@ class Chunk:
         self._header_is_written = False
 
         if 'r' in self.fp.mode:
-            self.chunk_id = self.fp.read(4)
-            if len(self.chunk_id) > 0:
+            chunk_id = self.fp.read(4)
+            try:
+                self.chunk_id = ChunkID(chunk_id)
+            except ValueError:
+                self.chunk_id = ChunkID.UNKNOWN_CHUNK
+            if len(self.chunk_id.value) > 0:
                 self.size = self.read_int(4, signed=True)
         else:
             self.write_header()
@@ -79,7 +89,9 @@ class Chunk:
     def read(self, nbytes):
         """
         Read data from the chunk.
+
         :param nbytes: The number of bytes to read.
+        :type nbytes: int
         """
         data = self.fp.read(nbytes)
         return data
@@ -102,7 +114,7 @@ class Chunk:
         Write the chunk header to the file, esp. the updated chunk size.
         """
         self.fp.seek(self.start)
-        self.fp.write(bytearray(self.chunk_id)[0:4])
+        self.fp.write(self.chunk_id.value)
         self.fp.write(self.int_to_bytes(self.size, 4, signed=False))
         self._header_is_written = True
 
@@ -110,19 +122,27 @@ class Chunk:
         """
         Read a signed integer from the specified number of bytes of the input
         chunk.
-        :param data: Number of bytes from the input to interpret as a signed
-        integer.
+
+        :param data: Input bytes to interpret as a signed integer.
+        :type data: bytes
         :param signed: Is the integer signed?
+        :type signed: bool
         :return: The integer value.
+        :rtype: int
         """
+        # noinspection PyTypeChecker
         return int.from_bytes(data, byteorder=self.endianness, signed=signed)
 
     def read_int(self, nbytes, signed=True):
         """
         Read an integer from the chunk.
+
         :param nbytes: Number of bytes encoding the integer.
+        :type nbytes: int
         :param signed: Whether the integer is signed.
+        :type signed: bool
         :return: The integer value.
+        :rtype: int
         """
         data = self.read(nbytes)
         if len(data) < nbytes:
@@ -132,21 +152,93 @@ class Chunk:
     def int_to_bytes(self, data, nbytes, signed=True):
         """
         Convert an integer to bytes.
+
         :param data: The integer to encode.
+        :type data: int
         :param nbytes: Number of bytes encoding the integer.
+        :type nbytes: int
         :param signed: Whether the integer is signed.
+        :type signed: bool
         :return: The bytes.
+        :rtype: bytes
         """
+        # noinspection PyTypeChecker
         return data.to_bytes(nbytes, byteorder=self.endianness, signed=signed)
 
     def write_int(self, data, nbytes, signed=True):
         """
         Write an integer to the chunk.
+
         :param data: The integer to encode.
+        :type data: int
         :param nbytes: Number of bytes encoding the integer.
+        :type nbytes: int
         :param signed: Whether the integer is signed.
+        :type signed: bool
         """
         self.write(self.int_to_bytes(data, nbytes, signed=signed))
+
+    def _get_float_struct_fmt(self, nbytes):
+        """Get the format specifier for packing and unpacking floats"""
+
+        endianness = '<' if self.endianness == 'little' else '>'
+        try:
+            return endianness + {
+                4: 'f',
+                8: 'd',
+            }[nbytes]
+        except KeyError:
+            raise exception.Error('Cannot convert float with the specified bit depth')
+
+    def bytes_to_float(self, data):
+        """
+        Read a float from the specified number of bytes of the input chunk.
+
+        :param data: Input bytes to interpret as a float.
+        :type data: bytes
+        :return: The float value.
+        :rtype: float
+        """
+        return struct.unpack(self._get_float_struct_fmt(len(data)), data)[0]
+
+    def read_float(self, nbytes):
+        """
+        Read a float from the chunk.
+
+        :param nbytes: Number of bytes encoding the float.
+        :type nbytes: int
+        :return: The float value.
+        :rtype: float
+        """
+        data = self.read(nbytes)
+
+        if len(data) < nbytes:
+            raise IOError('Could not read enough bytes. Maybe EOF.')
+        return self.bytes_to_float(data)
+
+    def float_to_bytes(self, data, nbytes):
+        """
+        Convert a float to bytes.
+
+        :param data: The float to encode.
+        :type data: float
+        :param nbytes: Number of bytes encoding the float.
+        :type nbytes: int
+        :return: The bytes.
+        :rtype: bytes
+        """
+        return struct.pack(self._get_float_struct_fmt(nbytes), data)
+
+    def write_float(self, data, nbytes):
+        """
+        Write a float to the chunk.
+
+        :param data: The float to encode.
+        :type data: float
+        :param nbytes: Number of bytes encoding the float.
+        :type nbytes: int
+        """
+        self.write(self.float_to_bytes(data, nbytes))
 
     def close(self):
         """
@@ -167,18 +259,19 @@ class RiffChunk(Chunk):
     def __init__(self, fp):
         """
         Initialise the chunk from a file pointer.
-        :param fp: Open file pointer.
-        """
 
-        self.chunk_id = ChunkID.RIFF_CHUNK.value
-        self.format = None
+        :param fp: Open file pointer.
+        :type fp: typing.IO
+        """
+        self.chunk_id = ChunkID.RIFF_CHUNK
+        self.format = RiffFormat.WAVE
 
         Chunk.__init__(self, fp, bigendian=False)
 
         if 'r' in self.fp.mode:
-            if self.chunk_id != ChunkID.RIFF_CHUNK.value:
+            if self.chunk_id != ChunkID.RIFF_CHUNK:
                 raise exception.ReadError('Chunk is not a RIFF chunk')
-            self.format = self.read(4)
+            self.format = RiffFormat(self.read(4))
         else:
             self.write(RiffFormat.WAVE.value)
 
@@ -205,11 +298,12 @@ class WavFmtChunk(Chunk):
     def __init__(self, fp):
         """
         Initialise the chunk from a file pointer.
-        :param fp: Open file pointer.
-        """
 
-        self.chunk_id = ChunkID.FMT_CHUNK.value
-        self.audio_fmt = WavFormat.PCM.value
+        :param fp: Open file pointer.
+        :type fp: typing.IO
+        """
+        self.chunk_id = ChunkID.FMT_CHUNK
+        self.audio_fmt = WavFormat.PCM
         self.num_channels = 0
         self.sample_rate = 0
         self.byte_rate = 0
@@ -219,11 +313,9 @@ class WavFmtChunk(Chunk):
         Chunk.__init__(self, fp, bigendian=False)
 
         if 'r' in self.fp.mode:
-            if self.chunk_id != ChunkID.FMT_CHUNK.value:
+            if self.chunk_id != ChunkID.FMT_CHUNK:
                 raise exception.ReadError('Chunk is not a FMT chunk')
-            self.audio_fmt = self.read_int(self._audio_fmt_size, signed=False)
-            if self.audio_fmt != WavFormat.PCM.value:
-                raise exception.ReadError('Unknown audio format')
+            self.audio_fmt = WavFormat(self.read_int(self._audio_fmt_size, signed=False))
             self.num_channels = self.read_int(self._num_channels_size, signed=False)
             self.sample_rate = self.read_int(self._sample_rate_size, signed=False)
             self.byte_rate = self.read_int(self._byte_rate_size, signed=False)
@@ -247,7 +339,7 @@ class WavFmtChunk(Chunk):
         Write the format data to the file.
         """
         self.fp.seek(self.content_start)
-        self.write_int(self.audio_fmt, self._audio_fmt_size, signed=False)
+        self.write_int(self.audio_fmt.value, self._audio_fmt_size, signed=False)
         self.write_int(self.num_channels, self._num_channels_size, signed=False)
         self.write_int(self.sample_rate, self._sample_rate_size, signed=False)
         self.write_int(self.byte_rate, self._byte_rate_size, signed=False)
@@ -269,19 +361,20 @@ class WavDataChunk(Chunk):
     def __init__(self, fp, fmt_chunk):
         """
         Initialise the chunk from a file pointer.
+
         :param fp: Open file pointer.
+        :type fp: typing.IO
         :param fmt_chunk: The associated format chunk.
+        :type fmt_chunk: WavFmtChunk
         """
-
-        self.chunk_id = ChunkID.DATA_CHUNK.value
-
+        self.chunk_id = ChunkID.DATA_CHUNK
         Chunk.__init__(self, fp, bigendian=False)
 
         self.__did_warn = False
         self.fmt_chunk = fmt_chunk
 
         if 'r' in self.fp.mode:
-            if self.chunk_id != ChunkID.DATA_CHUNK.value:
+            if self.chunk_id != ChunkID.DATA_CHUNK:
                 raise exception.ReadError('Chunk is not a DATA chunk')
 
     @property
@@ -303,14 +396,20 @@ class WavDataChunk(Chunk):
         """
         Read a sample from the chunk.
         """
-        return self.read_int(self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
+        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
+            return self.read_int(self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
+        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
+            return self.read_float(self.fmt_chunk.bytes_per_sample)
 
     def read_frames(self, nframes=None):
         """
         Read a number of audio frames from the chunk. A frame is a collection of samples, from each
         audio channel, associated with a single time instant.
+
         :param nframes: Number of audio frames to read.
+        :type nframes: int
         :return: The audio frames as a list of lists.
+        :rtype: list[list[Union[int, float]]]
         """
 
         if nframes is None or nframes < 0:
@@ -330,19 +429,27 @@ class WavDataChunk(Chunk):
         return audio
 
     @property
-    def _max_signed_int(self):
-        """Maximum signed integer"""
-        return (2 ** (self.fmt_chunk.bits_per_sample - 1)) - 1
+    def _max_val(self):
+        """Maximum value"""
+        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
+            if self.fmt_chunk.signed:
+                sign_correction = 1
+            else:
+                sign_correction = 0
+            return (2 ** (self.fmt_chunk.bits_per_sample - sign_correction)) - 1
+        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
+            return 1.0
 
     @property
-    def _min_signed_int(self):
-        """Minimum signed integer"""
-        return -self._max_signed_int - 1
-
-    @property
-    def _max_unsigned_int(self):
-        """Maximum unsigned integer"""
-        return (2 ** self.fmt_chunk.bits_per_sample) - 1
+    def _min_val(self):
+        """Minimum value"""
+        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
+            if self.fmt_chunk.signed:
+                return -self._max_val - 1
+            else:
+                return 0
+        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
+            return -1.0
 
     def __saturation_warning(self):
         """
@@ -352,51 +459,37 @@ class WavDataChunk(Chunk):
             self.__did_warn = True
             print('Saturating one of more sample values that are out-of-range', file=sys.stderr)
 
-    def _saturate_signed(self, val):
-        """
-        Saturate out-of-range signed sample values.
-        """
-        if val > self._max_signed_int:
-            val = self._max_signed_int
-            self.__saturation_warning()
-        elif val < self._min_signed_int:
-            val = self._min_signed_int
-            self.__saturation_warning()
-        return val
-
-    def _saturate_unsigned(self, val):
-        """
-        Saturate out-of-range unsigned sample values.
-        """
-        if val > self._max_unsigned_int:
-            val = self._max_unsigned_int
-            self.__saturation_warning()
-        elif val < 0:
-            val = 0
-            self.__saturation_warning()
-        return val
-
     def _saturate(self, val):
         """
         Saturate out-of-range sample values.
         """
-        if self.fmt_chunk.signed:
-            return self._saturate_signed(val)
-        else:
-            return self._saturate_unsigned(val)
+        if val > self._max_val:
+            val = self._max_val
+            self.__saturation_warning()
+        elif val < self._min_val:
+            val = self._min_val
+            self.__saturation_warning()
+        return val
 
     def write_sample(self, sample):
         """
         Write a sample to the chunk.
+
         :param sample: An audio sample.
+        :type sample: Union[int, float]
         """
         sample = self._saturate(sample)
-        self.write_int(sample, self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
+        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
+            self.write_int(sample, self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
+        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
+            self.write_float(sample, self.fmt_chunk.bytes_per_sample)
 
     def write_frames(self, audio):
         """
         Write one or more frames of audio to the chunk.
+
         :param audio: The audio frames as a list of lists.
+        :type audio: list[list[Union[int, float]]]
         """
 
         num_channels = len(audio[0])
@@ -417,11 +510,15 @@ class WavDataChunk(Chunk):
 
     def seek(self, frame_number, whence=0):
         """
-        Move to the specified frame number.
+        Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
+        absolute positioning, 1 = relative to current position, 2 = relative to end of last frame.
+
         :param frame_number: The frame number.
-        :param whence: The frame positioning mode; 0 (default) = absolute positioning, 1 = relative
-        to current position, 2 = relative to end of last frame.
+        :type frame_number: int
+        :param whence: The frame positioning mode.
+        :type whence: int
         :return: The method returns the object.
+        :rtype: WavDataChunk
         """
         if frame_number > self.num_frames:
             raise exception.Error('Frame number exceeds number of frames in file')
