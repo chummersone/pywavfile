@@ -68,6 +68,7 @@ Alternatively, the following shortcut function is provided:
 
 where audio is the audio data to write to the file.
 """
+import os.path
 
 from . import chunk
 from . import wavread
@@ -85,12 +86,19 @@ def open(f, mode=None, sample_rate=44100, num_channels=None, bits_per_sample=16,
     block of samples.
 
     :param f: Either a path to a wave file or a pointer to an open file.
+    :type f: Union[str, os.PathLike, typing.IO]
     :param mode: Open the file for reading ('r', 'rb') or writing ('w', 'wb').
+    :type mode: str
     :param sample_rate: The sample rate for the new file (write only).
+    :type sample_rate: int
     :param num_channels: The number of audio channels for the new file (write only).
+    :type num_channels: int
     :param bits_per_sample: The number of bits to encode each audio sample (write only).
+    :type bits_per_sample: int
     :param fmt: The audio format (write only) (chunk.WavFormat.PCM, chunk.WavFormat.IEEE_FLOAT)
+    :type fmt: wavfile.chunk.WavFormat
     :return: Returns a wavfile.wavread.WavRead object or wavfile.wavwrite.WavWrite object.
+    :rtype: Union[wavfile.wavread.WavRead, wavfile.wavwrite.WavWrite]
     """
     if mode is None:
         if hasattr(f, 'mode'):
@@ -114,8 +122,11 @@ def read(path, fmt='int'):
     converted to integers (``fmt='int'``), or converted to floating point (``fmt='float'``).
 
     :param path: Path to the wave audio file.
+    :type path: Union[str, os.PathLike]
     :param fmt: Read the file as 'int', 'float', or 'native'.
+    :type fmt: str
     :return: The audio data, the sample rate, and the bit depth.
+    :rtype: tuple(list[list[Union[int, float]]], int, int)
     """
     with open(path, 'r') as wf:
         fs = wf.sample_rate
@@ -141,10 +152,55 @@ def write(path, audio_data, sample_rate=44100, bits_per_sample=16, fmt=chunk.Wav
     be converted if they do match the format of the destination file.
 
     :param path: Path to the newly created wave file.
+    :type path: Union[str, os.PathLike]
     :param audio_data: The data to be written to the file.
+    :type audio_data: list[list[Union[int, float]]]
     :param sample_rate: The sample rate for the new file.
+    :type sample_rate: int
     :param bits_per_sample: The number of bits to encode each audio sample (write only).
+    :type bits_per_sample: int
     :param fmt: The audio format (chunk.WavFormat.PCM, chunk.WavFormat.IEEE_FLOAT)
+    :type fmt: wavfile.chunk.WavFormat
     """
     with open(path, 'w', sample_rate=sample_rate, bits_per_sample=bits_per_sample, fmt=fmt) as wf:
         wf.write(audio_data)
+
+
+def split(path):
+    """
+    Split a multichannel wave file in to multiple mono wave files.
+
+    :param path: Path to the multichannel wave file.
+    :type path: Union[str, os.PathLike]
+    """
+
+    with open(path, 'r') as wfp:
+        num_channels = wfp.num_channels
+
+        # filenames for new files
+        filenames = []
+        base, ext = os.path.splitext(path)
+        for i in range(num_channels):
+            filenames.append('{:s}_{:02d}{:s}'.format(base, i, ext))
+
+        # open the wave files for writing
+        outs = []
+        for i in range(num_channels):
+            outs.append(
+                wavwrite.WavWrite(
+                    filenames[i],
+                    sample_rate=wfp.sample_rate,
+                    num_channels=1,
+                    bits_per_sample=wfp.bits_per_sample,
+                    fmt=wfp.format
+                )
+            )
+
+        # read the input file and write to the output files
+        for audio in wfp.iter(1):
+            for i in range(num_channels):
+                outs[i].write([[audio[0][i]]])
+
+        # close the output files
+        for i in range(num_channels):
+            outs[i].close()
