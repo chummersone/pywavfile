@@ -79,6 +79,48 @@ class TestWavfileFloat(unittest.TestCase):
         self.run_test(audio_data_in, read_callback, sample_rate,
                       bits_per_sample, len(audio_data_in[0]), reference)
 
+    def test_read_write_audio_float_int(self):
+        audio_data_in = [
+            [-1.0, -1.0],
+            [1.0, 1.0],
+            [0.1, 0.1],
+            [-0.5, -0.5],
+            [1.0, 1.0],
+        ]
+        reference = [
+            [-2147483648, -2147483648],
+            [2147483648, 2147483648],
+            [214748368, 214748368],
+            [-1073741824, -1073741824],
+            [2147483648, 2147483648],
+        ]
+        read_callback = "read_int"
+        sample_rate = 44100
+        bits_per_sample = 32
+        self.run_test(audio_data_in, read_callback, sample_rate,
+                      bits_per_sample, len(audio_data_in[0]), reference)
+
+    def test_read_write_audio_int_float(self):
+        audio_data_in = [
+            [-2147483648, -2147483648],
+            [2147483648, 2147483648],
+            [214748368, 214748368],
+            [-1073741824, -1073741824],
+            [2147483648, 2147483648],
+        ]
+        reference = [
+            [-1.0, -1.0],
+            [1.0, 1.0],
+            [0.1, 0.1],
+            [-0.5, -0.5],
+            [1.0, 1.0],
+        ]
+        read_callback = "read"
+        sample_rate = 44100
+        bits_per_sample = 32
+        self.run_test(audio_data_in, read_callback, sample_rate,
+                      bits_per_sample, len(audio_data_in[0]), reference)
+
     def test_read_write_audio_float_mono(self):
         audio_data_in = [
             [0],

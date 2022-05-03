@@ -47,6 +47,15 @@ class Wavfile(ABC):
         """
         return x / (2.0 ** (self.bits_per_sample - 1.0))
 
+    def _convert_int_to_float(self, x):
+        """
+        Convert int to float [-1, 1).
+        """
+        if self._data_chunk.fmt_chunk.signed:
+            return self._convert_signed_int_to_float(x)
+        else:
+            return self._convert_unsigned_int_to_float(x)
+
     def _convert_float_to_unsigned_int(self, x):
         """
         Convert float [-1, 1) to unsigned int.
@@ -58,6 +67,15 @@ class Wavfile(ABC):
         Convert float [-1, 1) to signed int.
         """
         return int(round(x * (2.0 ** (self.bits_per_sample - 1.0))))
+
+    def _convert_float_to_int(self, x):
+        """
+        Convert float [-1, 1) to int.
+        """
+        if self._data_chunk.fmt_chunk.signed:
+            return self._convert_float_to_signed_int(x)
+        else:
+            return self._convert_float_to_unsigned_int(x)
 
     @property
     def _bytes_per_sample(self):

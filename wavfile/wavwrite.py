@@ -71,17 +71,13 @@ class WavWrite(base.Wavfile):
             # data are floats but we are writing integers
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
-                    if self._data_chunk.fmt_chunk.signed:
-                        audio[n][m] = self._convert_float_to_signed_int(audio[n][m])
-                    else:
-                        audio[n][m] = self._convert_float_to_unsigned_int(audio[n][m])
+                    audio[n][m] = self._convert_float_to_int(audio[n][m])
         elif not self._data_are_floats(audio) and \
                 self.format == chunk.WavFormat.IEEE_FLOAT:
             # data are integers but we are writing floats
-            gain = 1.0 / ((2 ** (self._data_chunk.fmt_chunk.bits_per_sample - 1)) - 1)
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
-                    audio[n][m] *= gain
+                    audio[n][m] = self._convert_int_to_float(audio[n][m])
 
         self._data_chunk.write_frames(audio)
 

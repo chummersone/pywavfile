@@ -110,10 +110,9 @@ class WavRead(base.Wavfile):
         """
         audio = self._data_chunk.read_frames(num_frames)
         if self.format == chunk.WavFormat.IEEE_FLOAT:
-            gain = (2 ** (self._data_chunk.fmt_chunk.bits_per_sample - 1)) - 1
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
-                    audio[n][m] = round(audio[n][m] * gain)
+                    audio[n][m] = self._convert_float_to_int(audio[n][m])
         return audio
 
     def iter_int(self, num_frames=None):
