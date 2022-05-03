@@ -3,8 +3,8 @@
 """
 Read/write wave audio files to/from lists of native Python types.
 
-The library is currently limited to PCM (integer) formats but supports arbitrary precision,
-including 16-, 24-, 32-, and 64-bit samples.
+The library currently supports PCM (integer) and IEEE float formats, and supports arbitrary integer
+precision, including: 16-, 24-, 32-, and 64-bit samples.
 
 Usage: reading wave files
 
@@ -20,11 +20,16 @@ wavfile.wavread.WavRead object with the following properties:
     format          -- Audio sample format.
 
 The object also has the following methods:
-    read_int(N)      -- Read, at most, N frames from the audio stream in integer format. The method
-                        returns a list of lists with size (N,C), where C is the number of audio
-                        channels. Choosing N = None or N < 0 will read all remaining samples.
-    read_float(N)    -- This method is identical to read_int() except that it returns the samples as
+    read([N])        -- Read, at most, N frames from the audio stream in their unmodified native
+                        format. The method returns a list of lists with size (N,C), where C is the
+                        number of audio channels. Excluding N, choosing N = None or N < 0 will read
+                        all remaining samples.
+    read_int([N])    -- This method is identical to read() except that it returns the samples as
+                        integers using the specified bit depth.
+    read_float(N)    -- This method is identical to read() except that it returns the samples as
                         floats in the range [-1, 1).
+    iter([N])        -- Similar to read() but used in iterator contexts to read successive groups of
+                        audio frames.
     iter_int(N)      -- Similar to read_int() but used in iterator contexts to read successive
                         groups of audio frames.
     iter_float(N)    -- Similar to read_float() but used in iterator contexts to read successive
@@ -39,8 +44,8 @@ Alternatively, the following shortcut function is provided:
 
     audio, sample_rate, bits_per_sample = wavfile.read(file, fmt='int')
 
-where fmt is 'int' or 'float', and audio is the audio data. The function reads all audio data in the
-file.
+where fmt is 'int', 'float', or 'native'; and audio is the audio data. The function reads all audio
+data in the file.
 
 Usage: writing wave files.
 
@@ -54,8 +59,8 @@ the wavfile.wavread.WavRead class. The object also offers the same seek(), tell(
 methods. In addition, the following methods are provided for writing audio data:
     write(N)         -- Write N frames of integers or floats to the audio file. The data should be
                         contained in a list of lists with size (N,C), where C is the number of audio
-                        channels. If the data are floats then they should be in the range [-1, 1).
-                        They will be converted automatically. Integers will be written directly.
+                        channels. The data may be int or float. The data may be converted if they do
+                        match the format of the destination file.
 
 Alternatively, the following shortcut function is provided:
 
@@ -132,8 +137,8 @@ def read(path, fmt='int'):
 def write(path, audio_data, sample_rate=44100, bits_per_sample=16, fmt=chunk.WavFormat.PCM):
     """
     Shortcut function to write a wave file. The data should be contained in a list of lists with
-    size (N,C), where C is the number of audio channels. If the data are floats then they should be
-    in the range [-1, 1). They will be converted automatically. Integers will be written directly.
+    size (N,C), where C is the number of audio channels. The data may be int or float. The data may
+    be converted if they do match the format of the destination file.
 
     :param path: Path to the newly created wave file.
     :param audio_data: The data to be written to the file.
