@@ -1,7 +1,7 @@
 import pathlib
-from setuptools import setup
+from setuptools import find_packages, setup
 
-with open('wavfile/version.py') as f:
+with open('src/wavfile/version.py') as f:
     __VERSION__ = ""
     exec(f.read())
 
@@ -27,7 +27,8 @@ setup(
         "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.8",
     ],
-    packages=["wavfile"],
+    packages=find_packages('src'),
+    package_dir={'': 'src'},
     include_package_data=True,
     install_requires=[],
     entry_points={},
