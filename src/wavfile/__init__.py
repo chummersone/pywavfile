@@ -177,9 +177,9 @@ def read(path, fmt='int'):
         }
         audio_data = None
         try:
-            audio_data = fmt_methods.get(fmt)()
+            audio_data = fmt_methods[fmt]()
         except KeyError:
-            Error('Unknown format. Options are: ' + ', '.join(fmt_methods.keys()))
+            raise Error('Unknown format. Options are: ' + ', '.join(fmt_methods.keys()))
 
     return audio_data, fs, bits_per_sample
 
