@@ -1,6 +1,8 @@
-![python-package](https://github.com/chummersone/pywavfile/actions/workflows/python-package.yml/badge.svg)
-![python-publish](https://github.com/chummersone/pywavfile/actions/workflows/python-publish.yml/badge.svg)
-[![PyPI version](https://badge.fury.io/py/wavfile.svg)](https://pypi.org/project/wavfile/)
+![GitHub Workflow Status (event)](https://img.shields.io/github/workflow/status/chummersone/pywavfile/wavfile%20CI?event=push)
+![Coveralls](https://img.shields.io/coveralls/github/chummersone/pywavfile)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/chummersone/pywavfile)
+![PyPI](https://img.shields.io/pypi/v/wavfile)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/wavfile)
 
 # wavfile
 

@@ -8,11 +8,13 @@ import unittest
 
 import wavfile
 
+from test_module import test_file_path
+
 
 class TestWavfileRead(unittest.TestCase):
 
-    filename = "osc_tri.wav"
-    filename_unsigned = "osc_tri_unsigned.wav"
+    filename = test_file_path("osc_tri.wav")
+    filename_unsigned = test_file_path("osc_tri_unsigned.wav")
 
     def test_file_open_filename(self):
         wfp = wavfile.open(self.filename)
@@ -203,21 +205,21 @@ class TestWavfileRead(unittest.TestCase):
         self.assertEqual(1, len(audio_data[0]))
 
     def test_read_test_file_1(self):
-        audio_data, fs, bits_per_sample = wavfile.read('test-file-1.wav')
+        audio_data, fs, bits_per_sample = wavfile.read(test_file_path('test-file-1.wav'))
         self.assertEqual(44100, fs)
         self.assertEqual(24, bits_per_sample)
         self.assertEqual(44100 * 4, len(audio_data))
         self.assertEqual(2, len(audio_data[0]))
 
     def test_read_test_file_2(self):
-        audio_data, fs, bits_per_sample = wavfile.read('test-file-2.wav')
+        audio_data, fs, bits_per_sample = wavfile.read(test_file_path('test-file-2.wav'))
         self.assertEqual(96000, fs)
         self.assertEqual(32, bits_per_sample)
         self.assertEqual(96000, len(audio_data))
         self.assertEqual(1, len(audio_data[0]))
 
     def test_read_test_file_3(self):
-        audio_data, fs, bits_per_sample = wavfile.read('test-file-3.wav')
+        audio_data, fs, bits_per_sample = wavfile.read(test_file_path('test-file-3.wav'))
         self.assertEqual(48000, fs)
         self.assertEqual(24, bits_per_sample)
         self.assertEqual(48000, len(audio_data))

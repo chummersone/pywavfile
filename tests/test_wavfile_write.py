@@ -8,12 +8,14 @@ import unittest
 
 import wavfile
 
+from test_module import test_file_path
+
 
 class TestWavfileWrite(unittest.TestCase):
 
     def run_test(self, audio_data_in, read_callback, sample_rate,
                  bits_per_sample, num_channels, reference=None):
-        filename = "tmp.wav"
+        filename = test_file_path("tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=sample_rate,
                           bits_per_sample=bits_per_sample,
@@ -222,7 +224,7 @@ class TestWavfileWrite(unittest.TestCase):
             self.assertRaises(wavfile.Error, wfp.write, [[0]])
 
     def test_write_after_close(self):
-        filename = "tmp.wav"
+        filename = test_file_path("tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
@@ -231,7 +233,7 @@ class TestWavfileWrite(unittest.TestCase):
         self.assertRaises(ValueError, wfp.write, [[0, 0]])
 
     def test_shortcut_write(self):
-        filename = "tmp.wav"
+        filename = test_file_path("tmp.wav")
         audio_data_in = [
             [0],
             [256],
@@ -251,7 +253,7 @@ class TestWavfileWrite(unittest.TestCase):
         self.assertListEqual(audio_data_in, audio_data_out)
 
     def test_before_write(self):
-        filename = "tmp.wav"
+        filename = test_file_path("tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16) as wfp:
