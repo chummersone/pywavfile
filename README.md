@@ -1,9 +1,9 @@
 ![GitHub](https://img.shields.io/github/license/chummersone/pywavfile)
-![GitHub Workflow Status (event)](https://img.shields.io/github/workflow/status/chummersone/pywavfile/wavfile%20CI?event=push&logo=github)
-[![Coveralls](https://img.shields.io/coveralls/github/chummersone/pywavfile?logo=coveralls)](https://coveralls.io/github/chummersone/pywavfile)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/chummersone/pywavfile?logo=github)
-[![PyPI](https://img.shields.io/pypi/v/wavfile?logo=pypi)](https://pypi.org/project/wavfile/)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/wavfile?logo=python)
+![GitHub Workflow Status (event)](https://img.shields.io/github/workflow/status/chummersone/pywavfile/wavfile%20CI?event=push&logo=github&logoColor=white)
+[![Coveralls](https://img.shields.io/coveralls/github/chummersone/pywavfile?logo=coveralls&logoColor=white)](https://coveralls.io/github/chummersone/pywavfile)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/chummersone/pywavfile?logo=github&logoColor=white)
+[![PyPI](https://img.shields.io/pypi/v/wavfile?logo=pypi&logoColor=white)](https://pypi.org/project/wavfile/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/wavfile?logo=python&logoColor=white)
 
 # wavfile
 
