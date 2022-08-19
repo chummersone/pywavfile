@@ -1,8 +1,9 @@
-![GitHub Workflow Status (event)](https://img.shields.io/github/workflow/status/chummersone/pywavfile/wavfile%20CI?event=push)
-![Coveralls](https://img.shields.io/coveralls/github/chummersone/pywavfile)
-![GitHub release (latest by date)](https://img.shields.io/github/v/release/chummersone/pywavfile)
-![PyPI](https://img.shields.io/pypi/v/wavfile)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/wavfile)
+![GitHub](https://img.shields.io/github/license/chummersone/pywavfile)
+![GitHub Workflow Status (event)](https://img.shields.io/github/workflow/status/chummersone/pywavfile/wavfile%20CI?event=push&logo=github)
+[![Coveralls](https://img.shields.io/coveralls/github/chummersone/pywavfile?logo=coveralls)](https://coveralls.io/github/chummersone/pywavfile)
+![GitHub release (latest by date)](https://img.shields.io/github/v/release/chummersone/pywavfile?logo=github)
+[![PyPI](https://img.shields.io/pypi/v/wavfile?logo=pypi)](https://pypi.org/project/wavfile/)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/wavfile?logo=python)
 
 # wavfile
 
