@@ -11,6 +11,10 @@ import unittest
 import wavfile
 
 
+def test_file_path(*args):
+    return os.path.join(os.path.dirname(os.path.realpath(__file__)), *args)
+
+
 class TestCaseWithFile(unittest.TestCase):
 
     def assertIsFile(self, path):
@@ -21,16 +25,16 @@ class TestCaseWithFile(unittest.TestCase):
 class TestModule(TestCaseWithFile):
 
     def test_write_error(self):
-        self.assertRaises(wavfile.WriteError, wavfile.open, 'junk.wav', 'w', fmt=b'junk')
+        self.assertRaises(wavfile.WriteError, wavfile.open, test_file_path('junk.wav'), 'w', fmt=b'junk')
 
     def test_mode_error(self):
-        self.assertRaises(wavfile.Error, wavfile.open, 'junk.wav', 'j')
+        self.assertRaises(wavfile.Error, wavfile.open, test_file_path('junk.wav'), 'j')
 
     def test_read_error(self):
-        self.assertRaises(wavfile.Error, wavfile.read, 'osc_tri.wav', fmt='junk')
+        self.assertRaises(wavfile.Error, wavfile.read, test_file_path('osc_tri.wav'), fmt='junk')
 
     def test_split(self):
-        wavfile.split('test-file-3.wav')
+        wavfile.split(test_file_path('test-file-3.wav'))
         filenames = [
             'test-file-3_00.wav',
             'test-file-3_01.wav',
@@ -39,5 +43,5 @@ class TestModule(TestCaseWithFile):
             'test-file-3_04.wav'
         ]
         for f in filenames:
-            self.assertIsFile(f)
-            os.remove(f)
+            self.assertIsFile(test_file_path(f))
+            os.remove(test_file_path(f))

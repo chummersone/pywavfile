@@ -10,10 +10,12 @@ import unittest
 
 import wavfile
 
+from test_module import test_file_path
+
 
 class TestWavReadCopy(unittest.TestCase):
 
-    filename = "test-file-1.wav"
+    filename = test_file_path("test-file-1.wav")
 
     def test_basic_copy(self):
         with wavfile.open(self.filename) as wfp:
