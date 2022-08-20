@@ -52,7 +52,6 @@ class Chunk:
             self.chunk_id = None
         self.size = 0
         self.start = self.fp.tell()
-        self._header_is_written = False
 
         if 'r' in self.fp.mode:
             chunk_id = self.fp.read(4)
@@ -105,7 +104,7 @@ class Chunk:
         data_size = len(data)
         real_size = data_size - (self.size - (self.fp.tell() - self.content_start))
         self.size += max(real_size, 0)
-        if not self._header_is_written and 'w' in self.fp.mode and not self.fp.closed:
+        if 'w' in self.fp.mode and not self.fp.closed:
             pos = self.fp.tell()
             self.write_header()
             self.fp.seek(pos)
@@ -118,7 +117,6 @@ class Chunk:
         self.fp.seek(self.start)
         self.fp.write(self.chunk_id.value)
         self.fp.write(self.int_to_bytes(self.size, 4, signed=False))
-        self._header_is_written = True
 
     def bytes_to_int(self, data, signed=True):
         """
@@ -244,7 +242,6 @@ class Chunk:
         if self.size < self._min_size:
             raise exception.WriteError('Required data have not been written to the file')
         if 'w' in self.fp.mode and not self.fp.closed:
-            self._header_is_written = False
             self.write_header()
 
 
