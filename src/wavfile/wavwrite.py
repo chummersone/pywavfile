@@ -6,6 +6,8 @@ Provides the WavWrite class for writing wave files.
 The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
+import os
+from typing import IO, List, Union
 
 from . import base
 from . import chunk
@@ -14,21 +16,17 @@ from . import chunk
 class WavWrite(base.Wavfile):
     """Class for writing a wave file"""
 
-    def __init__(self, fp, sample_rate=44100, num_channels=None, bits_per_sample=16,
-                 fmt=chunk.WavFormat.PCM):
+    def __init__(self, fp: Union[str, os.PathLike, IO], sample_rate: int = 44100,
+                 num_channels: int = None, bits_per_sample: int = 16,
+                 fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """
         Initialise the WavWrite object.
 
         :param fp: Either a path to a wave file or a pointer to an open file.
-        :type fp: Union[str, os.PathLike, typing.IO]
         :param sample_rate: The sample rate for the new file.
-        :type sample_rate: int
         :param num_channels: The number of audio channels for the new file.
-        :type num_channels: int
         :param bits_per_sample: The number of bits to encode each audio sample.
-        :type bits_per_sample: int
         :param fmt: The audio format (chunk.WavFormat.PCM, chunk.WavFormat.IEEE_FLOAT)
-        :type fmt: wavfile.chunk.WavFormat
         """
         base.Wavfile.__init__(self)
 
@@ -50,21 +48,22 @@ class WavWrite(base.Wavfile):
         self.fp.seek(self._data_chunk.content_start)
 
     @staticmethod
-    def _data_are_floats(data):
+    def _data_are_floats(data: List[List[Union[int, float]]]) -> bool:
         """
         Check for any floats in data.
+
+        data: Audio buffer to analyse for floats.
         """
         return any([any([isinstance(y, float) for y in x]) for x in data]) or \
             base.Wavfile._buffer_max_abs(data) <= 1.0
 
-    def write(self, audio):
+    def write(self, audio: List[List[Union[int, float]]]) -> None:
         """
         Write audio data to the file. The data should be a list of lists with dimensions (N,C),
         where N is the number of frames and C is the number of audio channels. The data may be int
         or float. The data may be converted if they do match the format of the destination file.
 
         :param audio: Audio frames to write.
-        :type audio: list[list[Union[int, float]]]
         """
         if self._data_are_floats(audio) and \
                 self.format == chunk.WavFormat.PCM:
@@ -81,10 +80,8 @@ class WavWrite(base.Wavfile):
 
         self._data_chunk.write_frames(audio)
 
-    def close(self):
-        """
-        Close the file.
-        """
+    def close(self) -> None:
+        """Close the file."""
         num_align_bytes = self._data_chunk.size % chunk.Chunk.align
         if num_align_bytes > 0:
             self._data_chunk.skip()
