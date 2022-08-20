@@ -174,6 +174,14 @@ class TestWavfileRead(unittest.TestCase):
                 self.assertTrue(len(audio) == num_frames or
                                 len(audio) == (wfp.num_frames % num_frames))
 
+    def test_iter_samples(self):
+        with wavfile.open(self.filename) as wfp:
+            self.assertEqual(wfp.format, wavfile.chunk.WavFormat.PCM)
+            num_frames = 1
+            buffer = wfp.iter(num_frames)
+            for audio in buffer:
+                self.assertTrue(len(audio) == num_frames)
+
     def test_read_native_type(self):
         with wavfile.open(self.filename) as wfp:
             self.assertEqual(wfp.format, wavfile.chunk.WavFormat.PCM)
@@ -224,6 +232,13 @@ class TestWavfileRead(unittest.TestCase):
         self.assertEqual(24, bits_per_sample)
         self.assertEqual(48000, len(audio_data))
         self.assertEqual(5, len(audio_data[0]))
+
+    def test_read_short_to_float(self):
+        with wavfile.open(self.filename_unsigned) as wfp:
+            audio = wfp.read_float()
+            for i in range(0, len(audio)):
+                for j in range(0, len(audio[0])):
+                    self.assertTrue(-1 <= audio[i][j] < 1)
 
 
 if __name__ == '__main__':

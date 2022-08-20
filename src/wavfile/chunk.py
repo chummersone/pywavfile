@@ -94,6 +94,8 @@ class Chunk:
         :type nbytes: int
         """
         data = self.fp.read(nbytes)
+        if len(data) < nbytes:
+            raise IOError('Could not read enough bytes. Maybe EOF.')
         return data
 
     def write(self, data):
@@ -145,8 +147,6 @@ class Chunk:
         :rtype: int
         """
         data = self.read(nbytes)
-        if len(data) < nbytes:
-            raise IOError('Could not read enough bytes. Maybe EOF.')
         return self.bytes_to_int(data, signed=signed)
 
     def int_to_bytes(self, data, nbytes, signed=True):
@@ -211,9 +211,6 @@ class Chunk:
         :rtype: float
         """
         data = self.read(nbytes)
-
-        if len(data) < nbytes:
-            raise IOError('Could not read enough bytes. Maybe EOF.')
         return self.bytes_to_float(data)
 
     def float_to_bytes(self, data, nbytes):

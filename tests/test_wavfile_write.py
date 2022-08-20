@@ -22,6 +22,7 @@ class TestWavfileWrite(unittest.TestCase):
                           num_channels=num_channels) as wfp:
             wfp.write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
+            self.assertEqual(wfp.bits_per_sample / 8, wfp._bytes_per_sample)
             # test overwriting the data
             wfp.seek(0)
             wfp.write(audio_data_in)
@@ -75,6 +76,27 @@ class TestWavfileWrite(unittest.TestCase):
             [1.0, 1.0],
         ]
         read_callback = "read_float"
+        sample_rate = 44100
+        bits_per_sample = 8
+        self.run_test(audio_data_in, read_callback, sample_rate,
+                      bits_per_sample, len(audio_data_in[0]), reference)
+
+    def test_read_write_audio_float_short_1(self):
+        reference = [
+            [0, 0],
+            [255, 255],
+            [128, 128],
+            [64, 64],
+            [255, 255],
+        ]
+        audio_data_in = [
+            [-1.0, -1.0],
+            [1.0, 1.0],
+            [0.0, 0.0],
+            [-0.5, -0.5],
+            [1.0, 1.0],
+        ]
+        read_callback = "read_int"
         sample_rate = 44100
         bits_per_sample = 8
         self.run_test(audio_data_in, read_callback, sample_rate,
