@@ -85,14 +85,16 @@ class WavRead(base.Wavfile):
             audio = getattr(self, method)(num_frames=num_frames)
             if len(audio) > 0:
                 yield audio
-            else:
-                break
+            return
 
     def close(self):
         """
         Close the wav file.
         """
-        base.Wavfile.close(self)
+        try:
+            base.Wavfile.close(self)
+        except AttributeError:
+            pass
         if self._should_close_file:
             self.fp.close()
         self._should_close_file = False
@@ -143,13 +145,9 @@ class WavRead(base.Wavfile):
             audio = self._data_chunk.read_frames(num_frames)
         elif self.format == chunk.WavFormat.PCM:
             audio = self.read_int(num_frames)
-            if self._bytes_per_sample == 1:
-                convert = self._convert_unsigned_int_to_float
-            else:
-                convert = self._convert_signed_int_to_float
             for i in range(0, len(audio)):
                 for j in range(0, len(audio[0])):
-                    audio[i][j] = convert(audio[i][j])
+                    audio[i][j] = self._convert_int_to_float(audio[i][j])
 
         return audio
 
