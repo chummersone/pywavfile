@@ -7,36 +7,42 @@ Chunk-based helper classes for working with RIFF files.
 import struct
 import sys
 from enum import Enum
-from typing import IO, List, Union
+from typing import IO, List, Optional, Union
 
 from . import exception
 
 
 class RiffFormat(Enum):
     """RIFF file format"""
-    WAVE = b'WAVE'
+    WAVE: 'RiffFormat' = b'WAVE'
 
 
 class ChunkID(Enum):
     """RIFF chunk identifiers"""
-    RIFF_CHUNK = b'RIFF'
-    FMT_CHUNK = b'fmt '
-    DATA_CHUNK = b'data'
-    UNKNOWN_CHUNK = b'    '
+    RIFF_CHUNK: 'ChunkID' = b'RIFF'
+    FMT_CHUNK: 'ChunkID' = b'fmt '
+    DATA_CHUNK: 'ChunkID' = b'data'
+    UNKNOWN_CHUNK: 'ChunkID' = b'    '
 
 
 class WavFormat(Enum):
     """Wav audio data format"""
-    PCM = 0x0001
-    IEEE_FLOAT = 0x0003
+    PCM: 'WavFormat' = 0x0001
+    IEEE_FLOAT: 'WavFormat' = 0x0003
 
 
 class Chunk:
     """Chunk read and write"""
 
-    align = 2
-    offset = 8
-    _min_size = 0
+    fp: Optional[IO]
+    bigendian: bool
+    chunk_id: Optional[ChunkID]
+    size: int
+    start: int
+
+    align: int = 2
+    offset: int = 8
+    _min_size: int = 0
 
     def __init__(self, fp: IO, bigendian: bool = False) -> None:
         """
@@ -47,7 +53,6 @@ class Chunk:
         """
         self.fp = fp
         self.bigendian = bigendian
-        self.chunk_id: ChunkID
         if not hasattr(self, 'chunk_id'):
             self.chunk_id = None
         self.size = 0
@@ -222,6 +227,8 @@ class Chunk:
 class RiffChunk(Chunk):
     """Riff container chunk read and write"""
 
+    format: RiffFormat
+
     _min_size = 4
 
     def __init__(self, fp: IO) -> None:
@@ -252,13 +259,20 @@ class RiffChunk(Chunk):
 class WavFmtChunk(Chunk):
     """Wave format chunk read and write"""
 
+    audio_fmt: WavFormat
+    num_channels: int
+    sample_rate: int
+    byte_rate: int
+    block_align: int
+    bits_per_sample: int
+
     _min_size = 16
-    _audio_fmt_size = 2
-    _num_channels_size = 2
-    _sample_rate_size = 4
-    _byte_rate_size = 4
-    _block_align_size = 2
-    _bits_per_sample_size = 2
+    _audio_fmt_size: int = 2
+    _num_channels_size: int = 2
+    _sample_rate_size: int = 4
+    _byte_rate_size: int = 4
+    _block_align_size: int = 2
+    _bits_per_sample_size: int = 2
 
     def __init__(self, fp: IO) -> None:
         """
@@ -317,6 +331,9 @@ class WavFmtChunk(Chunk):
 
 class WavDataChunk(Chunk):
     """Wave data chunk read and write"""
+
+    __did_warn: bool
+    fmt_chunk: WavFmtChunk
 
     def __init__(self, fp: IO, fmt_chunk: WavFmtChunk) -> None:
         """
