@@ -54,15 +54,11 @@ class Chunk:
         self.start = self.fp.tell()
 
         if 'r' in self.fp.mode:
-            chunk_id = self.fp.read(4)
-            if len(chunk_id) > 0:
-                try:
-                    self.chunk_id = ChunkID(chunk_id)
-                except ValueError:
-                    self.chunk_id = ChunkID.UNKNOWN_CHUNK
-                self.size = self.read_int(4, signed=True)
-            else:
-                raise exception.Error('Chunk is empty')
+            try:
+                self.chunk_id = ChunkID(self.read(4))
+            except ValueError:
+                self.chunk_id = ChunkID.UNKNOWN_CHUNK
+            self.size = self.read_int(4, signed=True)
         else:
             self.write_header()
 
