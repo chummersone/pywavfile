@@ -7,13 +7,18 @@ The main API for reading and writing wav files.
 import builtins
 import os
 from abc import ABC
-from typing import Any, IO, List, Tuple, Union
+from typing import Any, IO, List, Optional, Tuple, Union
 
 from . import chunk
 
 
 class Wavfile(ABC):
     """Abstract base class for wave file read/write"""
+
+    fp: Optional[IO]
+    _should_close_file: bool
+    _riff_chunk: Optional[chunk.RiffChunk]
+    _data_chunk: Optional[chunk.WavDataChunk]
 
     def __init__(self) -> None:
         """

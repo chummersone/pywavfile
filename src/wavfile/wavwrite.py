@@ -16,6 +16,8 @@ from . import chunk
 class WavWrite(base.Wavfile):
     """Class for writing a wave file"""
 
+    _is_open: bool
+
     def __init__(self, fp: Union[str, os.PathLike, IO], sample_rate: int = 44100,
                  num_channels: int = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
@@ -35,7 +37,6 @@ class WavWrite(base.Wavfile):
 
         # initialise each of the riff chunk
         self._riff_chunk = chunk.RiffChunk(self.fp)
-        self._riff_chunk.format = chunk.RiffFormat.WAVE
         fmt_chunk = chunk.WavFmtChunk(self.fp)
         fmt_chunk.audio_fmt = fmt
         self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
