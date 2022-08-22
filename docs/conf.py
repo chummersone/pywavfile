@@ -15,12 +15,19 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
 sys.path.insert(0, os.path.abspath(os.path.join('..', 'src', 'wavfile')))
 
+from wavfile.version import __VERSION__
+
 
 # -- Project information -----------------------------------------------------
 
 project = 'wavfile'
 copyright = '2022, Chris Hummersone'
 author = 'Chris Hummersone'
+
+# The short X.Y version.
+version = __VERSION__
+# The full version, including alpha/beta/rc tags.
+release = version
 
 
 # -- General configuration ---------------------------------------------------
@@ -30,7 +37,6 @@ author = 'Chris Hummersone'
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'myst_parser',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -9,7 +9,7 @@ with open('src/wavfile/version.py') as f:
 HERE = pathlib.Path(__file__).parent
 
 # The text of the README file
-README = (HERE / "README.md").read_text()
+README = (HERE / "README.rst").read_text()
 
 # This call to setup() does all the work
 setup(
@@ -17,7 +17,7 @@ setup(
     version=__VERSION__,
     description="Read/write wave audio files to/from lists of native Python types.",
     long_description=README,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     url="https://github.com/chummersone/pywavfile",
     author="Christopher Hummersone",
     author_email="chummersone@users.noreply.github.com",
