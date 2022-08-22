@@ -1,2 +1,2 @@
 .. include:: ../README.rst
-   :start-after: inclusion-marker-do-not-remove
+   :start-after: github-only-above-here
