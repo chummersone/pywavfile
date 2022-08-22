@@ -37,6 +37,7 @@ release = version
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.ifconfig',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -56,6 +57,39 @@ autodoc_default_options = {
     'exclude-members': '__weakref__'
 }
 autoclass_content = 'both'
+
+
+def setup(app):
+    app.add_config_value('github', False, 'env')
+
+
+rst_prolog = """
+.. |wavfile.open| replace:: :meth:`wavfile.open`
+.. |WavRead| replace:: :class:`wavfile.wavread.WavRead`
+.. |num_channels| replace:: :attr:`num_channels <wavfile.base.Wavfile.num_channels>`
+.. |sample_rate| replace:: :attr:`sample_rate <wavfile.base.Wavfile.sample_rate>`
+.. |bits_per_sample| replace:: :attr:`bits_per_sample <wavfile.base.Wavfile.bits_per_sample>`
+.. |num_frames| replace:: :attr:`num_frames <wavfile.base.Wavfile.num_frames>`
+.. |format| replace:: :attr:`format <wavfile.base.Wavfile.format>`
+.. |read| replace:: :meth:`read() <wavfile.wavread.WavRead.read>`
+.. |readN| replace:: :meth:`read([N]) <wavfile.wavread.WavRead.read>`
+.. |read_int| replace:: :meth:`read_int() <wavfile.wavread.WavRead.read_int>`
+.. |read_intN| replace:: :meth:`read_int([N]) <wavfile.wavread.WavRead.read_int>`
+.. |read_float| replace:: :meth:`read_float() <wavfile.wavread.WavRead.read_float>`
+.. |read_floatN| replace:: :meth:`read_float([N]) <wavfile.wavread.WavRead.read_float>`
+.. |iter| replace:: :meth:`iter() <wavfile.wavread.WavRead.iter>`
+.. |iterN| replace:: :meth:`iter([N]) <wavfile.wavread.WavRead.iter>`
+.. |iter_intN| replace:: :meth:`iter_int([N]) <wavfile.wavread.WavRead.iter_int>`
+.. |iter_floatN| replace:: :meth:`iter_float([N]) <wavfile.wavread.WavRead.iter_float>`
+.. |seek| replace:: :meth:`seek() <wavfile.base.Wavfile.seek>`
+.. |seekN| replace:: :meth:`seek(N [, whence]) <wavfile.base.Wavfile.seek>`
+.. |tell| replace:: :meth:`tell() <wavfile.base.Wavfile.tell>`
+.. |close| replace:: :meth:`close() <wavfile.wavread.WavRead.close>`
+.. |wavfile.read| replace:: :meth:`wavfile.read`
+.. |WavWrite| replace:: :class:`wavfile.wavwrite.WavWrite`
+.. |write| replace:: :meth:`write(audio) <wavfile.wavwrite.WavWrite.write>`
+.. |wavfile.write| replace:: :meth:`wavfile.write`
+"""
 
 
 # -- Options for HTML output -------------------------------------------------
