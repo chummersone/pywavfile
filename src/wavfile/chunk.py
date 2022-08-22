@@ -372,7 +372,7 @@ class WavDataChunk(Chunk):
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return self.read_float(self.fmt_chunk.bytes_per_sample)
 
-    def read_frames(self, nframes: int = None) -> List[List[Union[int, float]]]:
+    def read_frames(self, nframes: Optional[int] = None) -> List[List[Union[int, float]]]:
         """
         Read a number of audio frames from the chunk. A frame is a collection of samples, from each
         audio channel, associated with a single time instant.

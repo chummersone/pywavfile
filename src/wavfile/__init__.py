@@ -1,114 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-wavfile
-=======
-
 Read/write wave audio files to/from lists of native Python types.
 
 The library currently supports PCM (integer) and IEEE float formats, and supports arbitrary integer
 precision, including: 16-, 24-, 32-, and 64-bit samples.
-
-Usage: reading wave files
--------------------------
-::
-
-    f = wavfile.open(file, 'r')
-
-where ``file`` is either a path to a wave file or a pointer to an open file. This returns a
-``wavfile.wavread.WavRead`` object with the following properties:
-
-``num_channels``
-  The number of audio channels in the stream.
-
-``sample_rate``
-  The sampling rate/frequency of the audio stream.
-
-``bits_per_sample``
-  The number of bits per audio sample.
-
-``num_frames``
-  The total number of audio frames in the audio stream. A frame is a block of samples, one for each
-  channel, corresponding to a single sampling point.
-
-``format``
-  Audio sample format.
-
-The object also has the following methods:
-
-``read([N])``
-  Read, at most, ``N`` frames from the audio stream in their unmodified native format. The method
-  returns a list of lists with size ``(N,C)``, where ``C`` is the number of audio channels.
-  Excluding ``N``, choosing ``N = None` or ``N < 0`` will read all remaining samples.
-
-``read_int([N])``
-  This method is identical to ``read()`` except that it returns the samples as integers using the
-  specified bit depth.
-
-``read_float(N)``
-  This method is identical to ``read()`` except that it returns the samples as floats in the range
-  [-1, 1).
-
-``iter([N])``
-  Similar to ``read()`` but used in iterator contexts to read successive groups of audio frames.
-
-``iter_int(N)``
-  Similar to ``read_int()`` but used in iterator contexts to read successive groups of audio frames.
-
-``iter_float(N)``
-  Similar to ``read_float()`` but used in iterator contexts to read successive groups of audio
-  frames.
-
-``seek(N, [W])``
-  Move to the ``N``th frame in the audio stream. The position mode can be changed by setting ``W``:
-  0 (default) = absolute positioning, 1 = relative to current position, 2 = relative to end of last
-  frame.
-
-``tell()``
-  Return the current frame in the audio stream.
-
-``close()``
-  Close the instance.
-
-Alternatively, the following shortcut function is provided::
-
-    audio, sample_rate, bits_per_sample = wavfile.read(file, fmt='int')
-
-where fmt is ``'int'``, ``'float'``, or ``'native'``; and audio is the audio data. The function
-reads all audio data in the file.
-
-Usage: writing wave files
--------------------------
-::
-
-    f = wavfile.open(file,
-                     'w',
-                     sample_rate=44100,
-                     num_channels=None,
-                     bits_per_sample=16,
-                     fmt=chunk.WavFormat.PCM)
-
-where ``sample_rate`` is the sampling rate for the new file, ``num_channels`` is the number of audio
-channels, ``bits_per_sample`` is the number of bits used to encode each sample, and ``fmt`` is the
-audio sample format. If ``num_channels`` is unspecified it will be determined automatically from the
-first block of samples that are written (see below). This returns a ``wavfile.wavread.WavWrite``
-object. The object shares its properties with the ``wavfile.wavread.WavRead`` class. The object also
-offers the same ``seek()``, ``tell()``, and ``close()`` methods. In addition, the following methods
-are provided for writing audio data:
-
-write(N)
-  Write ``N`` frames of integers or floats to the audio file. The data should be contained in a list
-  of lists with size ``(N,C)``, where ``C`` is the number of audio channels. The data may be ``int``
-  or ``float``. The data may be converted if they do match the format of the destination file.
-
-Alternatively, the following shortcut function is provided::
-
-    wavfile.write(file, audio, sample_rate=44100, bits_per_sample=16, fmt=chunk.WavFormat.PCM)
-
-where ``audio`` is the audio data to write to the file.
 """
 import os.path
-from typing import IO, List, Tuple, Union
+from typing import IO, List, Optional, Tuple, Union
 
 import wavfile.wavread
 from . import chunk
@@ -118,8 +17,8 @@ from .exception import Error, WriteError
 from .version import __VERSION__
 
 
-def open(f: Union[str, os.PathLike, IO], mode: str = None, sample_rate: int = 44100,
-         num_channels: int = None, bits_per_sample: int = 16,
+def open(f: Union[str, os.PathLike, IO], mode: Optional[str] = None, sample_rate: int = 44100,
+         num_channels: Optional[int] = None, bits_per_sample: int = 16,
          fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> Union[wavread.WavRead, wavwrite.WavWrite]:
     """
     Open the wave file.

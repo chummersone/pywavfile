@@ -8,7 +8,7 @@ mode.
 """
 
 import os
-from typing import Generator, IO, List, Union
+from typing import Generator, IO, List, Optional, Union
 
 from . import base
 from . import chunk
@@ -103,7 +103,7 @@ class WavRead(base.Wavfile):
             self.fp.close()
         self._should_close_file = False
 
-    def read_int(self, num_frames: int = None) -> List[List[int]]:
+    def read_int(self, num_frames: Optional[int] = None) -> List[List[int]]:
         """
         Read, at most, num_frames frames from the audio stream in integer format. The method returns
         a list of lists with dimensions (N,C), where C is the number of audio channels. Choosing
@@ -119,7 +119,7 @@ class WavRead(base.Wavfile):
                     audio[n][m] = self._convert_float_to_int(audio[n][m])
         return audio
 
-    def iter_int(self, num_frames: int = None) -> Generator[List[List[int]], None, None]:
+    def iter_int(self, num_frames: Optional[int] = None) -> Generator[List[List[int]], None, None]:
         """
         This method is equivalent to read_int(), except that it returns a generator rather than
         a block of sample.
@@ -129,7 +129,7 @@ class WavRead(base.Wavfile):
         """
         return self._block_iterator('read_int', num_frames)
 
-    def read_float(self, num_frames: int = None) -> List[List[float]]:
+    def read_float(self, num_frames: Optional[int] = None) -> List[List[float]]:
         """
         Read, at most, num_frames frames from the audio stream in float format in the range [-1, 1).
         The method returns a list of lists with size [N][C], where C is the number of audio
@@ -149,7 +149,8 @@ class WavRead(base.Wavfile):
 
         return audio
 
-    def iter_float(self, num_frames: int = None) -> Generator[List[List[float]], None, None]:
+    def iter_float(self, num_frames: Optional[int] = None) -> \
+            Generator[List[List[float]], None, None]:
         """
         This method is equivalent to read_float(), except that it returns a generator rather than
         a block of samples.
@@ -159,7 +160,7 @@ class WavRead(base.Wavfile):
         """
         return self._block_iterator('read_float', num_frames)
 
-    def read(self, num_frames: int = None) -> List[List[Union[int, float]]]:
+    def read(self, num_frames: Optional[int] = None) -> List[List[Union[int, float]]]:
         """
         Read, at most, num_frames frames from the audio stream in its native format. The method
         returns a list of lists with dimensions (N,C), where C is the number of audio channels.
