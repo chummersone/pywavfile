@@ -7,7 +7,7 @@ The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
 import os
-from typing import IO, List, Union
+from typing import IO, List, Optional, Union
 
 from . import base
 from . import chunk
@@ -19,7 +19,7 @@ class WavWrite(base.Wavfile):
     _is_open: bool
 
     def __init__(self, fp: Union[str, os.PathLike, IO], sample_rate: int = 44100,
-                 num_channels: int = None, bits_per_sample: int = 16,
+                 num_channels: Optional[int] = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """
         Initialise the WavWrite object.
