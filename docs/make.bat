@@ -4,9 +4,6 @@ pushd %~dp0
 
 REM Command file for Sphinx documentation
 
-if "%SPHINXAPIDOC%" == "" (
-	set SPHINXAPIDOC=sphinx-apidoc
-)
 if "%SPHINXBUILD%" == "" (
 	set SPHINXBUILD=sphinx-build
 )
@@ -28,7 +25,6 @@ if errorlevel 9009 (
 	exit /b 1
 )
 
-%SPHINXAPIDOC% -o "%SOURCEDIR%\wavfile" "%SOURCEDIR%\..\src" -f -M -T -e --templatedir "%SOURCEDIR%\_templates"
 %SPHINXBUILD% -M %1 %SOURCEDIR% %BUILDDIR% %SPHINXOPTS% %O%
 goto end
 

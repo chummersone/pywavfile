@@ -12,6 +12,9 @@
 #
 import os
 import sys
+
+import sphinx.ext.apidoc
+
 sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
 sys.path.insert(0, os.path.abspath(os.path.join('..', 'src', 'wavfile')))
 
@@ -58,8 +61,16 @@ autodoc_default_options = {
 }
 
 
+def run_apidoc(_):
+    curdir = os.path.abspath(os.path.dirname(__file__))
+    srcdir = os.path.normpath(os.path.join(curdir, '..', 'src'))
+    outdir = os.path.normpath(os.path.join(curdir, 'wavfile'))
+    templatedir = os.path.normpath(os.path.join(curdir, '_templates'))
+    sphinx.ext.apidoc.main(('-o', outdir, srcdir, '-f', '-M', '-T', '-e', '--templatedir', templatedir))
+
+
 def setup(app):
-    app.add_config_value('github', False, 'env')
+    app.connect('builder-inited', run_apidoc)
 
 
 rst_prolog = """
@@ -96,7 +107,7 @@ rst_prolog = """
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'classic'
+html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
