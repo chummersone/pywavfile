@@ -9,7 +9,6 @@ Python wavfile package
 .. toctree::
    :maxdepth: 10
    :caption: Contents:
-   :glob:
 
    readme
    wavfile/wavfile

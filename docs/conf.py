@@ -56,7 +56,6 @@ autodoc_default_options = {
     'undoc-members': True,
     'exclude-members': '__weakref__'
 }
-autoclass_content = 'both'
 
 
 def setup(app):
