@@ -48,6 +48,8 @@ The package currently supports PCM (integer) and IEEE float formats, and
 supports arbitrary integer precision, including: 16-, 24-, 32-, and
 64-bit samples.
 
+View online documentation at https://pywavfile.readthedocs.io/.
+
 Usage: reading wave files
 -------------------------
 
