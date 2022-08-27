@@ -8,6 +8,10 @@ import struct
 import sys
 from enum import Enum
 from typing import IO, List, Optional, Union
+try:
+    from typing import Literal
+except ImportError:
+    from typing_extensions import Literal
 
 from . import exception
 
@@ -36,7 +40,7 @@ class Chunk:
 
     fp: Optional[IO]
     bigendian: bool
-    chunk_id: Optional[ChunkID]
+    chunk_id: ChunkID
     size: int
     start: int
 
@@ -54,7 +58,7 @@ class Chunk:
         self.fp = fp
         self.bigendian = bigendian
         if not hasattr(self, 'chunk_id'):
-            self.chunk_id = None
+            self.chunk_id = ChunkID.UNKNOWN_CHUNK
         self.size = 0
         self.start = self.fp.tell()
 
@@ -68,7 +72,7 @@ class Chunk:
             self.write_header()
 
     @property
-    def endianness(self) -> str:
+    def endianness(self) -> Literal['big', 'little']:
         """The endianness in text form."""
         if self.bigendian:
             return 'big'
