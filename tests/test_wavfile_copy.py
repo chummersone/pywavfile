@@ -32,6 +32,7 @@ class TestWavReadCopy(unittest.TestCase):
 
     def test_copy_content(self):
         with wavfile.open(self.filename) as wfp:
+            wfp: wavfile.wavread.WavRead
             wfc = copy.copy(wfp)
             num_frames = 1
             for x, y in itertools.zip_longest(wfp.iter_int(num_frames),

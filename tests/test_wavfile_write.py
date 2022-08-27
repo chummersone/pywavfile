@@ -20,6 +20,7 @@ class TestWavfileWrite(unittest.TestCase):
                           sample_rate=sample_rate,
                           bits_per_sample=bits_per_sample,
                           num_channels=num_channels) as wfp:
+            wfp: wavfile.wavwrite.WavWrite
             wfp.write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
             self.assertEqual(wfp.bits_per_sample / 8, wfp._bytes_per_sample)
@@ -243,6 +244,7 @@ class TestWavfileWrite(unittest.TestCase):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
+            wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.Error, wfp.write, [[0]])
 
     def test_write_after_close(self):
@@ -251,6 +253,7 @@ class TestWavfileWrite(unittest.TestCase):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
+            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0, 0]])
         self.assertRaises(ValueError, wfp.write, [[0, 0]])
 

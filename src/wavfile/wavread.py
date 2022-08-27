@@ -138,7 +138,7 @@ class WavRead(base.Wavfile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
-        audio = []
+        audio: List[List[Union[int, float]]] = []
         if self.format == chunk.WavFormat.IEEE_FLOAT:
             audio = self._data_chunk.read_frames(num_frames)
         elif self.format == chunk.WavFormat.PCM:
