@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+Build the wavfile package.
+"""
+
 import pathlib
 import sys
 from setuptools import find_packages, setup
@@ -30,12 +36,12 @@ setup(
     classifiers=[
         "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
+    python_requires='>=3.7',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
