@@ -91,7 +91,8 @@ class WavRead(base.Wavfile):
             audio = getattr(self, method)(num_frames=num_frames)
             if len(audio) > 0:
                 yield audio
-            return
+            else:
+                return
 
     def close(self) -> None:
         """Close the wav file."""
