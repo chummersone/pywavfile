@@ -58,28 +58,51 @@ class WavWrite(base.Wavfile):
         return any([any([isinstance(y, float) for y in x]) for x in data]) or \
             base.Wavfile._buffer_max_abs(data) <= 1.0
 
-    def write(self, audio: List[List[Union[int, float]]]) -> None:
+    def write_float(self, audio: List[List[float]]) -> None:
         """
-        Write audio data to the file. The data should be a list of lists with dimensions (N,C),
-        where N is the number of frames and C is the number of audio channels. The data may be int
-        or float. The data may be converted if they do match the format of the destination file.
+        Write float data to the file. If the file format is `PCM` then the data will be converted to
+        floats, otherwise there will be no conversion.
 
         :param audio: Audio frames to write.
         """
-        if self._data_are_floats(audio) and \
-                self.format == chunk.WavFormat.PCM:
+
+        if self.format == chunk.WavFormat.PCM:
             # data are floats but we are writing integers
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
                     audio[n][m] = self._convert_float_to_int(audio[n][m])
-        elif not self._data_are_floats(audio) and \
-                self.format == chunk.WavFormat.IEEE_FLOAT:
+
+        self._data_chunk.write_frames(audio)
+
+    def write_int(self, audio: List[List[int]]) -> None:
+        """
+        Write integer data to the file. If the file format is `IEEE_FLOAT` then the data will be
+        converted to floats, otherwise there will be no conversion.
+
+        :param audio: Audio frames to write.
+        """
+
+        if self.format == chunk.WavFormat.IEEE_FLOAT:
             # data are integers but we are writing floats
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
                     audio[n][m] = self._convert_int_to_float(audio[n][m])
 
         self._data_chunk.write_frames(audio)
+
+    def write(self, audio: List[List[Union[int, float]]]) -> None:
+        """
+        Write audio data to the file. The data should be a list of lists with dimensions (N,C),
+        where N is the number of frames and C is the number of audio channels. The data may be int
+        or float; the method will attempt to determine the format of the data, and choose the
+        appropriate scaling and conversion when writing the file.
+
+        :param audio: Audio frames to write.
+        """
+        if self._data_are_floats(audio):
+            self.write_float(audio)
+        else:
+            self.write_int(audio)
 
     def close(self) -> None:
         """Close the file."""
