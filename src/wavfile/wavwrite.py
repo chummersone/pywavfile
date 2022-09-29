@@ -108,8 +108,8 @@ class WavWrite(base.Wavfile):
         """Close the file."""
         num_align_bytes = self._data_chunk.size % chunk.Chunk.align
         if num_align_bytes > 0:
-            self._data_chunk.skip()
-            self._data_chunk.write(bytearray(num_align_bytes))
+            self._data_chunk.skip(include_pad=False)
+            self._data_chunk.write(bytearray(num_align_bytes), update_size=False)
         base.Wavfile.close(self)
         if self._should_close_file:
             self.fp.close()

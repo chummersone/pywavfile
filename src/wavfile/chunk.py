@@ -84,11 +84,24 @@ class Chunk:
         """The start position of the chunk content"""
         return self.start + self.offset
 
-    def skip(self) -> None:
-        """Skip to the end of the chunk."""
+    @property
+    def pad(self):
+        """Size of any trailing padding required to align the chunk"""
+        return self.size % self.align
+
+    def skip(self, include_pad: bool = True) -> None:
+        """
+        Skip to the end of the chunk.
+
+        :param include_pad: Specify whether the end includes any padding.
+        """
         if self.size == 0:
             raise exception.Error('Chunk has no payload to skip')
-        self.fp.seek(self.content_start + self.size)
+        if include_pad:
+            _pad = self.pad
+        else:
+            _pad = 0
+        self.fp.seek(self.content_start + self.size + _pad)
 
     def read(self, nbytes: int) -> bytes:
         """
@@ -102,15 +115,17 @@ class Chunk:
             raise IOError('Could not read enough bytes. Maybe EOF.')
         return data
 
-    def write(self, data: bytes) -> None:
+    def write(self, data: bytes, update_size: bool = True) -> None:
         """
         Write data to the chunk. Adjust the chunk size accordingly.
 
         :param data: Data to write to the chunk.
+        :param update_size: Update the chunk size (not required for padding words).
         """
         data_size = len(data)
         real_size = data_size - (self.size - (self.fp.tell() - self.content_start))
-        self.size += max(real_size, 0)
+        if update_size:
+            self.size += max(real_size, 0)
         if 'w' in self.fp.mode and not self.fp.closed:
             pos = self.fp.tell()
             self.write_header()
