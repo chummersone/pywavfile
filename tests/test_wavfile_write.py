@@ -303,7 +303,6 @@ class TestWavfileWrite(unittest.TestCase):
             [128],
             [64],
             [32],
-            [0],
         ]
         read_callback = "read_int"
         sample_rate = 44100
