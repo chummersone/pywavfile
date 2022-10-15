@@ -7,7 +7,7 @@ The main API for reading and writing wav files.
 import builtins
 import os
 from abc import ABC
-from typing import Any, IO, List, Optional, Tuple, Union
+from typing import Any, Dict, IO, List, Optional, Tuple, Union
 
 from . import chunk
 
@@ -28,6 +28,7 @@ class Wavfile(ABC):
         self._should_close_file = False
         self._riff_chunk = None
         self._data_chunk = None
+        self._list_chunk = None
 
     def _init_fp(self, f: Union[str, os.PathLike, IO], mode: str) -> None:
         """
@@ -152,6 +153,13 @@ class Wavfile(ABC):
     def _block_align(self) -> int:
         """Number of audio frames in the file"""
         return self._data_chunk.fmt_chunk.block_align
+
+    @property
+    def metadata(self) -> Optional[Dict[str, str]]:
+        """Metadata from the .wav file"""
+        if self._list_chunk is not None:
+            return self._list_chunk.info
+        return None
 
     @staticmethod
     def _buffer_max_abs(data: List[List[Union[float, int]]]) -> Union[float, int]:

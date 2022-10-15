@@ -11,6 +11,7 @@ from typing import IO, List, Optional, Union
 
 from . import base
 from . import chunk
+from . import exception
 
 
 class WavWrite(base.Wavfile):
@@ -44,6 +45,7 @@ class WavWrite(base.Wavfile):
         if num_channels is not None:
             self._data_chunk.fmt_chunk.num_channels = int(num_channels)
         self._data_chunk.fmt_chunk.bits_per_sample = int(bits_per_sample)
+        self._list_chunk = None
 
         # go to data chunk content start ready to write samples
         self.fp.seek(self._data_chunk.content_start)
@@ -103,6 +105,43 @@ class WavWrite(base.Wavfile):
             self.write_float(audio)
         else:
             self.write_int(audio)
+
+    def add_metadata(self, **kwargs):
+        """
+        Add metadata to the wav file. Note that this method can only be called once, and the
+        metadata cannot be updated once it is written. The metadata chunk will be written before or
+        after the data chunk, depending on when this method is called.
+
+        See chunk.InfoItem for a list of supported tags.
+
+        :param kwargs: The metadata to write, provided as keyword arguments.
+        :return: Dict[str, str]
+        """
+
+        if self._list_chunk is not None:
+            raise exception.WriteError('Metadata already written to file. '
+                                       'Editing is not currently supported.')
+
+        # if the data chunk is empty, then overwrite it and recreate it after the metadata
+        recreate_data_chunk = False
+        if self._data_chunk.size == 0:
+            # overwrite data chunk
+            self.fp.seek(self._data_chunk.start)
+            recreate_data_chunk = True
+        else:
+            # write after data
+            self.fp.seek(
+                self._data_chunk.content_start +
+                self._data_chunk.size +
+                self._data_chunk.pad
+            )
+        self._list_chunk = chunk.ListChunk(self.fp)
+        self._list_chunk.info = kwargs
+        self._list_chunk.write_info()
+        if recreate_data_chunk:
+            # recreate data chunk
+            fmt_chunk = self._data_chunk.fmt_chunk
+            self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
 
     def close(self) -> None:
         """Close the file."""
