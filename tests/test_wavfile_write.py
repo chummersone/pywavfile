@@ -11,15 +11,18 @@ import wavfile
 from test_module import test_file_path
 
 
-class TestWavfileWrite(unittest.TestCase):
+class WavfileWriteTestRunner(unittest.TestCase):
 
-    def run_test(self, audio_data_in, read_callback, sample_rate,
-                 bits_per_sample, num_channels, reference=None):
+    def run_test(self, audio_data_in, read_callback, sample_rate, bits_per_sample, num_channels,
+                 reference=None, metadata=None, metadata_mode='pre'):
         filename = test_file_path("tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=sample_rate,
                           bits_per_sample=bits_per_sample,
                           num_channels=num_channels) as wfp:
+            # write metadata before data
+            if metadata is not None and metadata_mode == 'pre':
+                wfp.add_metadata(**metadata)
             wfp: wavfile.wavwrite.WavWrite
             wfp.write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
@@ -28,6 +31,9 @@ class TestWavfileWrite(unittest.TestCase):
             wfp.seek(0)
             wfp.write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
+            # write metadata after data
+            if metadata is not None and metadata_mode == 'post':
+                wfp.add_metadata(**metadata)
 
         with wavfile.open(filename, 'r') as wfp:
             audio_out = getattr(wfp, read_callback)()
@@ -47,6 +53,13 @@ class TestWavfileWrite(unittest.TestCase):
         self.assertEqual(wfp.num_channels, num_channels)
         self.assertEqual(wfp.num_frames, len(reference))
         self.assertEqual(wfp.duration, len(reference) / sample_rate)
+        if metadata is not None:
+            self.assertDictEqual(metadata, wfp.metadata)
+        else:
+            self.assertIsNone(wfp.metadata)
+
+
+class TestWavfileWrite(WavfileWriteTestRunner):
 
     def test_read_write_audio_short_int_1(self):
         audio_data_in = [

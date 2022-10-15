@@ -61,6 +61,8 @@ class WavRead(base.Wavfile):
                 if fmt_chunk is None:
                     raise exception.ReadError('DATA chunk read before FMT chunk')
                 self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
+            elif chnk.chunk_id == chunk.ChunkID.LIST_CHUNK:
+                self._list_chunk = chunk.ListChunk(self.fp)
 
             # skip superfluous bytes
             if chnk.chunk_id != chunk.ChunkID.RIFF_CHUNK:
