@@ -46,6 +46,7 @@ class TestWavfileWrite(unittest.TestCase):
         self.assertEqual(wfp.bits_per_sample, bits_per_sample)
         self.assertEqual(wfp.num_channels, num_channels)
         self.assertEqual(wfp.num_frames, len(reference))
+        self.assertEqual(wfp.duration, len(reference) / sample_rate)
 
     def test_read_write_audio_short_int_1(self):
         audio_data_in = [
@@ -288,6 +289,8 @@ class TestWavfileWrite(unittest.TestCase):
             self.assertEqual(wfp.num_channels, 0)
             self.assertEqual(wfp.sample_rate, 44100)
             self.assertEqual(wfp.num_frames, 0)
+            self.assertEqual(wfp.duration, 0)
+            self.assertEqual(wfp.hms, '0:00:00.00')
 
     def test_wav_data_aligned(self):
         audio_data_in = [

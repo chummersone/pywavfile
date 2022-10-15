@@ -137,6 +137,18 @@ class Wavfile(ABC):
             return 0
 
     @property
+    def duration(self) -> float:
+        """Duration of the file in seconds"""
+        return self.num_frames / self.sample_rate
+
+    @property
+    def hms(self) -> str:
+        """Duration of the file formatted as hours:minutes:seconds"""
+        m, s = divmod(self.duration, 60)
+        h, m = divmod(int(m), 60)
+        return '{}:{:02d}:{:05.2f}'.format(h, m, s)
+
+    @property
     def _block_align(self) -> int:
         """Number of audio frames in the file"""
         return self._data_chunk.fmt_chunk.block_align
