@@ -53,6 +53,14 @@ class TestWavfileRead(unittest.TestCase):
         with wavfile.open(self.filename) as wfp:
             self.assertEqual(wfp.num_frames, 4096)
 
+    def test_file_duration(self):
+        with wavfile.open(self.filename) as wfp:
+            self.assertEqual(wfp.duration, 4096 / 44100)
+
+    def test_file_hms(self):
+        with wavfile.open(self.filename) as wfp:
+            self.assertEqual(wfp.hms, '0:00:00.09')
+
     def test_file_read_num_frames(self):
         with wavfile.open(self.filename) as wfp:
             wfp: wavfile.wavread.WavRead
