@@ -60,6 +60,14 @@ class WavWrite(base.Wavfile):
         return any([any([isinstance(y, float) for y in x]) for x in data]) or \
             base.Wavfile._buffer_max_abs(data) <= 1.0
 
+    def __check_metadata(self):
+        """
+        Prevent new audio data from overwriting the metadata chunk.
+        """
+        if self._list_chunk is not None:
+            if self._list_chunk.start > self._data_chunk.start:
+                raise exception.WriteError('Audio may overwrite metadata chunk')
+
     def write_float(self, audio: List[List[float]]) -> None:
         """
         Write float data to the file. If the file format is `PCM` then the data will be converted to
@@ -67,7 +75,7 @@ class WavWrite(base.Wavfile):
 
         :param audio: Audio frames to write.
         """
-
+        self.__check_metadata()
         if self.format == chunk.WavFormat.PCM:
             # data are floats but we are writing integers
             for n in range(len(audio)):
@@ -83,7 +91,7 @@ class WavWrite(base.Wavfile):
 
         :param audio: Audio frames to write.
         """
-
+        self.__check_metadata()
         if self.format == chunk.WavFormat.IEEE_FLOAT:
             # data are integers but we are writing floats
             for n in range(len(audio)):
@@ -106,16 +114,17 @@ class WavWrite(base.Wavfile):
         else:
             self.write_int(audio)
 
-    def add_metadata(self, **kwargs):
+    def add_metadata(self, **kwargs: Union[str, int]) -> None:
         """
         Add metadata to the wav file. Note that this method can only be called once, and the
         metadata cannot be updated once it is written. The metadata chunk will be written before or
-        after the data chunk, depending on when this method is called.
+        after the data chunk, depending on when this method is called. Note that if the method is
+        called after writing audio data, then it will not be possible to write additional audio
+        data (since this may overwrite the trailing metadata chunk).
 
         See chunk.InfoItem for a list of supported tags.
 
         :param kwargs: The metadata to write, provided as keyword arguments.
-        :return: Dict[str, str]
         """
 
         if self._list_chunk is not None:

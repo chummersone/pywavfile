@@ -155,7 +155,7 @@ class Wavfile(ABC):
         return self._data_chunk.fmt_chunk.block_align
 
     @property
-    def metadata(self) -> Optional[Dict[str, str]]:
+    def metadata(self) -> Optional[Dict[str, Union[str, int]]]:
         """Metadata from the .wav file"""
         if self._list_chunk is not None:
             return self._list_chunk.info

@@ -86,3 +86,13 @@ class TestWavfileWriteMetadata(WavfileWriteTestRunner):
         with wavfile.open(filename, 'w') as wfp:
             wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.exception.WriteError, wfp.add_metadata, invalid='test')
+
+    def test_metadata_write_order(self):
+        filename = test_file_path("tmp.wav")
+        with wavfile.open(filename, 'w') as wfp:
+            wfp: wavfile.wavwrite.WavWrite
+            wfp.write([[0]])
+            wfp.add_metadata(
+                comment='Write metadata after audio',
+            )
+            self.assertRaises(wavfile.exception.WriteError, wfp.write, [[0]])
