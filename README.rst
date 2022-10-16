@@ -19,7 +19,10 @@
 .. |sample_rate| replace:: ``sample_rate``
 .. |bits_per_sample| replace:: ``bits_per_sample``
 .. |num_frames| replace:: ``num_frames``
+.. |duration| replace:: ``duration``
+.. |hms| replace:: ``hms``
 .. |format| replace:: ``format``
+.. |metadata| replace:: ``metadata``
 .. |read| replace:: ``read()``
 .. |readN| replace:: ``read([N])``
 .. |read_int| replace:: ``read_int()``
@@ -37,6 +40,7 @@
 .. |wavfile.read| replace:: ``wavfile.read``
 .. |WavWrite| replace:: ``wavfile.wavwrite.WavWrite``
 .. |write| replace:: ``write(audio)``
+.. |add_metadata| replace:: ``add_metadata(**kwargs)``
 .. |wavfile.write| replace:: ``wavfile.write``
 
 .. github-only-above-here
@@ -78,8 +82,17 @@ file. This returns a |WavRead| object with the following properties:
   block of samples, one for each channel, corresponding to a single
   sampling point.
 
+|duration|
+  The duration of the audio file in seconds.
+
+|hms|
+  The duration of the audio file formatted as hh:mm:ss.tt.
+
 |format|
   The file audio sample format.
+
+|metadata|
+  A dictionary containing metadata encoded in the file.
 
 The object also has the following methods:
 
@@ -156,6 +169,9 @@ are provided for writing audio data:
   number of frames and ``C`` is the number of audio channels. The data
   may be ``int`` or ``float``. The data may be converted if they do
   match the format of the destination file.
+
+|add_metadata|
+  Add metadata to the .wav file.
 
 Alternatively, the |wavfile.write| shortcut function is provided::
 

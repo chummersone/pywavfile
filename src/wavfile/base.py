@@ -144,7 +144,7 @@ class Wavfile(ABC):
 
     @property
     def hms(self) -> str:
-        """Duration of the file formatted as hours:minutes:seconds"""
+        """Duration of the file formatted as hh:mm:ss.tt"""
         m, s = divmod(self.duration, 60)
         h, m = divmod(int(m), 60)
         return '{}:{:02d}:{:05.2f}'.format(h, m, s)

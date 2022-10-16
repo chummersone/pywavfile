@@ -79,7 +79,10 @@ rst_prolog = """
 .. |sample_rate| replace:: :attr:`sample_rate <wavfile.base.Wavfile.sample_rate>`
 .. |bits_per_sample| replace:: :attr:`bits_per_sample <wavfile.base.Wavfile.bits_per_sample>`
 .. |num_frames| replace:: :attr:`num_frames <wavfile.base.Wavfile.num_frames>`
+.. |duration| replace:: :attr:`duration <wavfile.base.Wavfile.duration>`
+.. |hms| replace:: :attr:`hms <wavfile.base.Wavfile.hms>`
 .. |format| replace:: :attr:`format <wavfile.base.Wavfile.format>`
+.. |metadata| replace:: :attr:`metadata <wavfile.base.Wavfile.metadata>`
 .. |read| replace:: :meth:`read() <wavfile.wavread.WavRead.read>`
 .. |readN| replace:: :meth:`read([N]) <wavfile.wavread.WavRead.read>`
 .. |read_int| replace:: :meth:`read_int() <wavfile.wavread.WavRead.read_int>`
@@ -97,6 +100,7 @@ rst_prolog = """
 .. |wavfile.read| replace:: :meth:`wavfile.read`
 .. |WavWrite| replace:: :class:`wavfile.wavwrite.WavWrite`
 .. |write| replace:: :meth:`write(audio) <wavfile.wavwrite.WavWrite.write>`
+.. |add_metadata| replace:: :meth:`add_metadata(**kwargs) <wavfile.wavwrite.WavWrite.add_metadata>`
 .. |wavfile.write| replace:: :meth:`wavfile.write`
 """
 
