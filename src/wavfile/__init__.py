@@ -7,7 +7,7 @@ The library currently supports PCM (integer) and IEEE float formats, and support
 precision, including: 16-, 24-, 32-, and 64-bit samples.
 """
 import os.path
-from typing import IO, List, Optional, Tuple, Union
+from typing import Dict, IO, List, Optional, Tuple, Union
 
 import wavfile.wavread
 from . import chunk
@@ -80,20 +80,27 @@ def read(path: Union[str, os.PathLike], fmt: str = 'int') -> \
 
 def write(path: Union[str, os.PathLike], audio_data: List[List[Union[int, float]]],
           sample_rate: int = 44100, bits_per_sample: int = 16,
-          fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
+          fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+          metadata: Optional[Dict[str, Union[int, str]]] = None) -> None:
     """
     Shortcut function to write a wave file. The data should be contained in a list of lists with
     size (N,C), where C is the number of audio channels. The data may be int or float. The data may
     be converted if they do match the format of the destination file.
+
+    Metadata can be added to the wav file by providing an appropriate dict. See chunk.InfoItem for a
+    list of valid metadata fields.
 
     :param path: Path to the newly created wave file.
     :param audio_data: The data to be written to the file.
     :param sample_rate: The sample rate for the new file.
     :param bits_per_sample: The number of bits to encode each audio sample (write only).
     :param fmt: The audio format (chunk.WavFormat.PCM, chunk.WavFormat.IEEE_FLOAT)
+    :param metadata: The metadata to write, provided as a dictionary.
     """
     with open(path, 'w', sample_rate=sample_rate, bits_per_sample=bits_per_sample, fmt=fmt) as wf:
         wf: wavfile.wavwrite.WavWrite
+        if metadata is not None:
+            wf.add_metadata(**metadata)
         wf.write(audio_data)
 
 

@@ -189,7 +189,8 @@ Alternatively, the |wavfile.write| shortcut function is provided::
                  audio,
                  sample_rate=44100,
                  bits_per_sample=16,
-                 fmt=wavfile.chunk.WavFormat.PCM)
+                 fmt=wavfile.chunk.WavFormat.PCM,
+                 metadata=None)
 
 where ``audio`` is the audio data to write to the file.
 

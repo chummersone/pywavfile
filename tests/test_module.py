@@ -45,3 +45,29 @@ class TestModule(TestCaseWithFile):
         for f in filenames:
             self.assertIsFile(test_file_path(f))
             os.remove(test_file_path(f))
+
+    def test_metadata(self):
+        metadata = {
+            'artist': 'Testy McTestface',
+            'track': 'test_metadata',
+            'album': 'test suite',
+            'date': 'today',
+            'track_number': 99,
+            'comment': 'Test',
+            'genre': 'testing'
+        }
+        filename = 'tmp.wav'
+        wavfile.write(
+            filename,
+            [
+                [0, 0, 0, 0],
+                [1, 1, 1, 1],
+                [-2, -2, -2, -2],
+                [3, 3, 3, 3],
+            ],
+            48000,
+            24,
+            metadata=metadata
+        )
+        with wavfile.open(filename) as wf:
+            self.assertDictEqual(metadata, wf.metadata)
