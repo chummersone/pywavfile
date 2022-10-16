@@ -542,7 +542,7 @@ class WavDataChunk(Chunk):
 class ListChunk(Chunk):
     """List chunk read and write"""
 
-    info: Optional[Dict[str, str]]
+    info: Optional[Dict[str, Union[int, str]]]
 
     def __init__(self, fp: IO) -> None:
         """
@@ -568,11 +568,10 @@ class ListChunk(Chunk):
                     if key in [e.value for e in InfoItem]:
                         field: str = InfoItem(key).name
                         data = self.read(size).decode('ascii').rstrip('\x00')
-                        if field == 'track_number':
-                            try:
-                                data = int(data)
-                            except ValueError:
-                                pass
+                        try:
+                            data = int(data)
+                        except ValueError:
+                            pass
                         self.info[field] = data
                         self.fp.seek(pad, 1)
                     else:
@@ -582,7 +581,6 @@ class ListChunk(Chunk):
         """
         Write the INFO to the LIST chunk.
         """
-
         if self.info is not None:
             self.fp.seek(self.content_start)
             self.write(ListType.INFO.value)
@@ -591,11 +589,13 @@ class ListChunk(Chunk):
                 if key not in InfoItem.__members__:
                     raise exception.WriteError('Unknown metadata field. Valid fields are: ' +
                                                ', '.join([e.name for e in InfoItem]))
-                if key == 'track_number':
-                    val = str(val)
-                data = val.encode('ascii')
-                size = len(data)
                 self.write(InfoItem[key].value)
+                # convert to bytes
+                data = dict([
+                    (int, lambda x: str(x).encode('ascii')),
+                    (str, lambda x: x.encode('ascii')),
+                ]).get(type(val))(val)
+                size = len(data)
                 self.write_int(size, 4)
                 self.write(data)
                 # align next item
