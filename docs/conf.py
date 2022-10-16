@@ -100,6 +100,8 @@ rst_prolog = """
 .. |wavfile.read| replace:: :meth:`wavfile.read`
 .. |WavWrite| replace:: :class:`wavfile.wavwrite.WavWrite`
 .. |write| replace:: :meth:`write(audio) <wavfile.wavwrite.WavWrite.write>`
+.. |write_int| replace:: :meth:`write_int(audio) <wavfile.wavwrite.WavWrite.write_int>`
+.. |write_float| replace:: :meth:`write_float(audio) <wavfile.wavwrite.WavWrite.write_float>`
 .. |add_metadata| replace:: :meth:`add_metadata(**kwargs) <wavfile.wavwrite.WavWrite.add_metadata>`
 .. |wavfile.write| replace:: :meth:`wavfile.write`
 """

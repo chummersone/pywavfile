@@ -40,6 +40,8 @@
 .. |wavfile.read| replace:: ``wavfile.read``
 .. |WavWrite| replace:: ``wavfile.wavwrite.WavWrite``
 .. |write| replace:: ``write(audio)``
+.. |write_int| replace:: ``write_int(audio)``
+.. |write_float| replace:: ``write_float(audio)``
 .. |add_metadata| replace:: ``add_metadata(**kwargs)``
 .. |wavfile.write| replace:: ``wavfile.write``
 
@@ -169,6 +171,14 @@ are provided for writing audio data:
   number of frames and ``C`` is the number of audio channels. The data
   may be ``int`` or ``float``. The data may be converted if they do
   match the format of the destination file.
+
+|write_int|
+  Write frames of integer audio data to the audio file. The data may be
+  converted if they do match the format of the destination file.
+
+|write_float|
+  Write frames of float audio data to the audio file. The data may be
+  converted if they do match the format of the destination file.
 
 |add_metadata|
   Add metadata to the .wav file.
