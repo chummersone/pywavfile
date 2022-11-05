@@ -71,3 +71,11 @@ class TestModule(TestCaseWithFile):
         )
         with wavfile.open(filename) as wf:
             self.assertDictEqual(metadata, wf.metadata)
+
+    def test_repr(self):
+        with wavfile.open(test_file_path('osc_tri.wav'), 'r') as wfp:
+            self.assertEqual(repr(wfp), f'WavRead("{test_file_path("osc_tri.wav")}")')
+        with wavfile.open(test_file_path('tmp.wav'), 'w') as wfp:
+            self.assertEqual(repr(wfp), f'WavWrite("{test_file_path("tmp.wav")}", ' +
+                             'sample_rate=44100, num_channels=0, bits_per_sample=16, ' +
+                             'fmt=WavFormat.PCM)')

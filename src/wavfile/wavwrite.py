@@ -50,6 +50,14 @@ class WavWrite(base.Wavfile):
         # go to data chunk content start ready to write samples
         self.fp.seek(self._data_chunk.content_start)
 
+    def __repr__(self) -> str:
+        """
+        Return the object representation in string format.
+        """
+        return f'{self.__class__.__name__}("{self.fp.name}", sample_rate={self.sample_rate}, ' + \
+               f'num_channels={self.num_channels}, bits_per_sample={self.bits_per_sample}, ' + \
+               f'fmt={self.format})'
+
     @staticmethod
     def _data_are_floats(data: List[List[Union[int, float]]]) -> bool:
         """

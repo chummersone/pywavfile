@@ -36,6 +36,12 @@ class WavRead(base.Wavfile):
 
         self.fp.seek(self._data_chunk.content_start)
 
+    def __repr__(self) -> str:
+        """
+        Return the object representation in string format.
+        """
+        return f'{self.__class__.__name__}("{self.fp.name}")'
+
     def _init_file(self) -> None:
         """
         Read the file and initialise the object properties.
