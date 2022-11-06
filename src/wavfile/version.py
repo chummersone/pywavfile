@@ -4,4 +4,4 @@
 The [semantic] version of the package.
 """
 
-__VERSION__ = "4.4.0"
+__VERSION__ = "4.5.0"
