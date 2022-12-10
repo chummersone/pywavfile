@@ -7,6 +7,7 @@ Chunk-based helper classes for working with RIFF files.
 import struct
 import sys
 from enum import Enum
+from types import DynamicClassAttribute
 from typing import IO, List, Optional, Union, Dict
 try:
     from typing import Literal
@@ -16,12 +17,30 @@ except ImportError:
 from . import exception
 
 
-class RiffFormat(Enum):
+class BytesEnum(Enum):
+    """Enum class with bytes values"""
+
+    @DynamicClassAttribute
+    def value(self) -> bytes:
+        """The value of the Enum member."""
+        return self._value_
+
+
+class IntEnum(Enum):
+    """Enum class with bytes values"""
+
+    @DynamicClassAttribute
+    def value(self) -> int:
+        """The value of the Enum member."""
+        return self._value_
+
+
+class RiffFormat(BytesEnum):
     """RIFF file format"""
     WAVE: 'RiffFormat' = b'WAVE'
 
 
-class ChunkID(Enum):
+class ChunkID(BytesEnum):
     """RIFF chunk identifiers"""
     RIFF_CHUNK: 'ChunkID' = b'RIFF'
     FMT_CHUNK: 'ChunkID' = b'fmt '
@@ -30,18 +49,18 @@ class ChunkID(Enum):
     UNKNOWN_CHUNK: 'ChunkID' = b'    '
 
 
-class WavFormat(Enum):
+class WavFormat(IntEnum):
     """Wav audio data format"""
     PCM: 'WavFormat' = 0x0001
     IEEE_FLOAT: 'WavFormat' = 0x0003
 
 
-class ListType(Enum):
+class ListType(BytesEnum):
     """LIST chunk list types"""
     INFO: 'ListType' = b'INFO'
 
 
-class InfoItem(Enum):
+class InfoItem(BytesEnum):
     """Items of the INFO chunk"""
     track: 'InfoItem' = b'INAM'
     album: 'InfoItem' = b'IPRD'
@@ -64,6 +83,7 @@ class Chunk:
     align: int = 2
     offset: int = 8
     _min_size: int = 0
+    word_size: int = 4
 
     def __init__(self, fp: IO, bigendian: bool = False) -> None:
         """
@@ -81,10 +101,10 @@ class Chunk:
 
         if 'r' in self.fp.mode:
             try:
-                self.chunk_id = ChunkID(self.read(4))
+                self.chunk_id = ChunkID(self.read(self.word_size))
             except ValueError:
                 self.chunk_id = ChunkID.UNKNOWN_CHUNK
-            self.size = self.read_int(4, signed=True)
+            self.size = self.read_int(self.word_size, signed=True)
         else:
             self.write_header()
 
@@ -153,7 +173,7 @@ class Chunk:
         """Write the chunk header to the file, esp. the updated chunk size."""
         self.fp.seek(self.start)
         self.fp.write(self.chunk_id.value)
-        self.fp.write(self.int_to_bytes(self.size, 4, signed=False))
+        self.fp.write(self.int_to_bytes(self.size, self.word_size, signed=False))
 
     def bytes_to_int(self, data: bytes, signed: bool = True) -> int:
         """
@@ -281,7 +301,7 @@ class RiffChunk(Chunk):
         if 'r' in self.fp.mode:
             if self.chunk_id != ChunkID.RIFF_CHUNK:
                 raise exception.ReadError('Chunk is not a RIFF chunk')
-            self.format = RiffFormat(self.read(4))
+            self.format = RiffFormat(self.read(self.word_size))
         else:
             self.write(RiffFormat.WAVE.value)
 
@@ -557,13 +577,13 @@ class ListChunk(Chunk):
         if 'r' in self.fp.mode:
             if self.chunk_id != ChunkID.LIST_CHUNK:
                 raise exception.ReadError('Chunk is not a LIST chunk')
-            subchnk = self.read(4)
+            subchnk = self.read(self.word_size)
             # read the INFO content of the LIST
             if subchnk == ListType.INFO.value:
                 self.info = {}
                 while self.fp.tell() < self.content_start + self.size:
-                    key = self.read(4)
-                    size = self.read_int(4)
+                    key = self.read(self.word_size)
+                    size = self.read_int(self.word_size)
                     pad = size % self.align
                     if key in [e.value for e in InfoItem]:
                         field: str = InfoItem(key).name
@@ -596,7 +616,7 @@ class ListChunk(Chunk):
                     (str, lambda x: x.encode('ascii')),
                 ]).get(type(val))(val)
                 size = len(data)
-                self.write_int(size, 4)
+                self.write_int(size, self.word_size)
                 self.write(data)
                 # align next item
                 pad = self.fp.tell() % self.align
