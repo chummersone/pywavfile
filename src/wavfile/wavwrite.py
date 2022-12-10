@@ -102,6 +102,7 @@ class WavWrite(base.Wavfile):
         self.__check_metadata()
         if self.format == chunk.WavFormat.IEEE_FLOAT:
             # data are integers but we are writing floats
+            audio: List[List[Union[int, float]]]
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
                     audio[n][m] = self._convert_int_to_float(audio[n][m])

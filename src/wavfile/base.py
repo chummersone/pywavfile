@@ -194,7 +194,7 @@ class Wavfile(ABC):
         total_size = \
             self._data_chunk.size + chunk.Chunk.offset + \
             self._data_chunk.fmt_chunk.size + chunk.Chunk.offset + \
-            4  # riff chunk contains four bytes indicating the format
+            chunk.Chunk.word_size  # riff chunk contains four bytes indicating the format
         self._riff_chunk.size = total_size
         self._data_chunk.close()
         self._riff_chunk.close()
