@@ -29,3 +29,22 @@ class TestExceptions(unittest.TestCase):
         filename = test_file_path("osc_tri_wrong_chunk_order.wav")
         with open(filename, 'rb') as fp:
             self.assertRaises(wavfile.exception.ReadError, wavfile.open, fp)
+
+    def test_riff_wrong_file_type(self):
+        self.assertRaises(wavfile.exception.ReadError,
+                          wavfile.chunk.RiffChunk, open(__file__, 'rb'))
+
+    def test_fmt_wrong_type(self):
+        self.assertRaises(wavfile.exception.ReadError,
+                          wavfile.chunk.WavFmtChunk, open(__file__, 'rb'))
+
+    def test_data_wrong_type(self):
+        wav = wavfile.wavread.WavRead(open(test_file_path("osc_tri.wav"), 'rb'))
+        self.assertRaises(wavfile.exception.ReadError,
+                          wavfile.chunk.WavDataChunk,
+                          open(__file__, 'rb'),
+                          wav._data_chunk.fmt_chunk)
+
+    def test_list_wrong_type(self):
+        self.assertRaises(wavfile.exception.ReadError,
+                          wavfile.chunk.ListChunk, open(__file__, 'rb'))
