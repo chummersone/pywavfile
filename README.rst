@@ -2,7 +2,7 @@
 (latest by date)| |PyPI| |PyPI - Python Version|
 
 .. |GitHub| image:: https://img.shields.io/github/license/chummersone/pywavfile
-.. |GitHub Workflow Status (event)| image:: https://img.shields.io/github/workflow/status/chummersone/pywavfile/wavfile%20CI?event=push&logo=github&logoColor=white
+.. |GitHub Workflow Status (event)| image:: https://img.shields.io/github/actions/workflow/status/chummersone/pywavfile/python-package.yml?branch=main&event=push&logo=github&logoColor=white
 .. |rtd| image:: https://img.shields.io/readthedocs/pywavfile/latest?logo=readthedocs&logoColor=white
    :alt: Read the Docs (version)
    :target: https://pywavfile.readthedocs.io
