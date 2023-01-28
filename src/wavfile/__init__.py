@@ -9,7 +9,6 @@ precision, including: 16-, 24-, 32-, and 64-bit samples.
 import os.path
 from typing import Dict, IO, List, Optional, Tuple, Union
 
-import wavfile.wavread
 from . import chunk
 from . import wavread
 from . import wavwrite
@@ -61,7 +60,7 @@ def read(path: Union[str, os.PathLike], fmt: str = 'int') -> \
     :return: The audio data, the sample rate, and the bit depth.
     """
     with open(path, 'r') as wf:
-        wf: wavfile.wavread.WavRead
+        wf: wavread.WavRead
         fs = wf.sample_rate
         bits_per_sample = wf.bits_per_sample
         fmt_methods = {
@@ -98,7 +97,7 @@ def write(path: Union[str, os.PathLike], audio_data: List[List[Union[int, float]
     :param metadata: The metadata to write, provided as a dictionary.
     """
     with open(path, 'w', sample_rate=sample_rate, bits_per_sample=bits_per_sample, fmt=fmt) as wf:
-        wf: wavfile.wavwrite.WavWrite
+        wf: wavwrite.WavWrite
         if metadata is not None:
             wf.add_metadata(**metadata)
         wf.write(audio_data)
@@ -112,7 +111,7 @@ def split(path: Union[str, os.PathLike]) -> None:
     """
 
     with open(path, 'r') as wfp:
-        wfp: wavfile.wavread.WavRead
+        wfp: wavread.WavRead
         num_channels = wfp.num_channels
 
         # filenames for new files
