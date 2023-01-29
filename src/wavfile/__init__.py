@@ -12,7 +12,7 @@ from typing import Dict, IO, List, Optional, Tuple, Union
 from . import chunk
 from . import wavread
 from . import wavwrite
-from .exception import Error, WriteError
+from .exception import Error, ReadError, WriteError
 from .version import __VERSION__
 
 
@@ -141,3 +141,63 @@ def split(path: Union[str, os.PathLike]) -> None:
         # close the output files
         for i in range(num_channels):
             outs[i].close()
+
+
+def join(filename: Union[str, os.PathLike], *paths: Union[str, os.PathLike]) -> None:
+    """
+    Join several wave files in to a single multichannel wave file.
+
+    The resulting wave file's duration will be equal to the longest wave file, with other shorter
+    channels being appended with zeros. The order of the channels will match the order of the
+    specified files.
+
+    :param filename: Name of the output file.
+    :param paths: Paths to the wave files.
+    """
+    # determine file properties
+    sample_rate = None
+    num_frames = []
+    bits_per_sample = 0
+    num_channels = 0
+    for file in paths:
+        with open(file, 'r') as fp:
+            # check matching sample rates
+            if sample_rate is None:
+                sample_rate = fp.sample_rate
+            else:
+                if fp.sample_rate != sample_rate:
+                    raise ReadError('Sample rates of input files do not match')
+            num_frames.append(fp.num_frames)
+            bits_per_sample = max(bits_per_sample, fp.bits_per_sample)
+            num_channels += fp.num_channels
+
+    # join files
+    with open(filename, 'w', bits_per_sample=bits_per_sample, sample_rate=sample_rate,
+              num_channels=num_channels) as wfp:
+        wfp: wavwrite.WavWrite
+
+        # open files
+        file_pointers = []
+        for file in paths:
+            file_pointers.append(open(file, 'r'))
+
+        # write each frame
+        for frame_num in range(max(num_frames)):
+            new_frame: List[float] = [0.0] * num_channels
+            channel = 0
+            for file_index, rfp in enumerate(file_pointers):
+                rfp: wavread.WavRead
+                # get samples if there are any
+                if frame_num < num_frames[file_index]:
+                    frame = rfp.read_float(1)[0]
+                    for ch in range(rfp.num_channels):
+                        new_frame[channel] = frame[ch]
+                        channel += 1
+                else:
+                    # keep zeros
+                    channel += rfp.num_channels
+            wfp.write_float([new_frame])
+
+        # close files
+        for rfp in file_pointers:
+            rfp.close()

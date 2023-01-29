@@ -79,3 +79,22 @@ class TestModule(TestCaseWithFile):
             self.assertEqual(repr(wfp), f'WavWrite("{test_file_path("tmp.wav")}", ' +
                              'sample_rate=44100, num_channels=0, bits_per_sample=16, ' +
                              'fmt=WavFormat.PCM)')
+
+    def test_join(self):
+        files = (
+            test_file_path('test-file-1.wav'),
+            test_file_path('osc_tri.wav')
+        )
+        filename = 'join-tmp.wav'
+        wavfile.join(test_file_path(filename), *files)
+        self.assertIsFile(test_file_path(filename))
+        with wavfile.open(test_file_path(filename), 'r') as wfp:
+            self.assertEqual(wfp.num_channels, 3)
+
+    def test_join_mismatch_fs(self):
+        files = (
+            test_file_path('test-file-2.wav'),
+            test_file_path('osc_tri.wav')
+        )
+        filename = 'join-tmp.wav'
+        self.assertRaises(wavfile.exception.ReadError, wavfile.join, filename, *files)
