@@ -29,7 +29,7 @@ class WavWrite(base.Wavfile):
         :param sample_rate: The sample rate for the new file.
         :param num_channels: The number of audio channels for the new file.
         :param bits_per_sample: The number of bits to encode each audio sample.
-        :param fmt: The audio format (chunk.WavFormat.PCM, chunk.WavFormat.IEEE_FLOAT)
+        :param fmt: The audio format (:class:`wavfile.chunk.WavFormat.PCM`, :class:`wavfile.chunk.WavFormat.IEEE_FLOAT`)
         """
         base.Wavfile.__init__(self)
 
@@ -111,10 +111,10 @@ class WavWrite(base.Wavfile):
 
     def write(self, audio: List[List[Union[int, float]]]) -> None:
         """
-        Write audio data to the file. The data should be a list of lists with dimensions (N,C),
-        where N is the number of frames and C is the number of audio channels. The data may be int
-        or float; the method will attempt to determine the format of the data, and choose the
-        appropriate scaling and conversion when writing the file.
+        Write audio data to the file. The data should be a list of lists with dimensions `(N,C)`,
+        where `N` is the number of frames and `C` is the number of audio channels. The data may be
+        ``int`` or ``float``; the method will attempt to determine the format of the data, and
+        choose the appropriate scaling and conversion when writing the file.
 
         :param audio: Audio frames to write.
         """
@@ -131,7 +131,7 @@ class WavWrite(base.Wavfile):
         called after writing audio data, then it will not be possible to write additional audio
         data (since this may overwrite the trailing metadata chunk).
 
-        See chunk.InfoItem for a list of supported tags.
+        See :class:`wavfile.chunk.InfoItem` for a list of supported tags.
 
         :param kwargs: The metadata to write, provided as keyword arguments.
         """
