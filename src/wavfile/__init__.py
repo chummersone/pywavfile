@@ -30,8 +30,8 @@ def open(f: Union[str, os.PathLike, IO], mode: Optional[str] = None, sample_rate
     :param sample_rate: The sample rate for the new file (write only).
     :param num_channels: The number of audio channels for the new file (write only).
     :param bits_per_sample: The number of bits to encode each audio sample (write only).
-    :param fmt: The audio format (write only) (chunk.WavFormat.PCM, chunk.WavFormat.IEEE_FLOAT)
-    :return: Returns a wavfile.wavread.WavRead object or wavfile.wavwrite.WavWrite object.
+    :param fmt: The audio format (write only) (:class:`chunk.WavFormat.PCM`, :class:`chunk.WavFormat.IEEE_FLOAT`)
+    :return: Returns a :class:`wavread.WavRead` object or :class:`wavwrite.WavWrite` object.
     """
     if mode is None:
         if hasattr(f, 'mode'):
@@ -93,7 +93,7 @@ def write(path: Union[str, os.PathLike], audio_data: List[List[Union[int, float]
     :param audio_data: The data to be written to the file.
     :param sample_rate: The sample rate for the new file.
     :param bits_per_sample: The number of bits to encode each audio sample (write only).
-    :param fmt: The audio format (chunk.WavFormat.PCM, chunk.WavFormat.IEEE_FLOAT)
+    :param fmt: The audio format (:class:`chunk.WavFormat.PCM`, :class:`chunk.WavFormat.IEEE_FLOAT`)
     :param metadata: The metadata to write, provided as a dictionary.
     """
     with open(path, 'w', sample_rate=sample_rate, bits_per_sample=bits_per_sample, fmt=fmt) as wf:
