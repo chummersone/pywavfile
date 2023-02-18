@@ -1,4 +1,4 @@
-|GitHub| |GitHub Workflow Status (event)| |rtd| |Coveralls| |GitHub release
+|GitHub| |GitHub Workflow Status (event)| |rtd| |codecov| |GitHub release
 (latest by date)| |PyPI| |PyPI - Python Version|
 
 .. |GitHub| image:: https://img.shields.io/github/license/chummersone/pywavfile
@@ -6,8 +6,8 @@
 .. |rtd| image:: https://img.shields.io/readthedocs/pywavfile/latest?logo=readthedocs&logoColor=white
    :alt: Read the Docs (version)
    :target: https://pywavfile.readthedocs.io
-.. |Coveralls| image:: https://img.shields.io/coveralls/github/chummersone/pywavfile?logo=coveralls&logoColor=white
-   :target: https://coveralls.io/github/chummersone/pywavfile
+.. |codecov| image:: https://img.shields.io/codecov/c/github/chummersone/pywavfile?logo=codecov&logoColor=white
+   :target: https://codecov.io/github/chummersone/pywavfile
 .. |GitHub release (latest by date)| image:: https://img.shields.io/github/v/release/chummersone/pywavfile?logo=github&logoColor=white
 .. |PyPI| image:: https://img.shields.io/pypi/v/wavfile?logo=pypi&logoColor=white
    :target: https://pypi.org/project/wavfile/
