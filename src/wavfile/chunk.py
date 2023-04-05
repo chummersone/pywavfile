@@ -108,6 +108,9 @@ class Chunk:
         else:
             self.write_header()
 
+    def __del__(self) -> None:
+        self.close()
+
     @property
     def endianness(self) -> Literal['big', 'little']:
         """The endianness in text form."""
@@ -163,10 +166,6 @@ class Chunk:
         real_size = data_size - (self.size - (self.fp.tell() - self.content_start))
         if update_size:
             self.size += max(real_size, 0)
-        if 'w' in self.fp.mode and not self.fp.closed:
-            pos = self.fp.tell()
-            self.write_header()
-            self.fp.seek(pos)
         self.fp.write(data)
 
     def write_header(self) -> None:
@@ -527,6 +526,10 @@ class WavDataChunk(Chunk):
             for m in range(len(audio[n])):
                 self.write_sample(audio[n][m])
 
+        pos = self.fp.tell()
+        self.write_header()
+        self.fp.seek(pos)
+
     def seek(self, frame_number: int, whence: int = 0) -> 'WavDataChunk':
         """
         Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
@@ -622,3 +625,6 @@ class ListChunk(Chunk):
                 pad = self.fp.tell() % self.align
                 if pad > 0:
                     self.write(bytearray(pad), update_size=False)
+            pos = self.fp.tell()
+            self.write_header()
+            self.fp.seek(pos)

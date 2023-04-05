@@ -187,16 +187,23 @@ class Wavfile(ABC):
         """Get the current frame number."""
         return self._data_chunk.tell()
 
+    def _get_total_size(self) -> int:
+        """Get the total size of the file"""
+        total_size = self._data_chunk.size + self._data_chunk.pad + chunk.Chunk.offset + \
+            self._data_chunk.fmt_chunk.size + self._data_chunk.fmt_chunk.pad + chunk.Chunk.offset + \
+            chunk.Chunk.word_size  # riff chunk contains four bytes indicating the format
+        if self._list_chunk is not None:
+            total_size += self._list_chunk.size + self._list_chunk.pad + chunk.Chunk.offset
+        return total_size
+
     def close(self) -> None:
         """
         Close the wav file.
         """
-        total_size = \
-            self._data_chunk.size + chunk.Chunk.offset + \
-            self._data_chunk.fmt_chunk.size + chunk.Chunk.offset + \
-            chunk.Chunk.word_size  # riff chunk contains four bytes indicating the format
-        self._riff_chunk.size = total_size
+        self._riff_chunk.size = self._get_total_size()
         self._data_chunk.close()
+        if self._list_chunk is not None:
+            self._list_chunk.close()
         self._riff_chunk.close()
 
     def __del__(self) -> None:
