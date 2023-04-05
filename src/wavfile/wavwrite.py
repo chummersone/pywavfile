@@ -68,7 +68,7 @@ class WavWrite(base.Wavfile):
         return any([any([isinstance(y, float) for y in x]) for x in data]) or \
             base.Wavfile._buffer_max_abs(data) <= 1.0
 
-    def __check_metadata(self):
+    def __check_metadata(self) -> None:
         """
         Prevent new audio data from overwriting the metadata chunk.
         """
@@ -160,6 +160,9 @@ class WavWrite(base.Wavfile):
             # recreate data chunk
             fmt_chunk = self._data_chunk.fmt_chunk
             self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
+        self._riff_chunk.size = self._get_total_size()
+        self._riff_chunk.write_header()
+        self.fp.seek(self._data_chunk.content_start)
 
     def close(self) -> None:
         """Close the file."""
