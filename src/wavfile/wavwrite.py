@@ -161,7 +161,6 @@ class WavWrite(base.Wavfile):
             fmt_chunk = self._data_chunk.fmt_chunk
             self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
         self._riff_chunk.size = self._get_total_size()
-        self._riff_chunk.write_header()
         self.fp.seek(self._data_chunk.content_start)
 
     def close(self) -> None:

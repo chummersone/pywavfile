@@ -526,10 +526,6 @@ class WavDataChunk(Chunk):
             for m in range(len(audio[n])):
                 self.write_sample(audio[n][m])
 
-        pos = self.fp.tell()
-        self.write_header()
-        self.fp.seek(pos)
-
     def seek(self, frame_number: int, whence: int = 0) -> 'WavDataChunk':
         """
         Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
@@ -625,6 +621,3 @@ class ListChunk(Chunk):
                 pad = self.fp.tell() % self.align
                 if pad > 0:
                     self.write(bytearray(pad), update_size=False)
-            pos = self.fp.tell()
-            self.write_header()
-            self.fp.seek(pos)
