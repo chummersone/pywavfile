@@ -443,12 +443,12 @@ class WavDataChunk(Chunk):
         # do not try to read past the end
         num_frames = min(nframes, self.num_frames - self.tell())
 
-        audio = []
-        for n in range(num_frames):
-            frame = []
-            for m in range(self.fmt_chunk.num_channels):
-                frame.append(self.read_sample())
-            audio.append(frame)
+        audio = [
+            [
+                self.read_sample() for _ in range(self.fmt_chunk.num_channels)
+            ]
+            for _ in range(num_frames)
+        ]
 
         return audio
 

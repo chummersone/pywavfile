@@ -152,9 +152,7 @@ class WavRead(base.Wavfile):
             audio = self._data_chunk.read_frames(num_frames)
         elif self.format == chunk.WavFormat.PCM:
             audio = self.read_int(num_frames)
-            for i in range(0, len(audio)):
-                for j in range(0, len(audio[i])):
-                    audio[i][j] = self._convert_int_to_float(audio[i][j])
+            audio = [[self._convert_int_to_float(sample) for sample in frame] for frame in audio]
 
         return audio
 
