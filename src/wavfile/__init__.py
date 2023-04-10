@@ -25,12 +25,19 @@ def open(f: Union[str, os.PathLike, IO], mode: Optional[str] = None, sample_rate
     If writing and ``num_channels`` is unspecified, it is determined automatically from the first
     block of samples.
 
+    The format code is either ``wavfile.chunk.WavFormat.PCM``,
+    ``wavfile.chunk.WavFormat.IEEE_FLOAT``, or ``wavfile.chunk.WavFormat.EXTENSIBLE``. The
+    extensible code corresponds to a variation of the wave file format intended for audio with: a
+    bit depth of greater than 16 bits, or more than two channels. The file will be updated
+    automatically to use the extensible format as appropriate. If the extensible format is specified
+    explicitly, then the audio data will be PCM encoded.
+
     :param f: Either a path to a wave file or a pointer to an open file.
     :param mode: Open the file for reading ('r', 'rb') or writing ('w', 'wb').
     :param sample_rate: The sample rate for the new file (write only).
     :param num_channels: The number of audio channels for the new file (write only).
     :param bits_per_sample: The number of bits to encode each audio sample (write only).
-    :param fmt: The audio format (write only) (:class:`chunk.WavFormat.PCM`, :class:`chunk.WavFormat.IEEE_FLOAT`)
+    :param fmt: The format code (write only) (:class:`chunk.WavFormat`)
     :return: Returns a :class:`wavread.WavRead` object or :class:`wavwrite.WavWrite` object.
     """
     if mode is None:
@@ -93,7 +100,7 @@ def write(path: Union[str, os.PathLike], audio_data: List[List[Union[int, float]
     :param audio_data: The data to be written to the file.
     :param sample_rate: The sample rate for the new file.
     :param bits_per_sample: The number of bits to encode each audio sample (write only).
-    :param fmt: The audio format (:class:`chunk.WavFormat.PCM`, :class:`chunk.WavFormat.IEEE_FLOAT`)
+    :param fmt: The audio format (:class:`chunk.WavFormat`)
     :param metadata: The metadata to write, provided as a dictionary.
     """
     with open(path, 'w', sample_rate=sample_rate, bits_per_sample=bits_per_sample, fmt=fmt) as wf:

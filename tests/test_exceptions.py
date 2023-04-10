@@ -10,23 +10,23 @@ import wavfile
 import wavfile.chunk
 import wavfile.exception
 
-from test_module import test_file_path
+from test_module import get_file_path
 
 
 class TestExceptions(unittest.TestCase):
 
     def test_empty_file(self):
-        filename = test_file_path("empty.wav")
+        filename = get_file_path("empty.wav")
         self.assertRaises(wavfile.exception.Error, wavfile.open, filename, 'r')
 
     def test_wrong_size(self):
-        filename = test_file_path("osc_tri_wrong_size.wav")
+        filename = get_file_path("osc_tri_wrong_size.wav")
         with wavfile.open(filename, 'r') as wfp:
             wfp: wavfile.wavread.WavRead
             self.assertRaises(IOError, wfp.read)
 
     def test_wrong_chunk_order(self):
-        filename = test_file_path("osc_tri_wrong_chunk_order.wav")
+        filename = get_file_path("osc_tri_wrong_chunk_order.wav")
         with open(filename, 'rb') as fp:
             self.assertRaises(wavfile.exception.ReadError, wavfile.open, fp)
 
@@ -39,7 +39,7 @@ class TestExceptions(unittest.TestCase):
                           wavfile.chunk.WavFmtChunk, open(__file__, 'rb'))
 
     def test_data_wrong_type(self):
-        wav = wavfile.wavread.WavRead(open(test_file_path("osc_tri.wav"), 'rb'))
+        wav = wavfile.wavread.WavRead(open(get_file_path("osc_tri.wav"), 'rb'))
         self.assertRaises(wavfile.exception.ReadError,
                           wavfile.chunk.WavDataChunk,
                           open(__file__, 'rb'),
