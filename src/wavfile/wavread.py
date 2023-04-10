@@ -62,7 +62,19 @@ class WavRead(base.Wavfile):
             if chnk.chunk_id == chunk.ChunkID.RIFF_CHUNK:
                 self._riff_chunk = chunk.RiffChunk(self.fp)
             elif chnk.chunk_id == chunk.ChunkID.FMT_CHUNK:
-                fmt_chunk = chunk.WavFmtChunk(self.fp)
+                # get audio format
+                self.fp.seek(chunk.Chunk.offset, 1)
+                audio_fmt_int = int.from_bytes(
+                    self.fp.read(chunk.WavFmtChunk.audio_fmt_size),
+                    signed=False,
+                    byteorder='little'
+                )
+                audio_fmt = chunk.WavFormat(audio_fmt_int)
+                self.fp.seek(-chunk.Chunk.offset - chunk.WavFmtChunk.audio_fmt_size, 1)
+                if audio_fmt == chunk.WavFormat.EXTENSIBLE:
+                    fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp)
+                else:
+                    fmt_chunk = chunk.WavFmtChunk(self.fp)
             elif chnk.chunk_id == chunk.ChunkID.DATA_CHUNK:
                 if fmt_chunk is None:
                     raise exception.ReadError('DATA chunk read before FMT chunk')
@@ -122,7 +134,7 @@ class WavRead(base.Wavfile):
         :return: The audio samples as a list of lists.
         """
         audio = self._data_chunk.read_frames(num_frames)
-        if self.format == chunk.WavFormat.IEEE_FLOAT:
+        if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
                     audio[n][m] = self._convert_float_to_int(audio[n][m])
@@ -148,9 +160,9 @@ class WavRead(base.Wavfile):
         :return: The audio samples as a list of lists.
         """
         audio: List[List[Union[int, float]]] = []
-        if self.format == chunk.WavFormat.IEEE_FLOAT:
+        if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
             audio = self._data_chunk.read_frames(num_frames)
-        elif self.format == chunk.WavFormat.PCM:
+        elif self.audio_fmt == chunk.WavFormat.PCM:
             audio = self.read_int(num_frames)
             audio = [[self._convert_int_to_float(sample) for sample in frame] for frame in audio]
 

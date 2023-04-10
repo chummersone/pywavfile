@@ -81,6 +81,7 @@ rst_prolog = """
 .. |num_frames| replace:: :attr:`num_frames <wavfile.base.Wavfile.num_frames>`
 .. |duration| replace:: :attr:`duration <wavfile.base.Wavfile.duration>`
 .. |hms| replace:: :attr:`hms <wavfile.base.Wavfile.hms>`
+.. |audio_fmt| replace:: :attr:`audio_fmt <wavfile.base.Wavfile.audio_fmt>`
 .. |format| replace:: :attr:`format <wavfile.base.Wavfile.format>`
 .. |metadata| replace:: :attr:`metadata <wavfile.base.Wavfile.metadata>`
 .. |read| replace:: :meth:`read() <wavfile.wavread.WavRead.read>`

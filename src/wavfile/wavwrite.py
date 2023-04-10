@@ -7,6 +7,7 @@ The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
 import os
+import sys
 from typing import IO, List, Optional, Union
 
 from . import base
@@ -23,23 +24,31 @@ class WavWrite(base.Wavfile):
                  num_channels: Optional[int] = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """
-        Initialise the WavWrite object.
+        Initialise the WavWrite object. The `fmt` argument may be any of the enumerations of
+        `wavfile.chunk.WavFormat`. If `wavfile.chunk.WavFormat.EXTENSIBLE` is specified, then the
+        audio data are PCM-encoded.
 
         :param fp: Either a path to a wave file or a pointer to an open file.
         :param sample_rate: The sample rate for the new file.
         :param num_channels: The number of audio channels for the new file.
         :param bits_per_sample: The number of bits to encode each audio sample.
-        :param fmt: The audio format (:class:`wavfile.chunk.WavFormat.PCM`, :class:`wavfile.chunk.WavFormat.IEEE_FLOAT`)
+        :param fmt: The audio format (:class:`wavfile.chunk.WavFormat`)
         """
         base.Wavfile.__init__(self)
 
         self._is_open = True
         self._init_fp(fp, 'wb')
 
-        # initialise each of the riff chunk
+        # initialise each of the riff chunks
         self._riff_chunk = chunk.RiffChunk(self.fp)
-        fmt_chunk = chunk.WavFmtChunk(self.fp)
-        fmt_chunk.audio_fmt = fmt
+        if bits_per_sample > 16 or (num_channels is not None and num_channels > 2) or \
+                fmt == chunk.WavFormat.EXTENSIBLE:
+            fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp)
+            if fmt != chunk.WavFormat.EXTENSIBLE:
+                fmt_chunk.sub_data_format = fmt
+        else:
+            fmt_chunk = chunk.WavFmtChunk(self.fp)
+            fmt_chunk.audio_fmt = fmt
         self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
         self._data_chunk.fmt_chunk.sample_rate = int(sample_rate)
         if num_channels is not None:
@@ -56,7 +65,7 @@ class WavWrite(base.Wavfile):
         """
         return f'{self.__class__.__name__}("{self.fp.name}", sample_rate={self.sample_rate}, ' + \
                f'num_channels={self.num_channels}, bits_per_sample={self.bits_per_sample}, ' + \
-               f'fmt={self.format})'
+               f'fmt={self.format.__class__.__name__}.{self.format.name})'
 
     @staticmethod
     def _data_are_floats(data: List[List[Union[int, float]]]) -> bool:
@@ -84,7 +93,7 @@ class WavWrite(base.Wavfile):
         :param audio: Audio frames to write.
         """
         self.__check_metadata()
-        if self.format == chunk.WavFormat.PCM:
+        if self.audio_fmt == chunk.WavFormat.PCM:
             # data are floats but we are writing integers
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
@@ -100,7 +109,7 @@ class WavWrite(base.Wavfile):
         :param audio: Audio frames to write.
         """
         self.__check_metadata()
-        if self.format == chunk.WavFormat.IEEE_FLOAT:
+        if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
             # data are integers but we are writing floats
             audio: List[List[Union[int, float]]]
             for n in range(len(audio)):
@@ -173,3 +182,9 @@ class WavWrite(base.Wavfile):
         if self._should_close_file:
             self.fp.close()
         self._should_close_file = False
+        if self.format != chunk.WavFormat.EXTENSIBLE and \
+                self.num_channels > 2:
+            print('More than two audio channels are present, but the file does not use the '
+                  'EXTENSIBLE format. The file may not be readable in some software.',
+                  file=sys.stderr
+                  )

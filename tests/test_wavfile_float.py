@@ -8,14 +8,14 @@ import unittest
 
 import wavfile
 
-from test_module import test_file_path
+from test_module import get_file_path
 
 
 class TestWavfileFloat(unittest.TestCase):
 
     def run_test(self, audio_data_in, read_callback, sample_rate,
                  bits_per_sample, num_channels, reference=None):
-        filename = test_file_path("tmp.wav")
+        filename = get_file_path("tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=sample_rate,
                           bits_per_sample=bits_per_sample,
@@ -160,7 +160,7 @@ class TestWavfileFloat(unittest.TestCase):
             [-0.1],
             [-0.3],
         ]
-        with wavfile.open(test_file_path('tmp.wav'), 'w',
+        with wavfile.open(get_file_path('tmp.wav'), 'w',
                           sample_rate=44100,
                           bits_per_sample=24,
                           fmt=wavfile.chunk.WavFormat.IEEE_FLOAT,

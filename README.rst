@@ -21,6 +21,7 @@
 .. |num_frames| replace:: ``num_frames``
 .. |duration| replace:: ``duration``
 .. |hms| replace:: ``hms``
+.. |audio_fmt| replace:: ``audio_fmt``
 .. |format| replace:: ``format``
 .. |metadata| replace:: ``metadata``
 .. |read| replace:: ``read()``
@@ -90,8 +91,11 @@ file. This returns a |WavRead| object with the following properties:
 |hms|
   The duration of the audio file formatted as hh:mm:ss.tt.
 
+|audio_fmt|
+  The audio sample format.
+
 |format|
-  The file audio sample format.
+  The wave format code.
 
 |metadata|
   A dictionary containing metadata encoded in the file.
@@ -157,13 +161,25 @@ Usage: writing wave files
 
 where ``sample_rate`` is the sampling rate for the new file,
 ``num_channels`` is the number of audio channels, ``bits_per_sample`` is
-the number of bits used to encode each sample, and ``fmt`` is the audio
-sample format. If ``num_channels`` is unspecified it will be determined
+the number of bits used to encode each sample, and ``fmt`` is the wave
+format code. If ``num_channels`` is unspecified it will be determined
 automatically from the first block of samples that are written (see
 below). This returns a |WavWrite| object. The object shares its
-properties with the |WavRead| class. The object also offers the same
-|seek|, |tell|, and |close| methods. In addition, the following methods
-are provided for writing audio data:
+properties with the |WavRead| class.
+
+The format code is either ``wavfile.chunk.WavFormat.PCM``,
+``wavfile.chunk.WavFormat.IEEE_FLOAT``, or
+``wavfile.chunk.WavFormat.EXTENSIBLE``. The extensible code corresponds
+to a variation of the wave file format intended for audio with: a bit
+depth of greater than 16 bits, or more than two channels. The file will
+be updated automatically to use the extensible format as appropriate. If
+the extensible format is specified explicitly, then the audio data will
+be PCM encoded. The |audio_fmt| property always reports the audio sample
+format, whereas the |format| property reports the format code that may
+be any of the three aforementioned values.
+
+The object also offers the same |seek|, |tell|, and |close| methods.
+In addition, the following methods are provided for writing audio data:
 
 |write|
   Write frames of audio data to the audio file. The data should be

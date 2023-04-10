@@ -8,7 +8,7 @@ import unittest
 
 import wavfile
 
-from test_module import test_file_path
+from test_module import get_file_path
 from test_wavfile_write import WavfileWriteTestRunner
 
 
@@ -16,7 +16,7 @@ class TestReadMetadata(unittest.TestCase):
 
     def test_read(self):
 
-        filename = test_file_path('noise_44100_24bit_w_metadata.wav')
+        filename = get_file_path('noise_44100_24bit_w_metadata.wav')
         with wavfile.open(filename, 'r') as wfp:
             self.assertEqual('Joe Bloggs', wfp.metadata['artist'])
             self.assertEqual('Noise', wfp.metadata['track'])
@@ -75,20 +75,20 @@ class TestWavfileWriteMetadata(WavfileWriteTestRunner):
                       len(audio_data_in[0]), metadata=metadata, metadata_mode='post')
 
     def test_metadata_rewrite(self):
-        filename = test_file_path("tmp.wav")
+        filename = get_file_path("tmp.wav")
         with wavfile.open(filename, 'w') as wfp:
             wfp: wavfile.wavwrite.WavWrite
             wfp.add_metadata(comment='test')
             self.assertRaises(wavfile.exception.WriteError, wfp.add_metadata, comment='more')
 
     def test_metadata_write_invalid(self):
-        filename = test_file_path("tmp.wav")
+        filename = get_file_path("tmp.wav")
         with wavfile.open(filename, 'w') as wfp:
             wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.exception.WriteError, wfp.add_metadata, invalid='test')
 
     def test_metadata_write_order(self):
-        filename = test_file_path("tmp.wav")
+        filename = get_file_path("tmp.wav")
         with wavfile.open(filename, 'w') as wfp:
             wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0]])

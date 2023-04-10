@@ -126,8 +126,13 @@ class Wavfile(ABC):
 
     @property
     def format(self) -> chunk.WavFormat:
-        """Audio sample format"""
+        """Wave file format code"""
         return self._data_chunk.fmt_chunk.audio_fmt
+
+    @property
+    def audio_fmt(self) -> chunk.WavFormat:
+        """Audio sample format"""
+        return self._data_chunk.audio_fmt
 
     @property
     def num_frames(self) -> int:
@@ -207,7 +212,8 @@ class Wavfile(ABC):
         self._riff_chunk.close()
 
     def __del__(self) -> None:
-        self.close()
+        if self._should_close_file:
+            self.close()
 
     def __enter__(self) -> 'Wavfile':
         return self
