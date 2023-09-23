@@ -8,6 +8,8 @@ import pathlib
 import sys
 from setuptools import find_packages, setup
 
+import project
+
 with open('src/wavfile/version.py') as f:
     __VERSION__ = ""
     exec(f.read())
@@ -24,25 +26,10 @@ if sys.version_info < (3, 8):
 
 # This call to setup() does all the work
 setup(
-    name="wavfile",
+    **project.information.setup_info,
     version=__VERSION__,
-    description="Read/write wave audio files to/from lists of native Python types.",
     long_description=README,
     long_description_content_type="text/x-rst",
-    url="https://github.com/chummersone/pywavfile",
-    author="Christopher Hummersone",
-    author_email="chummersone@users.noreply.github.com",
-    license="MIT",
-    classifiers=[
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
-        "Programming Language :: Python :: 3.9",
-        "Programming Language :: Python :: 3.10",
-        "Programming Language :: Python :: 3.11",
-    ],
-    python_requires='>=3.7',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
