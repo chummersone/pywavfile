@@ -15,23 +15,25 @@ import sys
 
 import sphinx.ext.apidoc
 
+
+sys.path.insert(0, os.path.abspath(os.path.join('..')))
 sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
 sys.path.insert(0, os.path.abspath(os.path.join('..', 'src', 'wavfile')))
 
+import project as proj
 from wavfile.version import __VERSION__
 
 
 # -- Project information -----------------------------------------------------
 
-project = 'wavfile'
-copyright = '2022, Chris Hummersone'
-author = 'Chris Hummersone'
+project = proj.information.name
+copyright = proj.information.copyright
+author = proj.information.author
 
 # The short X.Y version.
 version = __VERSION__
 # The full version, including alpha/beta/rc tags.
 release = version
-
 
 # -- General configuration ---------------------------------------------------
 
@@ -118,4 +120,4 @@ html_theme = 'sphinx_rtd_theme'
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
-html_static_path = ['_static']
+html_static_path = []
