@@ -31,20 +31,25 @@ class TestExceptions(unittest.TestCase):
             self.assertRaises(wavfile.exception.ReadError, wavfile.open, fp)
 
     def test_riff_wrong_file_type(self):
-        self.assertRaises(wavfile.exception.ReadError,
-                          wavfile.chunk.RiffChunk, open(__file__, 'rb'))
+        with open(__file__, 'rb') as fp:
+            self.assertRaises(wavfile.exception.ReadError,
+                              wavfile.chunk.RiffChunk, fp)
 
     def test_fmt_wrong_type(self):
-        self.assertRaises(wavfile.exception.ReadError,
-                          wavfile.chunk.WavFmtChunk, open(__file__, 'rb'))
+        with open(__file__, 'rb') as fp:
+            self.assertRaises(wavfile.exception.ReadError,
+                              wavfile.chunk.WavFmtChunk, fp)
 
     def test_data_wrong_type(self):
-        wav = wavfile.wavread.WavRead(open(get_file_path("osc_tri.wav"), 'rb'))
-        self.assertRaises(wavfile.exception.ReadError,
-                          wavfile.chunk.WavDataChunk,
-                          open(__file__, 'rb'),
-                          wav._data_chunk.fmt_chunk)
+        with open(get_file_path("osc_tri.wav"), 'rb') as fp1:
+            wav = wavfile.wavread.WavRead(fp1)
+        with open(__file__, 'rb') as fp2:
+            self.assertRaises(wavfile.exception.ReadError,
+                              wavfile.chunk.WavDataChunk,
+                              fp2,
+                              wav._data_chunk.fmt_chunk)
 
     def test_list_wrong_type(self):
-        self.assertRaises(wavfile.exception.ReadError,
-                          wavfile.chunk.ListChunk, open(__file__, 'rb'))
+        with open(__file__, 'rb') as fp:
+            self.assertRaises(wavfile.exception.ReadError,
+                              wavfile.chunk.ListChunk, fp)

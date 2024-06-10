@@ -91,7 +91,7 @@ class Chunk:
         self.size = 0
         self.start = self.fp.tell()
 
-        if 'r' in self.fp.mode:
+        if self.read_only:
             try:
                 self.chunk_id = ChunkID(self.read(self.word_size))
             except ValueError:
@@ -102,6 +102,19 @@ class Chunk:
 
     def __del__(self) -> None:
         self.close()
+
+    @staticmethod
+    def _file_is_read_only(fp: IO) -> bool:
+        """Check whether a file is read-only"""
+        return 'r' in fp.mode and '+' not in fp.mode
+
+    @property
+    def read_only(self) -> Optional[bool]:
+        """Check whether the file is read-only"""
+        if self.fp is None:
+            return None
+        else:
+            return self._file_is_read_only(self.fp)
 
     @property
     def endianness(self) -> Literal['big', 'little']:
@@ -289,7 +302,7 @@ class RiffChunk(Chunk):
 
         Chunk.__init__(self, fp, bigendian=False)
 
-        if 'r' in self.fp.mode:
+        if self.read_only:
             if self.chunk_id != ChunkID.RIFF_CHUNK:
                 raise exception.ReadError('Chunk is not a RIFF chunk')
             self.format = RiffFormat(self.read(self.word_size))
@@ -338,7 +351,7 @@ class WavFmtChunk(Chunk):
 
         Chunk.__init__(self, fp, bigendian=False)
 
-        if 'r' in self.fp.mode:
+        if self.read_only:
             self._read()
         else:
             self.write_fmt()
@@ -468,7 +481,7 @@ class WavDataChunk(Chunk):
         self.__did_warn = False
         self.fmt_chunk = fmt_chunk
 
-        if 'r' in self.fp.mode:
+        if self.read_only:
             if self.chunk_id != ChunkID.DATA_CHUNK:
                 raise exception.ReadError('Chunk is not a DATA chunk')
 
@@ -646,7 +659,7 @@ class ListChunk(Chunk):
         Chunk.__init__(self, fp, bigendian=False)
         self.info = None
 
-        if 'r' in self.fp.mode:
+        if self.read_only:
             if self.chunk_id != ChunkID.LIST_CHUNK:
                 raise exception.ReadError('Chunk is not a LIST chunk')
             subchnk = self.read(self.word_size)
