@@ -7,7 +7,7 @@ The main API for reading and writing wav files.
 import builtins
 import os
 from abc import ABC
-from typing import Any, Dict, IO, List, Optional, Tuple, Union
+from typing import Any, IO
 
 from . import chunk
 
@@ -15,10 +15,10 @@ from . import chunk
 class Wavfile(ABC):
     """Abstract base class for wave file read/write"""
 
-    fp: Optional[IO]
+    fp: IO | None
     _should_close_file: bool
-    _riff_chunk: Optional[chunk.RiffChunk]
-    _data_chunk: Optional[chunk.WavDataChunk]
+    _riff_chunk: chunk.RiffChunk | None
+    _data_chunk: chunk.WavDataChunk | None
 
     def __init__(self) -> None:
         """
@@ -30,7 +30,7 @@ class Wavfile(ABC):
         self._data_chunk = None
         self._list_chunk = None
 
-    def _init_fp(self, f: Union[str, os.PathLike, IO], mode: str) -> None:
+    def _init_fp(self, f: str | os.PathLike | IO, mode: str) -> None:
         """
         Initialise the file pointer.
 
@@ -152,7 +152,7 @@ class Wavfile(ABC):
         """Duration of the file formatted as hh:mm:ss.tt"""
         m, s = divmod(self.duration, 60)
         h, m = divmod(int(m), 60)
-        return '{}:{:02d}:{:05.2f}'.format(h, m, s)
+        return f'{h}:{m:02d}:{s:05.2f}'
 
     @property
     def _block_align(self) -> int:
@@ -160,14 +160,14 @@ class Wavfile(ABC):
         return self._data_chunk.fmt_chunk.block_align
 
     @property
-    def metadata(self) -> Optional[Dict[str, Union[str, int]]]:
+    def metadata(self) -> dict[str, str | int] | None:
         """Metadata from the .wav file"""
         if self._list_chunk is not None:
             return self._list_chunk.info
         return None
 
     @staticmethod
-    def _buffer_max_abs(data: List[List[Union[float, int]]]) -> Union[float, int]:
+    def _buffer_max_abs(data: list[list[float | int]]) -> float | int:
         """
         Max(Abs(X)) for an audio buffer.
 
@@ -218,5 +218,5 @@ class Wavfile(ABC):
     def __enter__(self) -> 'Wavfile':
         return self
 
-    def __exit__(self, *args: Tuple[Any, ...]) -> None:
+    def __exit__(self, *args: tuple[Any, ...]) -> None:
         self.close()

@@ -3,16 +3,13 @@
 """
 Chunk-based helper classes for working with RIFF files.
 """
-
 import struct
 import sys
 from enum import Enum, IntEnum
 from types import DynamicClassAttribute
-from typing import IO, List, Optional, Union, Dict
-try:
-    from typing import Literal
-except ImportError:
-    from typing_extensions import Literal
+from typing import cast, IO, Literal, TYPE_CHECKING
+if TYPE_CHECKING:
+    pass
 
 from . import exception
 
@@ -28,45 +25,45 @@ class BytesEnum(Enum):
 
 class RiffFormat(BytesEnum):
     """RIFF file format"""
-    WAVE: 'RiffFormat' = b'WAVE'
+    WAVE = b'WAVE'
 
 
 class ChunkID(BytesEnum):
     """RIFF chunk identifiers"""
-    RIFF_CHUNK: 'ChunkID' = b'RIFF'
-    FMT_CHUNK: 'ChunkID' = b'fmt '
-    DATA_CHUNK: 'ChunkID' = b'data'
-    LIST_CHUNK: 'ChunkID' = b'LIST'
-    UNKNOWN_CHUNK: 'ChunkID' = b'    '
+    RIFF_CHUNK = b'RIFF'
+    FMT_CHUNK = b'fmt '
+    DATA_CHUNK = b'data'
+    LIST_CHUNK = b'LIST'
+    UNKNOWN_CHUNK = b'    '
 
 
 class WavFormat(IntEnum):
     """Wav audio data format"""
-    PCM: 'WavFormat' = 0x0001
-    IEEE_FLOAT: 'WavFormat' = 0x0003
-    EXTENSIBLE: 'WavFormat' = 0xFFFE
+    PCM = 0x0001
+    IEEE_FLOAT = 0x0003
+    EXTENSIBLE = 0xFFFE
 
 
 class ListType(BytesEnum):
     """LIST chunk list types"""
-    INFO: 'ListType' = b'INFO'
+    INFO = b'INFO'
 
 
 class InfoItem(BytesEnum):
     """Items of the INFO chunk"""
-    track: 'InfoItem' = b'INAM'
-    album: 'InfoItem' = b'IPRD'
-    artist: 'InfoItem' = b'IART'
-    date: 'InfoItem' = b'ICRD'
-    track_number: 'InfoItem' = b'ITRK'
-    comment: 'InfoItem' = b'ICMT'
-    genre: 'InfoItem' = b'IGNR'
+    track = b'INAM'
+    album = b'IPRD'
+    artist = b'IART'
+    date = b'ICRD'
+    track_number = b'ITRK'
+    comment = b'ICMT'
+    genre = b'IGNR'
 
 
 class Chunk:
     """Chunk read and write"""
 
-    fp: Optional[IO]
+    fp: IO | None
     bigendian: bool
     chunk_id: ChunkID
     size: int
@@ -109,7 +106,7 @@ class Chunk:
         return 'r' in fp.mode and '+' not in fp.mode
 
     @property
-    def read_only(self) -> Optional[bool]:
+    def read_only(self) -> bool | None:
         """Check whether the file is read-only"""
         if self.fp is None:
             return None
@@ -158,7 +155,7 @@ class Chunk:
         data = self.fp.read(nbytes)
         if len(data) < nbytes:
             raise IOError('Could not read enough bytes. Maybe EOF.')
-        return data
+        return cast(bytes, data)
 
     def write(self, data: bytes, update_size: bool = True) -> None:
         """
@@ -466,7 +463,7 @@ class WavDataChunk(Chunk):
     """Wave data chunk read and write"""
 
     __did_warn: bool
-    fmt_chunk: Union[WavFmtChunk, WavFmtExtensibleChunk]
+    fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk
 
     def __init__(self, fp: IO, fmt_chunk: WavFmtChunk) -> None:
         """
@@ -505,15 +502,17 @@ class WavDataChunk(Chunk):
             return self.fmt_chunk.audio_fmt
         elif type(self.fmt_chunk) == WavFmtExtensibleChunk:
             return self.fmt_chunk.sub_data_format
+        raise exception.ReadError('File is invalid')
 
-    def read_sample(self) -> Union[int, float]:
+    def read_sample(self) -> int | float:
         """Read a sample from the chunk."""
         if self.audio_fmt == WavFormat.PCM:
             return self.read_int(self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
         elif self.audio_fmt == WavFormat.IEEE_FLOAT:
             return self.read_float(self.fmt_chunk.bytes_per_sample)
+        raise exception.ReadError('File is invalid')
 
-    def read_frames(self, nframes: Optional[int] = None) -> List[List[Union[int, float]]]:
+    def read_frames(self, nframes: int | None = None) -> list[list[int | float]]:
         """
         Read a number of audio frames from the chunk. A frame is a collection of samples, from each
         audio channel, associated with a single time instant.
@@ -539,7 +538,7 @@ class WavDataChunk(Chunk):
         return audio
 
     @property
-    def _max_val(self) -> Union[float, int]:
+    def _max_val(self) -> float | int:
         """Maximum value"""
         if self.audio_fmt == WavFormat.PCM:
             if self.fmt_chunk.signed:
@@ -549,9 +548,10 @@ class WavDataChunk(Chunk):
             return (2 ** (self.fmt_chunk.bits_per_sample - sign_correction)) - 1
         elif self.audio_fmt == WavFormat.IEEE_FLOAT:
             return 1.0
+        raise exception.ReadError('File is invalid')
 
     @property
-    def _min_val(self) -> Union[float, int]:
+    def _min_val(self) -> float | int:
         """Minimum value"""
         if self.audio_fmt == WavFormat.PCM:
             if self.fmt_chunk.signed:
@@ -560,6 +560,7 @@ class WavDataChunk(Chunk):
                 return 0
         elif self.audio_fmt == WavFormat.IEEE_FLOAT:
             return -1.0
+        raise exception.ReadError('File is invalid')
 
     def __saturation_warning(self) -> None:
         """Print a warning to stderr about out-of-range sample values."""
@@ -567,7 +568,7 @@ class WavDataChunk(Chunk):
             self.__did_warn = True
             print('Saturating one of more sample values that are out-of-range', file=sys.stderr)
 
-    def _saturate(self, val: Union[int, float]) -> Union[int, float]:
+    def _saturate(self, val: int | float) -> int | float:
         """Saturate out-of-range sample values."""
         if val > self._max_val:
             val = self._max_val
@@ -577,7 +578,7 @@ class WavDataChunk(Chunk):
             self.__saturation_warning()
         return val
 
-    def write_sample(self, sample: Union[int, float]) -> None:
+    def write_sample(self, sample: int | float) -> None:
         """
         Write a sample to the chunk.
 
@@ -585,17 +586,17 @@ class WavDataChunk(Chunk):
         """
         sample = self._saturate(sample)
         if self.audio_fmt == WavFormat.PCM:
-            self.write_int(sample, self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
+            self.write_int(int(sample), self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
         elif self.audio_fmt == WavFormat.IEEE_FLOAT:
             self.write_float(sample, self.fmt_chunk.bytes_per_sample)
+        raise exception.ReadError('File is invalid')
 
-    def write_frames(self, audio: List[List[Union[int, float]]]) -> None:
+    def write_frames(self, audio: list[list[int | float]]) -> None:
         """
         Write one or more frames of audio to the chunk.
 
         :param audio: The audio frames as a list of lists.
         """
-
         num_channels = len(audio[0])
         if num_channels != self.fmt_chunk.num_channels:
             if self.fmt_chunk.num_channels == 0:
@@ -647,7 +648,7 @@ class WavDataChunk(Chunk):
 class ListChunk(Chunk):
     """List chunk read and write"""
 
-    info: Optional[Dict[str, Union[int, str]]]
+    info: dict[str, int | str] | None
 
     def __init__(self, fp: IO) -> None:
         """

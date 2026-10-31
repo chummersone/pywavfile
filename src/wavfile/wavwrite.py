@@ -6,9 +6,10 @@ Provides the WavWrite class for writing wave files.
 The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
+import copy
 import os
 import sys
-from typing import IO, List, Optional, Union
+from typing import cast, IO
 
 from . import base
 from . import chunk
@@ -20,8 +21,8 @@ class WavWrite(base.Wavfile):
 
     _is_open: bool
 
-    def __init__(self, fp: Union[str, os.PathLike, IO], sample_rate: int = 44100,
-                 num_channels: Optional[int] = None, bits_per_sample: int = 16,
+    def __init__(self, fp: str | os.PathLike | IO, sample_rate: int = 44100,
+                 num_channels: int | None = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """
         Initialise the WavWrite object. The `fmt` argument may be any of the enumerations of
@@ -38,6 +39,8 @@ class WavWrite(base.Wavfile):
 
         self._is_open = True
         self._init_fp(fp, 'wb')
+        if self.fp is None:
+            raise exception.WriteError('Failed to open audio file')
 
         # initialise each of the riff chunks
         self._riff_chunk = chunk.RiffChunk(self.fp)
@@ -68,7 +71,7 @@ class WavWrite(base.Wavfile):
                f'fmt={self.format.__class__.__name__}.{self.format.name})'
 
     @staticmethod
-    def _data_are_floats(data: List[List[Union[int, float]]]) -> bool:
+    def _data_are_floats(data: list[list[int | float]]) -> bool:
         """
         Check for any floats in data.
 
@@ -85,7 +88,7 @@ class WavWrite(base.Wavfile):
             if self._list_chunk.start > self._data_chunk.start:
                 raise exception.WriteError('Audio may overwrite metadata chunk')
 
-    def write_float(self, audio: List[List[float]]) -> None:
+    def write_float(self, audio: list[list[float]]) -> None:
         """
         Write float data to the file. If the file format is `PCM` then the data will be converted to
         floats, otherwise there will be no conversion.
@@ -93,32 +96,33 @@ class WavWrite(base.Wavfile):
         :param audio: Audio frames to write.
         """
         self.__check_metadata()
+        audio_copy = copy.copy(audio)
         if self.audio_fmt == chunk.WavFormat.PCM:
             # data are floats but we are writing integers
-            for n in range(len(audio)):
-                for m in range(len(audio[n])):
-                    audio[n][m] = self._convert_float_to_int(audio[n][m])
+            for n in range(len(audio_copy)):
+                for m in range(len(audio_copy[n])):
+                    audio_copy[n][m] = self._convert_float_to_int(audio[n][m])
 
         self._data_chunk.write_frames(audio)
 
-    def write_int(self, audio: List[List[int]]) -> None:
+    def write_int(self, audio: list[list[int]]) -> None:
         """
         Write integer data to the file. If the file format is `IEEE_FLOAT` then the data will be
         converted to floats, otherwise there will be no conversion.
 
         :param audio: Audio frames to write.
         """
+        audio_copy = cast(list[list[int | float]], copy.copy(audio))
         self.__check_metadata()
         if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
             # data are integers but we are writing floats
-            audio: List[List[Union[int, float]]]
-            for n in range(len(audio)):
-                for m in range(len(audio[n])):
-                    audio[n][m] = self._convert_int_to_float(audio[n][m])
+            for n in range(len(audio_copy)):
+                for m in range(len(audio_copy[n])):
+                    audio_copy[n][m] = self._convert_int_to_float(audio[n][m])
 
-        self._data_chunk.write_frames(audio)
+        self._data_chunk.write_frames(audio_copy)
 
-    def write(self, audio: List[List[Union[int, float]]]) -> None:
+    def write(self, audio: list[list[int | float]]) -> None:
         """
         Write audio data to the file. The data should be a list of lists with dimensions `(N,C)`,
         where `N` is the number of frames and `C` is the number of audio channels. The data may be
@@ -130,9 +134,9 @@ class WavWrite(base.Wavfile):
         if self._data_are_floats(audio):
             self.write_float(audio)
         else:
-            self.write_int(audio)
+            self.write_int(cast(list[list[int]], audio))
 
-    def add_metadata(self, **kwargs: Union[str, int]) -> None:
+    def add_metadata(self, **kwargs: str | int) -> None:
         """
         Add metadata to the wav file. Note that this method can only be called once, and the
         metadata cannot be updated once it is written. The metadata chunk will be written before or
@@ -144,6 +148,8 @@ class WavWrite(base.Wavfile):
 
         :param kwargs: The metadata to write, provided as keyword arguments.
         """
+        if self.fp is None:
+            raise exception.WriteError('Audio file pointer must be initialized')
 
         if self._list_chunk is not None:
             raise exception.WriteError('Metadata already written to file. '

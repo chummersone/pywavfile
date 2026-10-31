@@ -8,7 +8,7 @@ mode.
 """
 
 import os
-from typing import Generator, IO, List, Optional, Union
+from typing import cast, Generator, IO
 
 from . import base
 from . import chunk
@@ -18,7 +18,7 @@ from . import exception
 class WavRead(base.Wavfile):
     """Class for reading a wave file"""
 
-    def __init__(self, f: Union[str, os.PathLike, IO]) -> None:
+    def __init__(self, f: str | os.PathLike | IO) -> None:
         """
         Initialise the WavRead object.
 
@@ -46,6 +46,9 @@ class WavRead(base.Wavfile):
         """
         Read the file and initialise the object properties.
         """
+        if self.fp is None:
+            raise exception.ReadError('Audio file pointer must be initialized')
+
         self.fp.seek(0, 2)
         file_size = self.fp.tell()
         self.fp.seek(0)
@@ -99,8 +102,8 @@ class WavRead(base.Wavfile):
         newobj.fp.seek(self.fp.tell())
         return newobj
 
-    def _block_iterator(self, method: str, num_frames: int) -> \
-            Generator[List[List[Union[float, int]]], None, None]:
+    def _block_iterator(self, method: str, num_frames: int | None = None) -> \
+            Generator[list[list[float | int]], None, None]:
         """
         Read blocks of frames using an iterator.
 
@@ -124,7 +127,7 @@ class WavRead(base.Wavfile):
             self.fp.close()
         self._should_close_file = False
 
-    def read_int(self, num_frames: Optional[int] = None) -> List[List[int]]:
+    def read_int(self, num_frames: int | None = None) -> list[list[int]]:
         """
         Read, at most, num_frames frames from the audio stream in integer format. The method returns
         a list of lists with dimensions `(N,C)`, where `C` is the number of audio channels. Choosing
@@ -138,9 +141,9 @@ class WavRead(base.Wavfile):
             for n in range(len(audio)):
                 for m in range(len(audio[n])):
                     audio[n][m] = self._convert_float_to_int(audio[n][m])
-        return audio
+        return cast(list[list[int]], audio)
 
-    def iter_int(self, num_frames: Optional[int] = None) -> Generator[List[List[int]], None, None]:
+    def iter_int(self, num_frames: int | None = None) -> Generator[list[list[int]], None, None]:
         """
         This method is equivalent to :meth:`read_int`, except that it returns a generator rather
         than a block of sample.
@@ -148,9 +151,10 @@ class WavRead(base.Wavfile):
         :param num_frames: Number of frames to read on each iteration.
         :return: A generator to yield the next frame(s) of audio.
         """
-        return self._block_iterator('read_int', num_frames)
+        return cast(Generator[list[list[int]], None, None],
+                    self._block_iterator('read_int', num_frames))
 
-    def read_float(self, num_frames: Optional[int] = None) -> List[List[float]]:
+    def read_float(self, num_frames: int | None = None) -> list[list[float]]:
         """
         Read, at most, num_frames frames from the audio stream in float format in the range [-1, 1).
         The method returns a list of lists with size `[N][C]`, where `C` is the number of audio
@@ -159,17 +163,17 @@ class WavRead(base.Wavfile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
-        audio: List[List[Union[int, float]]] = []
+        audio = []
         if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
             audio = self._data_chunk.read_frames(num_frames)
         elif self.audio_fmt == chunk.WavFormat.PCM:
             audio = self.read_int(num_frames)
-            audio = [[self._convert_int_to_float(sample) for sample in frame] for frame in audio]
+            audio = [[self._convert_int_to_float(int(sample)) for sample in frame] for frame in audio]
 
         return audio
 
-    def iter_float(self, num_frames: Optional[int] = None) -> \
-            Generator[List[List[float]], None, None]:
+    def iter_float(self, num_frames: int | None = None) -> \
+            Generator[list[list[float]], None, None]:
         """
         This method is equivalent to :meth:`read_float`, except that it returns a generator rather
         than a block of samples.
@@ -179,7 +183,7 @@ class WavRead(base.Wavfile):
         """
         return self._block_iterator('read_float', num_frames)
 
-    def read(self, num_frames: Optional[int] = None) -> List[List[Union[int, float]]]:
+    def read(self, num_frames: int | None = None) -> list[list[int | float]]:
         """
         Read, at most, `num_frames` frames from the audio stream in its native format. The method
         returns a list of lists with dimensions `(N,C)`, where `C` is the number of audio channels.
@@ -190,7 +194,7 @@ class WavRead(base.Wavfile):
         """
         return self._data_chunk.read_frames(num_frames)
 
-    def iter(self, num_frames=None) -> Generator[List[List[Union[int, float]]], None, None]:
+    def iter(self, num_frames=None) -> Generator[list[list[int | float]], None, None]:
         """
         This method is equivalent to :meth:`read`, except that it returns a generator rather than
         a block of samples.
