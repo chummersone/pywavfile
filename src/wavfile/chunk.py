@@ -589,7 +589,8 @@ class WavDataChunk(Chunk):
             self.write_int(int(sample), self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
         elif self.audio_fmt == WavFormat.IEEE_FLOAT:
             self.write_float(sample, self.fmt_chunk.bytes_per_sample)
-        raise exception.ReadError('File is invalid')
+        else:
+            raise exception.ReadError('File is invalid')
 
     def write_frames(self, audio: list[list[int | float]]) -> None:
         """
