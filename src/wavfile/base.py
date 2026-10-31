@@ -43,6 +43,45 @@ class Wavfile(ABC):
         else:
             self.fp = f
 
+    @classmethod
+    def check_audio_buffer(cls, audio: Sequence[Sequence[float]]) -> \
+            type[int] | type[float] | None:
+        """
+        Validate the audio buffer layout and type. The buffer must have a consistent audio sample
+        type and channel count.
+
+        Raises TypeError when the audio sample type is invalid or inconsistent.
+
+        Raises ValueError when channel count is zero or inconsistent.
+
+        :return: None when there are no audio frames, otherwise the audio sample type.
+        """
+        if len(audio) == 0:
+            return None
+
+        channels = len(audio[0])
+
+        if channels == 0:
+            raise ValueError("Audio frames must contain at least one channel")
+
+        if any(len(frame) != channels for frame in audio):
+            raise ValueError("All frames must have the same number of channels")
+
+        first = audio[0][0]
+        sample_type = type(first)
+
+        if sample_type not in (int, float):
+            raise TypeError("Audio samples must be integers or floats")
+
+        if not all(
+                type(sample) is sample_type
+                for frame in audio
+                for sample in frame
+        ):
+            raise TypeError("Audio samples must be of the same type")
+
+        return sample_type
+
     def _convert_unsigned_int_to_float(self, x: int) -> float:
         """
         Convert unsigned int to float [-1, 1).

@@ -77,38 +77,6 @@ class WavWrite(base.Wavfile):
             if self._list_chunk.start > self._data_chunk.start:
                 raise exception.WriteError('Audio may overwrite metadata chunk')
 
-    @staticmethod
-    def _check_audio_buffer(audio: Sequence[Sequence[float]]) -> \
-            type[int] | type[float] | None:
-        """
-        Validate the audio buffer layout and type.
-        """
-        if len(audio) == 0:
-            return None
-
-        channels = len(audio[0])
-
-        if channels == 0:
-            raise ValueError("Audio frames must contain at least one channel")
-
-        if any(len(frame) != channels for frame in audio):
-            raise ValueError("All frames must have the same number of channels")
-
-        first = audio[0][0]
-        sample_type = type(first)
-
-        if sample_type not in (int, float):
-            raise TypeError("Audio samples must be integers or floats")
-
-        if not all(
-            type(sample) is sample_type
-            for frame in audio
-            for sample in frame
-        ):
-            raise TypeError("Audio samples must be of the same type")
-
-        return sample_type
-
     def __write_float(self, audio: Sequence[Sequence[float]]) -> None:
         """
         Write float data to the file.
@@ -128,7 +96,7 @@ class WavWrite(base.Wavfile):
         :param audio: Audio frames to write.
         """
         self.__check_metadata()
-        sample_type = self._check_audio_buffer(audio)
+        sample_type = self.check_audio_buffer(audio)
         if sample_type is None:
             return
         elif sample_type is int:
@@ -154,7 +122,7 @@ class WavWrite(base.Wavfile):
         :param audio: Audio frames to write.
         """
         self.__check_metadata()
-        sample_type = self._check_audio_buffer(audio)
+        sample_type = self.check_audio_buffer(audio)
         if sample_type is None:
             return
         elif sample_type is float:
@@ -171,7 +139,7 @@ class WavWrite(base.Wavfile):
         :param audio: Audio frames to write.
         """
         self.__check_metadata()
-        sample_type = self._check_audio_buffer(audio)
+        sample_type = self.check_audio_buffer(audio)
         if sample_type is None:
             return
 

@@ -11,6 +11,7 @@ from types import DynamicClassAttribute
 from typing import cast, Callable, IO, Literal, Sequence
 
 from . import exception
+from .base import Wavfile
 
 
 class BytesEnum(Enum):
@@ -592,13 +593,17 @@ class WavDataChunk(Chunk):
             raise exception.ReadError('File is invalid')
 
     def write_frames(self, audio: Sequence[Sequence[int | float]],
-                     sample_converter: Callable[[int | float], int | float] | None = None) -> None:
+                     sample_transform: Callable[[int | float], int | float] | None = None) -> None:
         """
         Write one or more frames of audio to the chunk.
 
         :param audio: The audio frames as a list of lists.
-        :param sample_converter: An optional convert function to apply to the audio samples.
+        :param sample_transform: An optional transform function to apply to the audio samples.
         """
+        sample_type = Wavfile.check_audio_buffer(audio)
+        if sample_type is None:
+            return
+
         num_channels = len(audio[0])
         if num_channels != self.fmt_chunk.num_channels:
             if self.fmt_chunk.num_channels == 0:
@@ -613,8 +618,8 @@ class WavDataChunk(Chunk):
 
         for frame in audio:
             for sample in frame:
-                if sample_converter is not None:
-                    sample = sample_converter(sample)
+                if sample_transform is not None:
+                    sample = sample_transform(sample)
                 self.write_sample(sample)
 
     def seek(self, frame_number: int, whence: int = 0) -> WavDataChunk:
