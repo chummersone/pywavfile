@@ -3,11 +3,11 @@
 """
 The main API for reading and writing wav files.
 """
-
+from __future__ import annotations
 import builtins
 import os
 from abc import ABC
-from typing import Any, IO
+from typing import Any, IO, Sequence
 
 from . import chunk
 
@@ -167,7 +167,7 @@ class Wavfile(ABC):
         return None
 
     @staticmethod
-    def _buffer_max_abs(data: list[list[float | int]]) -> float | int:
+    def _buffer_max_abs(data: Sequence[Sequence[float | int]]) -> float | int:
         """
         Max(Abs(X)) for an audio buffer.
 
@@ -176,7 +176,7 @@ class Wavfile(ABC):
         """
         return max([max([abs(y) for y in x]) for x in data])
 
-    def seek(self, frame_number: int, whence: int = 0) -> 'Wavfile':
+    def seek(self, frame_number: int, whence: int = 0) -> Wavfile:
         """
         Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
         absolute positioning, 1 = relative to current position, 2 = relative to end of last frame.
@@ -215,7 +215,7 @@ class Wavfile(ABC):
         if self._should_close_file:
             self.close()
 
-    def __enter__(self) -> 'Wavfile':
+    def __enter__(self) -> Wavfile:
         return self
 
     def __exit__(self, *args: tuple[Any, ...]) -> None:

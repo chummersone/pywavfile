@@ -126,7 +126,7 @@ class TestWavfileFloat(unittest.TestCase):
 
     def test_read_write_audio_float_mono(self):
         audio_data_in = [
-            [0],
+            [0.0],
             [0.1],
             [0.3],
             [-0.1],
@@ -140,7 +140,7 @@ class TestWavfileFloat(unittest.TestCase):
 
     def test_read_write_audio_double_mono(self):
         audio_data_in = [
-            [0],
+            [0.0],
             [0.1],
             [0.3],
             [-0.1],
@@ -154,7 +154,7 @@ class TestWavfileFloat(unittest.TestCase):
 
     def test_invalid_bitdepth(self):
         audio_data_in = [
-            [0],
+            [0.0],
             [0.1],
             [0.3],
             [-0.1],

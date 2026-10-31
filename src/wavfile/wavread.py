@@ -6,7 +6,7 @@ Provides the WavRead class for reading wave files.
 The WavRead class is returned by wavfile.open() when opening a file in read
 mode.
 """
-
+from __future__ import annotations
 import os
 from typing import cast, Generator, IO
 
@@ -92,7 +92,7 @@ class WavRead(base.Wavfile):
         # go to data chunk content start ready to read samples
         self.fp.seek(self._data_chunk.content_start)
 
-    def __copy__(self) -> 'WavRead':
+    def __copy__(self) -> WavRead:
         """
         Create a shallow copy of the WavRead object.
         """

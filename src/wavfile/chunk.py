@@ -3,13 +3,12 @@
 """
 Chunk-based helper classes for working with RIFF files.
 """
+from __future__ import annotations
 import struct
 import sys
 from enum import Enum, IntEnum
 from types import DynamicClassAttribute
-from typing import cast, IO, Literal, TYPE_CHECKING
-if TYPE_CHECKING:
-    pass
+from typing import cast, Callable, IO, Literal, Sequence
 
 from . import exception
 
@@ -592,11 +591,13 @@ class WavDataChunk(Chunk):
         else:
             raise exception.ReadError('File is invalid')
 
-    def write_frames(self, audio: list[list[int | float]]) -> None:
+    def write_frames(self, audio: Sequence[Sequence[int | float]],
+                     sample_converter: Callable[[int | float], int | float] | None = None) -> None:
         """
         Write one or more frames of audio to the chunk.
 
         :param audio: The audio frames as a list of lists.
+        :param sample_converter: An optional convert function to apply to the audio samples.
         """
         num_channels = len(audio[0])
         if num_channels != self.fmt_chunk.num_channels:
@@ -610,11 +611,13 @@ class WavDataChunk(Chunk):
                 self.fmt_chunk.num_channels * self.fmt_chunk.bytes_per_sample
             self.fmt_chunk.byte_rate = self.fmt_chunk.block_align * self.fmt_chunk.sample_rate
 
-        for n in range(len(audio)):
-            for m in range(len(audio[n])):
-                self.write_sample(audio[n][m])
+        for frame in audio:
+            for sample in frame:
+                if sample_converter is not None:
+                    sample = sample_converter(sample)
+                self.write_sample(sample)
 
-    def seek(self, frame_number: int, whence: int = 0) -> 'WavDataChunk':
+    def seek(self, frame_number: int, whence: int = 0) -> WavDataChunk:
         """
         Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
         absolute positioning, 1 = relative to current position, 2 = relative to end of last frame.

@@ -6,10 +6,9 @@ Provides the WavWrite class for writing wave files.
 The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
-import copy
 import os
 import sys
-from typing import cast, IO
+from typing import cast, IO, Sequence
 
 from . import base
 from . import chunk
@@ -70,16 +69,6 @@ class WavWrite(base.Wavfile):
                f'num_channels={self.num_channels}, bits_per_sample={self.bits_per_sample}, ' + \
                f'fmt={self.format.__class__.__name__}.{self.format.name})'
 
-    @staticmethod
-    def _data_are_floats(data: list[list[int | float]]) -> bool:
-        """
-        Check for any floats in data.
-
-        data: Audio buffer to analyse for floats.
-        """
-        return any([any([isinstance(y, float) for y in x]) for x in data]) or \
-            base.Wavfile._buffer_max_abs(data) <= 1.0
-
     def __check_metadata(self) -> None:
         """
         Prevent new audio data from overwriting the metadata chunk.
@@ -88,7 +77,50 @@ class WavWrite(base.Wavfile):
             if self._list_chunk.start > self._data_chunk.start:
                 raise exception.WriteError('Audio may overwrite metadata chunk')
 
-    def write_float(self, audio: list[list[float]]) -> None:
+    @staticmethod
+    def _check_audio_buffer(audio: Sequence[Sequence[float]]) -> \
+            type[int] | type[float] | None:
+        """
+        Validate the audio buffer layout and type.
+        """
+        if len(audio) == 0:
+            return None
+
+        channels = len(audio[0])
+
+        if channels == 0:
+            raise ValueError("Audio frames must contain at least one channel")
+
+        if any(len(frame) != channels for frame in audio):
+            raise ValueError("All frames must have the same number of channels")
+
+        first = audio[0][0]
+        sample_type = type(first)
+
+        if sample_type not in (int, float):
+            raise TypeError("Audio samples must be integers or floats")
+
+        if not all(
+            type(sample) is sample_type
+            for frame in audio
+            for sample in frame
+        ):
+            raise TypeError("Audio samples must be of the same type")
+
+        return sample_type
+
+    def __write_float(self, audio: Sequence[Sequence[float]]) -> None:
+        """
+        Write float data to the file.
+        """
+        convert = (
+            self._convert_float_to_int
+            if self.audio_fmt == chunk.WavFormat.PCM
+            else None
+        )
+        self._data_chunk.write_frames(audio, convert)
+
+    def write_float(self, audio: Sequence[Sequence[float]]) -> None:
         """
         Write float data to the file. If the file format is `PCM` then the data will be converted to
         floats, otherwise there will be no conversion.
@@ -96,33 +128,40 @@ class WavWrite(base.Wavfile):
         :param audio: Audio frames to write.
         """
         self.__check_metadata()
-        audio_copy = copy.copy(audio)
-        if self.audio_fmt == chunk.WavFormat.PCM:
-            # data are floats but we are writing integers
-            for n in range(len(audio_copy)):
-                for m in range(len(audio_copy[n])):
-                    audio_copy[n][m] = self._convert_float_to_int(audio[n][m])
+        sample_type = self._check_audio_buffer(audio)
+        if sample_type is None:
+            return
+        elif sample_type is int:
+            raise TypeError("Audio samples must be floats")
+        self.__write_float(audio)
 
-        self._data_chunk.write_frames(audio)
+    def __write_int(self, audio: Sequence[Sequence[int]]) -> None:
+        """
+        Write integer data to the file.
+        """
+        convert = (
+            self._convert_int_to_float
+            if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT
+            else None
+        )
+        self._data_chunk.write_frames(audio, convert)
 
-    def write_int(self, audio: list[list[int]]) -> None:
+    def write_int(self, audio: Sequence[Sequence[int]]) -> None:
         """
         Write integer data to the file. If the file format is `IEEE_FLOAT` then the data will be
         converted to floats, otherwise there will be no conversion.
 
         :param audio: Audio frames to write.
         """
-        audio_copy = cast(list[list[int | float]], copy.copy(audio))
         self.__check_metadata()
-        if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
-            # data are integers but we are writing floats
-            for n in range(len(audio_copy)):
-                for m in range(len(audio_copy[n])):
-                    audio_copy[n][m] = self._convert_int_to_float(audio[n][m])
+        sample_type = self._check_audio_buffer(audio)
+        if sample_type is None:
+            return
+        elif sample_type is float:
+            raise TypeError("Audio samples must be integers")
+        self.__write_int(audio)
 
-        self._data_chunk.write_frames(audio_copy)
-
-    def write(self, audio: list[list[int | float]]) -> None:
+    def write(self, audio: Sequence[Sequence[int | float]]) -> None:
         """
         Write audio data to the file. The data should be a list of lists with dimensions `(N,C)`,
         where `N` is the number of frames and `C` is the number of audio channels. The data may be
@@ -131,10 +170,15 @@ class WavWrite(base.Wavfile):
 
         :param audio: Audio frames to write.
         """
-        if self._data_are_floats(audio):
-            self.write_float(audio)
+        self.__check_metadata()
+        sample_type = self._check_audio_buffer(audio)
+        if sample_type is None:
+            return
+
+        if sample_type is float:
+            self.__write_float(audio)
         else:
-            self.write_int(cast(list[list[int]], audio))
+            self.__write_int(cast(Sequence[Sequence[int]], audio))
 
     def add_metadata(self, **kwargs: str | int) -> None:
         """
