@@ -8,7 +8,7 @@ import unittest
 
 import wavfile
 
-from test_module import get_file_path
+from test_module import get_fixture
 from test_wavfile_write import WavfileWriteTestRunner
 
 
@@ -166,7 +166,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                       bits_per_sample, len(audio_data_in[0]), fmt=self.fmt)
 
     def test_extensible_incorrect_channel_count(self):
-        filename = "tmp.wav"
+        filename = get_fixture("tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
@@ -175,7 +175,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
             self.assertRaises(wavfile.Error, wfp.write, [[0]])
 
     def test_extensible_write_after_close(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_fixture("tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
@@ -185,7 +185,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         self.assertRaises(ValueError, wfp.write, [[0, 0]])
 
     def test_extensible_shortcut_write(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_fixture("tmp.wav")
         audio_data_in = [
             [0],
             [256],
@@ -205,7 +205,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         self.assertListEqual(audio_data_in, audio_data_out)
 
     def test_extensible_before_write(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_fixture("tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16) as wfp:
@@ -240,7 +240,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                       bits_per_sample, len(audio_data_in[0]), audio_data_aligned, fmt=self.fmt)
 
     def test_extensible_reference_file(self):
-        filename = get_file_path('noise_44100_24bit_w_metadata.ext.wav')
+        filename = get_fixture('noise_44100_24bit_w_metadata.ext.wav')
         with wavfile.open(filename, 'r') as wav:
             wav: wavfile.wavread.WavRead
             self.assertEqual(wav.num_frames, 1323000)

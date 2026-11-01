@@ -15,6 +15,10 @@ def get_file_path(*args):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), *args)
 
 
+def get_fixture(*args):
+    return get_file_path("fixtures", *args)
+
+
 class TestCaseWithFile(unittest.TestCase):
 
     def assertIsFile(self, path):
@@ -25,16 +29,16 @@ class TestCaseWithFile(unittest.TestCase):
 class TestModule(TestCaseWithFile):
 
     def test_write_error(self):
-        self.assertRaises(wavfile.WriteError, wavfile.open, get_file_path('junk.wav'), 'w', fmt=b'junk')
+        self.assertRaises(wavfile.WriteError, wavfile.open, get_fixture('junk.wav'), 'w', fmt=b'junk')
 
     def test_mode_error(self):
-        self.assertRaises(wavfile.Error, wavfile.open, get_file_path('junk.wav'), 'j')
+        self.assertRaises(wavfile.Error, wavfile.open, get_fixture('junk.wav'), 'j')
 
     def test_read_error(self):
-        self.assertRaises(wavfile.Error, wavfile.read, get_file_path('osc_tri.wav'), fmt='junk')
+        self.assertRaises(wavfile.Error, wavfile.read, get_fixture('osc_tri.wav'), fmt='junk')
 
     def test_split(self):
-        wavfile.split(get_file_path('test-file-3.wav'))
+        wavfile.split(get_fixture('test-file-3.wav'))
         filenames = [
             'test-file-3_00.wav',
             'test-file-3_01.wav',
@@ -43,8 +47,8 @@ class TestModule(TestCaseWithFile):
             'test-file-3_04.wav'
         ]
         for f in filenames:
-            self.assertIsFile(get_file_path(f))
-            os.remove(get_file_path(f))
+            self.assertIsFile(get_fixture(f))
+            os.remove(get_fixture(f))
 
     def test_metadata(self):
         metadata = {
@@ -56,7 +60,7 @@ class TestModule(TestCaseWithFile):
             'comment': 'Test',
             'genre': 'testing'
         }
-        filename = 'tmp.wav'
+        filename = get_fixture("tmp.wav")
         wavfile.write(
             filename,
             [
@@ -73,28 +77,28 @@ class TestModule(TestCaseWithFile):
             self.assertDictEqual(metadata, wf.metadata)
 
     def test_repr(self):
-        with wavfile.open(get_file_path('osc_tri.wav'), 'r') as wfp:
-            self.assertEqual(repr(wfp), f'WavRead("{get_file_path("osc_tri.wav")}")')
-        with wavfile.open(get_file_path('tmp.wav'), 'w') as wfp:
-            self.assertEqual(repr(wfp), f'WavWrite("{get_file_path("tmp.wav")}", ' +
+        with wavfile.open(get_fixture('osc_tri.wav'), 'r') as wfp:
+            self.assertEqual(repr(wfp), f'WavRead("{get_fixture("osc_tri.wav")}")')
+        with wavfile.open(get_fixture('tmp.wav'), 'w') as wfp:
+            self.assertEqual(repr(wfp), f'WavWrite("{get_fixture("tmp.wav")}", ' +
                              'sample_rate=44100, num_channels=0, bits_per_sample=16, ' +
                              'fmt=WavFormat.PCM)')
 
     def test_join(self):
         files = (
-            get_file_path('test-file-1.wav'),
-            get_file_path('osc_tri.wav')
+            get_fixture('test-file-1.wav'),
+            get_fixture('osc_tri.wav')
         )
         filename = 'join-tmp.wav'
-        wavfile.join(get_file_path(filename), *files)
-        self.assertIsFile(get_file_path(filename))
-        with wavfile.open(get_file_path(filename), 'r') as wfp:
+        wavfile.join(get_fixture(filename), *files)
+        self.assertIsFile(get_fixture(filename))
+        with wavfile.open(get_fixture(filename), 'r') as wfp:
             self.assertEqual(wfp.num_channels, 3)
 
     def test_join_mismatch_fs(self):
         files = (
-            get_file_path('test-file-2.wav'),
-            get_file_path('osc_tri.wav')
+            get_fixture('test-file-2.wav'),
+            get_fixture('osc_tri.wav')
         )
         filename = 'join-tmp.wav'
         self.assertRaises(wavfile.exception.ReadError, wavfile.join, filename, *files)
