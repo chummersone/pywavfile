@@ -60,7 +60,7 @@ class InfoItem(BytesEnum):
 class Chunk:
     """Chunk read and write"""
 
-    fp: BinaryIO | None
+    fp: BinaryIO
     bigendian: bool
     chunk_id: ChunkID
     size: int
