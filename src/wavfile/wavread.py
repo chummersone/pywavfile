@@ -18,7 +18,7 @@ from . import exception
 class WavRead(base.Wavfile):
     """Class for reading a wave file"""
 
-    def __init__(self, f: str | os.PathLike | IO) -> None:
+    def __init__(self, f: str | os.PathLike[str] | IO) -> None:
         """
         Initialise the WavRead object.
 

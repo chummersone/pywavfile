@@ -20,7 +20,7 @@ class WavWrite(base.Wavfile):
 
     _is_open: bool
 
-    def __init__(self, fp: str | os.PathLike | IO, sample_rate: int = 44100,
+    def __init__(self, fp: str | os.PathLike[str] | IO, sample_rate: int = 44100,
                  num_channels: int | None = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """

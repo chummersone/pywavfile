@@ -7,7 +7,8 @@ The library currently supports PCM (integer) and IEEE float formats, and support
 precision, including: 16-, 24-, 32-, and 64-bit samples.
 """
 import os.path
-from typing import Dict, IO, List, Optional, Tuple, Union
+from typing import overload, IO, Literal
+
 
 from . import chunk
 from . import wavread
@@ -15,10 +16,51 @@ from . import wavwrite
 from .exception import Error, ReadError, WriteError
 from .version import __VERSION__
 
+@overload
+def open(
+    f: str | os.PathLike[str] | IO[bytes],
+    mode: Literal["r"] = "r",
+    *,
+    sample_rate: int = 44100,
+    num_channels: int | None = None,
+    bits_per_sample: int = 16,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+) -> wavread.WavRead: ...
 
-def open(f: Union[str, os.PathLike, IO], mode: Optional[str] = None, sample_rate: int = 44100,
-         num_channels: Optional[int] = None, bits_per_sample: int = 16,
-         fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> Union[wavread.WavRead, wavwrite.WavWrite]:
+
+@overload
+def open(
+    f: str | os.PathLike[str] | IO[bytes],
+    mode: Literal["w"] = "w",
+    *,
+    sample_rate: int = 44100,
+    num_channels: int | None = None,
+    bits_per_sample: int = 16,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+) -> wavwrite.WavWrite: ...
+
+
+@overload
+def open(
+    f: str | os.PathLike[str] | IO[bytes],
+    mode: str,
+    *,
+    sample_rate: int = 44100,
+    num_channels: int | None = None,
+    bits_per_sample: int = 16,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+) -> wavread.WavRead | wavwrite.WavWrite: ...
+
+
+def open(
+    f: str | os.PathLike[str] | IO[bytes],
+    mode: str = "r",
+    *,
+    sample_rate: int = 44100,
+    num_channels: int | None = None,
+    bits_per_sample: int = 16,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+) -> wavread.WavRead | wavwrite.WavWrite:
     """
     Open the wave file.
 
@@ -40,11 +82,6 @@ def open(f: Union[str, os.PathLike, IO], mode: Optional[str] = None, sample_rate
     :param fmt: The format code (write only) (:class:`chunk.WavFormat`)
     :return: Returns a :class:`wavread.WavRead` object or :class:`wavwrite.WavWrite` object.
     """
-    if mode is None:
-        if hasattr(f, 'mode'):
-            mode = f.mode
-        else:
-            mode = 'rb'
     if mode in ('r', 'rb'):
         return wavread.WavRead(f)
     elif mode in ('w', 'wb'):
@@ -56,8 +93,7 @@ def open(f: Union[str, os.PathLike, IO], mode: Optional[str] = None, sample_rate
         raise Error("mode must be 'r', 'rb', 'w', or 'wb'")
 
 
-def read(path: Union[str, os.PathLike], fmt: str = 'int') -> \
-        Tuple[List[List[Union[int, float]]], int, int]:
+def read(path: str | os.PathLike[str], fmt: str = 'int') -> tuple[list[list[int | float]], int, int]:
     """
     Shortcut function to read a wave file. The audio can be read directly (``fmt='native'``),
     converted to integers (``fmt='int'``), or converted to floating point (``fmt='float'``).
@@ -67,7 +103,6 @@ def read(path: Union[str, os.PathLike], fmt: str = 'int') -> \
     :return: The audio data, the sample rate, and the bit depth.
     """
     with open(path, 'r') as wf:
-        wf: wavread.WavRead
         fs = wf.sample_rate
         bits_per_sample = wf.bits_per_sample
         fmt_methods = {
@@ -84,10 +119,10 @@ def read(path: Union[str, os.PathLike], fmt: str = 'int') -> \
     return audio_data, fs, bits_per_sample
 
 
-def write(path: Union[str, os.PathLike], audio_data: List[List[Union[int, float]]],
+def write(path: str | os.PathLike[str], audio_data: list[list[int | float]],
           sample_rate: int = 44100, bits_per_sample: int = 16,
           fmt: chunk.WavFormat = chunk.WavFormat.PCM,
-          metadata: Optional[Dict[str, Union[int, str]]] = None) -> None:
+          metadata: dict[str, int | str] | None = None) -> None:
     """
     Shortcut function to write a wave file. The data should be contained in a list of lists with
     size (N,C), where C is the number of audio channels. The data may be int or float. The data may
@@ -104,13 +139,12 @@ def write(path: Union[str, os.PathLike], audio_data: List[List[Union[int, float]
     :param metadata: The metadata to write, provided as a dictionary.
     """
     with open(path, 'w', sample_rate=sample_rate, bits_per_sample=bits_per_sample, fmt=fmt) as wf:
-        wf: wavwrite.WavWrite
         if metadata is not None:
             wf.add_metadata(**metadata)
         wf.write(audio_data)
 
 
-def split(path: Union[str, os.PathLike]) -> None:
+def split(path: str | os.PathLike[str]) -> None:
     """
     Split a multichannel wave file in to multiple mono wave files.
 
@@ -118,14 +152,13 @@ def split(path: Union[str, os.PathLike]) -> None:
     """
 
     with open(path, 'r') as wfp:
-        wfp: wavread.WavRead
         num_channels = wfp.num_channels
 
         # filenames for new files
         filenames = []
         base, ext = os.path.splitext(path)
         for i in range(num_channels):
-            filenames.append('{:s}_{:02d}{:s}'.format(base, i, ext))
+            filenames.append(f'{base}_{i:02d}{ext}')
 
         # open the wave files for writing
         outs = []
@@ -150,7 +183,7 @@ def split(path: Union[str, os.PathLike]) -> None:
             outs[i].close()
 
 
-def join(filename: Union[str, os.PathLike], *paths: Union[str, os.PathLike]) -> None:
+def join(filename: str | os.PathLike[str], *paths: str | os.PathLike[str]) -> None:
     """
     Join several wave files in to a single multichannel wave file.
 
@@ -178,11 +211,12 @@ def join(filename: Union[str, os.PathLike], *paths: Union[str, os.PathLike]) -> 
             bits_per_sample = max(bits_per_sample, fp.bits_per_sample)
             num_channels += fp.num_channels
 
-    # join files
-    with open(filename, 'w', bits_per_sample=bits_per_sample, sample_rate=sample_rate,
-              num_channels=num_channels) as wfp:
-        wfp: wavwrite.WavWrite
+    if sample_rate is None:
+        raise ReadError('Sample rates of input files cannot be determined')
 
+    # join files
+    with open(filename, mode='w', bits_per_sample=bits_per_sample, sample_rate=sample_rate,
+              num_channels=num_channels) as wfp:
         # open files
         file_pointers = []
         for file in paths:
@@ -190,10 +224,9 @@ def join(filename: Union[str, os.PathLike], *paths: Union[str, os.PathLike]) -> 
 
         # write each frame
         for frame_num in range(max(num_frames)):
-            new_frame: List[float] = [0.0] * num_channels
+            new_frame: list[float] = [0.0] * num_channels
             channel = 0
             for file_index, rfp in enumerate(file_pointers):
-                rfp: wavread.WavRead
                 # get samples if there are any
                 if frame_num < num_frames[file_index]:
                     frame = rfp.read_float(1)[0]

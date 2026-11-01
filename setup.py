@@ -20,6 +20,10 @@ HERE = pathlib.Path(__file__).parent
 # The text of the README file
 README = (HERE / "README.rst").read_text()
 
+install_requires = []
+if sys.version_info < (3, 11):
+    install_requires += ['typing_extensions']
+
 # This call to setup() does all the work
 setup(
     **project.information.setup_info,
@@ -29,6 +33,6 @@ setup(
     packages=find_packages('src'),
     package_dir={'': 'src'},
     include_package_data=True,
-    install_requires=[],
+    install_requires=install_requires,
     entry_points={},
 )
