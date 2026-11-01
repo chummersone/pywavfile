@@ -7,7 +7,7 @@ The library currently supports PCM (integer) and IEEE float formats, and support
 precision, including: 16-, 24-, 32-, and 64-bit samples.
 """
 import os.path
-from typing import overload, IO, Literal
+from typing import overload, AnyStr, BinaryIO, Literal
 
 
 from . import chunk
@@ -18,7 +18,7 @@ from .version import __VERSION__
 
 @overload
 def open(
-    f: str | os.PathLike[str] | IO[bytes],
+    f: str | os.PathLike[AnyStr] | BinaryIO,
     mode: Literal["r"] = "r",
     *,
     sample_rate: int = 44100,
@@ -30,7 +30,7 @@ def open(
 
 @overload
 def open(
-    f: str | os.PathLike[str] | IO[bytes],
+    f: str | os.PathLike[AnyStr] | BinaryIO,
     mode: Literal["w"] = "w",
     *,
     sample_rate: int = 44100,
@@ -42,7 +42,7 @@ def open(
 
 @overload
 def open(
-    f: str | os.PathLike[str] | IO[bytes],
+    f: str | os.PathLike[AnyStr] | BinaryIO,
     mode: str,
     *,
     sample_rate: int = 44100,
@@ -53,7 +53,7 @@ def open(
 
 
 def open(
-    f: str | os.PathLike[str] | IO[bytes],
+    f: str | os.PathLike[AnyStr] | BinaryIO,
     mode: str = "r",
     *,
     sample_rate: int = 44100,
@@ -93,7 +93,7 @@ def open(
         raise Error("mode must be 'r', 'rb', 'w', or 'wb'")
 
 
-def read(path: str | os.PathLike[str], fmt: str = 'int') -> tuple[list[list[int | float]], int, int]:
+def read(path: str | os.PathLike[AnyStr], fmt: str = 'int') -> tuple[list[list[int | float]], int, int]:
     """
     Shortcut function to read a wave file. The audio can be read directly (``fmt='native'``),
     converted to integers (``fmt='int'``), or converted to floating point (``fmt='float'``).
@@ -119,7 +119,7 @@ def read(path: str | os.PathLike[str], fmt: str = 'int') -> tuple[list[list[int 
     return audio_data, fs, bits_per_sample
 
 
-def write(path: str | os.PathLike[str], audio_data: list[list[int | float]],
+def write(path: str | os.PathLike[AnyStr], audio_data: list[list[int | float]],
           sample_rate: int = 44100, bits_per_sample: int = 16,
           fmt: chunk.WavFormat = chunk.WavFormat.PCM,
           metadata: dict[str, int | str] | None = None) -> None:
@@ -144,7 +144,7 @@ def write(path: str | os.PathLike[str], audio_data: list[list[int | float]],
         wf.write(audio_data)
 
 
-def split(path: str | os.PathLike[str]) -> None:
+def split(path: str | os.PathLike[AnyStr]) -> None:
     """
     Split a multichannel wave file in to multiple mono wave files.
 
@@ -183,7 +183,7 @@ def split(path: str | os.PathLike[str]) -> None:
             outs[i].close()
 
 
-def join(filename: str | os.PathLike[str], *paths: str | os.PathLike[str]) -> None:
+def join(filename: str | os.PathLike[AnyStr], *paths: str | os.PathLike[AnyStr]) -> None:
     """
     Join several wave files in to a single multichannel wave file.
 

@@ -8,7 +8,7 @@ mode.
 """
 from __future__ import annotations
 import os
-from typing import cast, Generator, IO
+from typing import cast, AnyStr, BinaryIO, Generator
 
 from . import base
 from . import chunk
@@ -18,7 +18,7 @@ from . import exception
 class WavRead(base.Wavfile):
     """Class for reading a wave file"""
 
-    def __init__(self, f: str | os.PathLike[str] | IO) -> None:
+    def __init__(self, f: str | os.PathLike[AnyStr] | BinaryIO) -> None:
         """
         Initialise the WavRead object.
 

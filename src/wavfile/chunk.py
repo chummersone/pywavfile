@@ -8,7 +8,7 @@ import struct
 import sys
 from enum import Enum, IntEnum
 from types import DynamicClassAttribute
-from typing import cast, Callable, IO, Literal, Sequence
+from typing import cast, BinaryIO, Callable, Literal, Sequence
 
 from . import exception
 
@@ -62,7 +62,7 @@ class InfoItem(BytesEnum):
 class Chunk:
     """Chunk read and write"""
 
-    fp: IO | None
+    fp: BinaryIO | None
     bigendian: bool
     chunk_id: ChunkID
     size: int
@@ -73,7 +73,7 @@ class Chunk:
     _min_size: int = 0
     word_size: int = 4
 
-    def __init__(self, fp: IO, bigendian: bool = False) -> None:
+    def __init__(self, fp: BinaryIO, bigendian: bool = False) -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -100,7 +100,7 @@ class Chunk:
         self.close()
 
     @staticmethod
-    def _file_is_read_only(fp: IO) -> bool:
+    def _file_is_read_only(fp: BinaryIO) -> bool:
         """Check whether a file is read-only"""
         return 'r' in fp.mode and '+' not in fp.mode
 
@@ -287,7 +287,7 @@ class RiffChunk(Chunk):
 
     _min_size = 4
 
-    def __init__(self, fp: IO) -> None:
+    def __init__(self, fp: BinaryIO) -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -330,7 +330,7 @@ class WavFmtChunk(Chunk):
     _block_align_size: int = 2
     _bits_per_sample_size: int = 2
 
-    def __init__(self, fp: IO) -> None:
+    def __init__(self, fp: BinaryIO) -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -407,7 +407,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
     _sub_format_size: int = 16
     _sub_data_format_size: int = 2
 
-    def __init__(self, fp: IO) -> None:
+    def __init__(self, fp: BinaryIO) -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -464,7 +464,7 @@ class WavDataChunk(Chunk):
     __did_warn: bool
     fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk
 
-    def __init__(self, fp: IO, fmt_chunk: WavFmtChunk) -> None:
+    def __init__(self, fp: BinaryIO, fmt_chunk: WavFmtChunk) -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -655,7 +655,7 @@ class ListChunk(Chunk):
 
     info: dict[str, int | str] | None
 
-    def __init__(self, fp: IO) -> None:
+    def __init__(self, fp: BinaryIO) -> None:
         """
         Initialise the chunk from a file pointer.
 

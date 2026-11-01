@@ -7,7 +7,7 @@ from __future__ import annotations
 import builtins
 import os
 from abc import ABC
-from typing import Any, BinaryIO, Sequence
+from typing import Any, AnyStr, BinaryIO, Sequence
 try:
     from typing import Self
 except ImportError:
@@ -37,7 +37,7 @@ class Wavfile(ABC):
     def __enter__(self) -> Self:
         return self
 
-    def _init_fp(self, f: str | os.PathLike[str] | BinaryIO, mode: str) -> None:
+    def _init_fp(self, f: str | os.PathLike[AnyStr] | BinaryIO, mode: str) -> None:
         """
         Initialise the file pointer.
 
