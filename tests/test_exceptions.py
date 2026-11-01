@@ -7,6 +7,7 @@ Provides test cases for writing and reading floating-point wave audio files.
 import unittest
 
 import wavfile
+import wavfile.base
 import wavfile.chunk
 import wavfile.exception
 
@@ -53,3 +54,31 @@ class TestExceptions(unittest.TestCase):
         with open(__file__, 'rb') as fp:
             self.assertRaises(wavfile.exception.ReadError,
                               wavfile.chunk.ListChunk, fp)
+
+    def test_check_audio_buffer_empty_frame(self):
+        buffer = [[]]
+        self.assertRaises(ValueError, wavfile.base.Wavfile.check_audio_buffer, buffer)
+
+    def test_check_audio_buffer_inconsistent_channel_count(self):
+        buffer = [[0, 0], [0], [0, 0]]
+        self.assertRaises(ValueError, wavfile.base.Wavfile.check_audio_buffer, buffer)
+
+    def test_check_audio_buffer_type(self):
+        buffer = [['0', '0']]
+        self.assertRaises(TypeError, wavfile.base.Wavfile.check_audio_buffer, buffer)
+
+    def test_check_audio_buffer_inconsistent_type(self):
+        buffer = [[0, 0], [0.5, 0.5]]
+        self.assertRaises(TypeError, wavfile.base.Wavfile.check_audio_buffer, buffer)
+
+    def test_check_audio_buffer_no_frames(self):
+        buffer = []
+        self.assertIsNone(wavfile.base.Wavfile.check_audio_buffer(buffer))
+
+    def test_check_audio_buffer_float_frames(self):
+        buffer = [[0.0, 0.0], [0.5, 0.5]]
+        self.assertIs(wavfile.base.Wavfile.check_audio_buffer(buffer), float)
+
+    def test_check_audio_buffer_int_frames(self):
+        buffer = [[0, 0], [5, 5]]
+        self.assertIs(wavfile.base.Wavfile.check_audio_buffer(buffer), int)

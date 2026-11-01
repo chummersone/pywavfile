@@ -3,11 +3,11 @@
 """
 The main API for reading and writing wav files.
 """
-
+from __future__ import annotations
 import builtins
 import os
 from abc import ABC
-from typing import Any, Dict, IO, List, Optional, Tuple, Union
+from typing import Any, IO, Sequence
 
 from . import chunk
 
@@ -15,10 +15,10 @@ from . import chunk
 class Wavfile(ABC):
     """Abstract base class for wave file read/write"""
 
-    fp: Optional[IO]
+    fp: IO | None
     _should_close_file: bool
-    _riff_chunk: Optional[chunk.RiffChunk]
-    _data_chunk: Optional[chunk.WavDataChunk]
+    _riff_chunk: chunk.RiffChunk | None
+    _data_chunk: chunk.WavDataChunk | None
 
     def __init__(self) -> None:
         """
@@ -30,7 +30,7 @@ class Wavfile(ABC):
         self._data_chunk = None
         self._list_chunk = None
 
-    def _init_fp(self, f: Union[str, os.PathLike, IO], mode: str) -> None:
+    def _init_fp(self, f: str | os.PathLike | IO, mode: str) -> None:
         """
         Initialise the file pointer.
 
@@ -42,6 +42,45 @@ class Wavfile(ABC):
             self._should_close_file = True
         else:
             self.fp = f
+
+    @classmethod
+    def check_audio_buffer(cls, audio: Sequence[Sequence[float]]) -> \
+            type[int] | type[float] | None:
+        """
+        Validate the audio buffer layout and type. The buffer must have a consistent audio sample
+        type and channel count.
+
+        Raises TypeError when the audio sample type is invalid or inconsistent.
+
+        Raises ValueError when channel count is zero or inconsistent.
+
+        :return: None when there are no audio frames, otherwise the audio sample type.
+        """
+        if len(audio) == 0:
+            return None
+
+        channels = len(audio[0])
+
+        if channels == 0:
+            raise ValueError("Audio frames must contain at least one channel")
+
+        if any(len(frame) != channels for frame in audio):
+            raise ValueError("All frames must have the same number of channels")
+
+        first = audio[0][0]
+        sample_type = type(first)
+
+        if sample_type not in (int, float):
+            raise TypeError("Audio samples must be integers or floats")
+
+        if not all(
+                type(sample) is sample_type
+                for frame in audio
+                for sample in frame
+        ):
+            raise TypeError("Audio samples must be of the same type")
+
+        return sample_type
 
     def _convert_unsigned_int_to_float(self, x: int) -> float:
         """
@@ -152,7 +191,7 @@ class Wavfile(ABC):
         """Duration of the file formatted as hh:mm:ss.tt"""
         m, s = divmod(self.duration, 60)
         h, m = divmod(int(m), 60)
-        return '{}:{:02d}:{:05.2f}'.format(h, m, s)
+        return f'{h}:{m:02d}:{s:05.2f}'
 
     @property
     def _block_align(self) -> int:
@@ -160,14 +199,14 @@ class Wavfile(ABC):
         return self._data_chunk.fmt_chunk.block_align
 
     @property
-    def metadata(self) -> Optional[Dict[str, Union[str, int]]]:
+    def metadata(self) -> dict[str, str | int] | None:
         """Metadata from the .wav file"""
         if self._list_chunk is not None:
             return self._list_chunk.info
         return None
 
     @staticmethod
-    def _buffer_max_abs(data: List[List[Union[float, int]]]) -> Union[float, int]:
+    def _buffer_max_abs(data: Sequence[Sequence[float | int]]) -> float | int:
         """
         Max(Abs(X)) for an audio buffer.
 
@@ -176,7 +215,7 @@ class Wavfile(ABC):
         """
         return max([max([abs(y) for y in x]) for x in data])
 
-    def seek(self, frame_number: int, whence: int = 0) -> 'Wavfile':
+    def seek(self, frame_number: int, whence: int = 0) -> Wavfile:
         """
         Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
         absolute positioning, 1 = relative to current position, 2 = relative to end of last frame.
@@ -215,8 +254,8 @@ class Wavfile(ABC):
         if self._should_close_file:
             self.close()
 
-    def __enter__(self) -> 'Wavfile':
+    def __enter__(self) -> Wavfile:
         return self
 
-    def __exit__(self, *args: Tuple[Any, ...]) -> None:
+    def __exit__(self, *args: tuple[Any, ...]) -> None:
         self.close()

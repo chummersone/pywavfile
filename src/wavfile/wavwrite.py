@@ -8,7 +8,7 @@ mode.
 """
 import os
 import sys
-from typing import IO, List, Optional, Union
+from typing import cast, IO, Sequence
 
 from . import base
 from . import chunk
@@ -20,8 +20,8 @@ class WavWrite(base.Wavfile):
 
     _is_open: bool
 
-    def __init__(self, fp: Union[str, os.PathLike, IO], sample_rate: int = 44100,
-                 num_channels: Optional[int] = None, bits_per_sample: int = 16,
+    def __init__(self, fp: str | os.PathLike | IO, sample_rate: int = 44100,
+                 num_channels: int | None = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """
         Initialise the WavWrite object. The `fmt` argument may be any of the enumerations of
@@ -38,6 +38,8 @@ class WavWrite(base.Wavfile):
 
         self._is_open = True
         self._init_fp(fp, 'wb')
+        if self.fp is None:
+            raise exception.WriteError('Failed to open audio file')
 
         # initialise each of the riff chunks
         self._riff_chunk = chunk.RiffChunk(self.fp)
@@ -67,16 +69,6 @@ class WavWrite(base.Wavfile):
                f'num_channels={self.num_channels}, bits_per_sample={self.bits_per_sample}, ' + \
                f'fmt={self.format.__class__.__name__}.{self.format.name})'
 
-    @staticmethod
-    def _data_are_floats(data: List[List[Union[int, float]]]) -> bool:
-        """
-        Check for any floats in data.
-
-        data: Audio buffer to analyse for floats.
-        """
-        return any([any([isinstance(y, float) for y in x]) for x in data]) or \
-            base.Wavfile._buffer_max_abs(data) <= 1.0
-
     def __check_metadata(self) -> None:
         """
         Prevent new audio data from overwriting the metadata chunk.
@@ -85,7 +77,18 @@ class WavWrite(base.Wavfile):
             if self._list_chunk.start > self._data_chunk.start:
                 raise exception.WriteError('Audio may overwrite metadata chunk')
 
-    def write_float(self, audio: List[List[float]]) -> None:
+    def __write_float(self, audio: Sequence[Sequence[float]]) -> None:
+        """
+        Write float data to the file.
+        """
+        convert = (
+            self._convert_float_to_int
+            if self.audio_fmt == chunk.WavFormat.PCM
+            else None
+        )
+        self._data_chunk.write_frames(audio, convert)
+
+    def write_float(self, audio: Sequence[Sequence[float]]) -> None:
         """
         Write float data to the file. If the file format is `PCM` then the data will be converted to
         floats, otherwise there will be no conversion.
@@ -93,15 +96,25 @@ class WavWrite(base.Wavfile):
         :param audio: Audio frames to write.
         """
         self.__check_metadata()
-        if self.audio_fmt == chunk.WavFormat.PCM:
-            # data are floats but we are writing integers
-            for n in range(len(audio)):
-                for m in range(len(audio[n])):
-                    audio[n][m] = self._convert_float_to_int(audio[n][m])
+        sample_type = self.check_audio_buffer(audio)
+        if sample_type is None:
+            return
+        elif sample_type is int:
+            raise TypeError("Audio samples must be floats")
+        self.__write_float(audio)
 
-        self._data_chunk.write_frames(audio)
+    def __write_int(self, audio: Sequence[Sequence[int]]) -> None:
+        """
+        Write integer data to the file.
+        """
+        convert = (
+            self._convert_int_to_float
+            if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT
+            else None
+        )
+        self._data_chunk.write_frames(audio, convert)
 
-    def write_int(self, audio: List[List[int]]) -> None:
+    def write_int(self, audio: Sequence[Sequence[int]]) -> None:
         """
         Write integer data to the file. If the file format is `IEEE_FLOAT` then the data will be
         converted to floats, otherwise there will be no conversion.
@@ -109,16 +122,14 @@ class WavWrite(base.Wavfile):
         :param audio: Audio frames to write.
         """
         self.__check_metadata()
-        if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
-            # data are integers but we are writing floats
-            audio: List[List[Union[int, float]]]
-            for n in range(len(audio)):
-                for m in range(len(audio[n])):
-                    audio[n][m] = self._convert_int_to_float(audio[n][m])
+        sample_type = self.check_audio_buffer(audio)
+        if sample_type is None:
+            return
+        elif sample_type is float:
+            raise TypeError("Audio samples must be integers")
+        self.__write_int(audio)
 
-        self._data_chunk.write_frames(audio)
-
-    def write(self, audio: List[List[Union[int, float]]]) -> None:
+    def write(self, audio: Sequence[Sequence[int | float]]) -> None:
         """
         Write audio data to the file. The data should be a list of lists with dimensions `(N,C)`,
         where `N` is the number of frames and `C` is the number of audio channels. The data may be
@@ -127,12 +138,17 @@ class WavWrite(base.Wavfile):
 
         :param audio: Audio frames to write.
         """
-        if self._data_are_floats(audio):
-            self.write_float(audio)
-        else:
-            self.write_int(audio)
+        self.__check_metadata()
+        sample_type = self.check_audio_buffer(audio)
+        if sample_type is None:
+            return
 
-    def add_metadata(self, **kwargs: Union[str, int]) -> None:
+        if sample_type is float:
+            self.__write_float(audio)
+        else:
+            self.__write_int(cast(Sequence[Sequence[int]], audio))
+
+    def add_metadata(self, **kwargs: str | int) -> None:
         """
         Add metadata to the wav file. Note that this method can only be called once, and the
         metadata cannot be updated once it is written. The metadata chunk will be written before or
@@ -144,6 +160,8 @@ class WavWrite(base.Wavfile):
 
         :param kwargs: The metadata to write, provided as keyword arguments.
         """
+        if self.fp is None:
+            raise exception.WriteError('Audio file pointer must be initialized')
 
         if self._list_chunk is not None:
             raise exception.WriteError('Metadata already written to file. '
