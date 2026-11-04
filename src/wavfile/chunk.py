@@ -434,7 +434,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         self.sub_data_format: WavFormatExSubformat = WavFormatExSubformat.PCM
         self.extension_size: int = 0
         self.valid_bits_per_sample: int = 0
-        self.channel_mask: bytes = bytearray(self._channel_mask_size)
+        self.channel_mask: int = 0
         super().__init__(fp)
 
     def _read(self) -> None:
@@ -447,20 +447,27 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         if (here + self.extension_size) > self.end:
             raise exception.ReadError('Extension size exceeds chunk size')
         self.valid_bits_per_sample = self.read_int(self._valid_bits_per_sample_size, signed=False)
-        self.channel_mask = self.read(self._channel_mask_size)
+        self.channel_mask = self.read_int(self._channel_mask_size, signed=False)
         sub_format = uuid.UUID(bytes_le=self.read(self._sub_format_size))
         try:
             self.sub_data_format = WavFormatExSubformat(sub_format)
         except ValueError as exc:
             raise exception.ReadError('Invalid sub format') from exc
 
+        # verify metadata
         if self.valid_bits_per_sample == 0:
-            warn('Valid bits per sample is 0. Interpreting this as full container precision.')
-            self.valid_bits_per_sample = self.bits_per_sample
+            raise exception.ReadError('Valid bits per sample is 0.')
         if self.valid_bits_per_sample > self.bits_per_sample:
             raise exception.ReadError("Valid bits per sample is exceeds the container's bit per sample")
         if self.audio_fmt == WavFormat.IEEE_FLOAT and self.valid_bits_per_sample not in (32, 64):
             raise exception.ReadError('valid_bits_per_sample should be 32 or 64 for IEEE_FLOAT')
+        if self.channel_mask != 0:
+            # the channel count mask must have a number of bits set equal to the number of channels
+            channel_count = 0
+            for i in range(self._channel_mask_size * 8):
+                channel_count += ((self.channel_mask >> i) & 0x1)
+            if channel_count != self.num_channels:
+                raise exception.ReadError('Invalid channel mask')
 
     def write_fmt(self) -> None:
         """Write the format data to the file."""
@@ -474,7 +481,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
             warn('valid_bits_per_sample is 0. Interpreting this as full container precision.')
             self.valid_bits_per_sample = self.bits_per_sample
         self.write_int(self.valid_bits_per_sample, self._valid_bits_per_sample_size, signed=False)
-        self.write(self.channel_mask)
+        self.write_int(self.channel_mask, self._channel_mask_size, signed=False)
         self.write(self.sub_data_format.value.bytes_le)
 
     @property

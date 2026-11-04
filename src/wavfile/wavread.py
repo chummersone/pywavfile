@@ -53,6 +53,8 @@ class WavRead(base.Wavfile):
         if chnk.chunk_id == chunk.ChunkID.RIFF_CHUNK:
             self._riff_chunk = chunk.RiffChunk(self.fp)
         elif chnk.chunk_id == chunk.ChunkID.FMT_CHUNK:
+            if self._fmt_chunk is not None:
+                raise exception.ReadError('Second format chunk found')
             # get audio format
             self.fp.seek(chunk.Chunk.offset, 1)
             audio_fmt_int = int.from_bytes(
@@ -70,6 +72,8 @@ class WavRead(base.Wavfile):
             else:
                 self._fmt_chunk = chunk.WavFmtChunk(self.fp)
         elif chnk.chunk_id == chunk.ChunkID.DATA_CHUNK:
+            if self._data_chunk is not None:
+                raise exception.ReadError('Second data chunk found')
             if self._fmt_chunk is None:
                 raise exception.ReadError('DATA chunk read before FMT chunk')
             self._data_chunk = chunk.WavDataChunk(self.fp, self._fmt_chunk)

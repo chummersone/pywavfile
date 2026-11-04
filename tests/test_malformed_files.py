@@ -27,6 +27,8 @@ def test_fixture_is_present_and_matches_manifest(filename, metadata):
 
 @pytest.mark.parametrize("filename, metadata", MANIFEST["fixtures"].items())
 def test_reader_behaviour(filename, metadata):
+    if filename.endswith('bad_extensible_unknown_guid.wav'):
+        print('')
     try:
         with wavfile.open(FIXTURES / filename):
             outcome = "valid"
