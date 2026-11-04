@@ -20,9 +20,7 @@ class TestExceptions(unittest.TestCase):
 
     def test_wrong_size(self):
         filename = get_file_path("corpus/osc_tri_wrong_size.wav")
-        with wavfile.open(filename, 'r') as wfp:
-            wfp: wavfile.wavread.WavRead
-            self.assertRaises(IOError, wfp.read)
+        self.assertRaises(wavfile.exception.ReadError, wavfile.open, filename)
 
     def test_wrong_chunk_order(self):
         filename = get_file_path("corpus/osc_tri_wrong_chunk_order.wav")

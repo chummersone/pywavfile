@@ -169,7 +169,6 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.Error, wfp.write, [[0]])
 
     def test_extensible_write_after_close(self):
@@ -178,7 +177,6 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0, 0]])
         self.assertRaises(ValueError, wfp.write, [[0, 0]])
 

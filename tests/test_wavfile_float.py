@@ -19,7 +19,6 @@ class TestWavfileFloat(unittest.TestCase):
                           bits_per_sample=bits_per_sample,
                           num_channels=num_channels,
                           fmt=wavfile.chunk.WavFormat.IEEE_FLOAT) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
             # test overwriting the data

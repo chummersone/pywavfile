@@ -32,9 +32,6 @@ class Wavfile(ABC):
         self._data_chunk = None
         self._list_chunk = None
 
-    def __enter__(self) -> Self:
-        return self
-
     def _init_fp(self, f: str | os.PathLike[AnyStr] | BinaryIO, mode: str) -> None:
         """
         Initialise the file pointer.
@@ -172,12 +169,12 @@ class Wavfile(ABC):
     @property
     def format(self) -> chunk.WavFormat:
         """Wave file format code"""
-        return self._data_chunk.fmt_chunk.audio_fmt
+        return self._data_chunk.fmt_chunk._audio_fmt
 
     @property
     def audio_fmt(self) -> chunk.WavFormat:
         """Audio sample format"""
-        return self._data_chunk.audio_fmt
+        return self._data_chunk.fmt_chunk.audio_fmt
 
     @property
     def num_frames(self) -> int:
@@ -260,7 +257,7 @@ class Wavfile(ABC):
         if self._should_close_file:
             self.close()
 
-    def __enter__(self) -> Wavfile:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *args: tuple[Any, ...]) -> None:
