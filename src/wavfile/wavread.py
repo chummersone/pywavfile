@@ -93,8 +93,10 @@ class WavRead(base.Wavfile):
         file_size = self.fp.tell()
         self.fp.seek(0)
 
+        read_end = file_size
+
         # Read the file
-        while file_size - self.fp.tell() > 0:
+        while read_end - self.fp.tell() > 0:
             chnk = chunk.Chunk(self.fp)
 
             # rewind to chunk start
@@ -113,6 +115,9 @@ class WavRead(base.Wavfile):
                     raise exception.ReadError('RIFF chunk size exceeds file size')
                 if self.fp.tell() > self._riff_chunk.end:
                     raise exception.ReadError('Reading beyond the end of the RIFF chunk')
+
+            # do not read past the end of the RIFF chunk
+            read_end = self._riff_chunk.end
 
             # check this chunk's boundary
             if chnk.end > self._riff_chunk.end:
