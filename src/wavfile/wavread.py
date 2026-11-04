@@ -107,16 +107,20 @@ class WavRead(base.Wavfile):
             if self._riff_chunk is None:
                 raise exception.ReadError('RIFF chunk not found')
 
-            # skip superfluous bytes
-            if chnk.chunk_id != chunk.ChunkID.RIFF_CHUNK:
-                chnk.skip()
-
             # check RIFF boundary
             if self._riff_chunk is not None:
                 if self._riff_chunk.size > file_size - self._riff_chunk.offset:
                     raise exception.ReadError('RIFF chunk size exceeds file size')
                 if self.fp.tell() > self._riff_chunk.end:
                     raise exception.ReadError('Reading beyond the end of the RIFF chunk')
+
+            # check this chunk's boundary
+            if chnk.end > self._riff_chunk.end:
+                raise exception.ReadError('Chunk end exceeds RIFF chunk boundary')
+
+            # skip superfluous bytes
+            if chnk.chunk_id != chunk.ChunkID.RIFF_CHUNK:
+                chnk.skip()
 
         if self._data_offset_for_deferred != 0:
             # Data chunk parsing was deferred because it landed before the format chunk

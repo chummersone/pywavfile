@@ -370,7 +370,9 @@ class WavFmtChunk(Chunk):
             raise exception.ReadError('Sample rate is 0')
         if self.bits_per_sample == 0:
             raise exception.ReadError('bits_per_sample is 0')
-        expected_block_align = (self.num_channels * self.bits_per_sample) // 8
+        if self.bits_per_sample % 8 != 0:
+            raise exception.ReadError('bits_per_sample should be a multiple of 8')
+        expected_block_align = self.num_channels * self.bits_per_sample // 8
         if self.block_align != expected_block_align:
             raise exception.ReadError('block_align set incorrectly')
         expected_byte_rate = (self.sample_rate * self.block_align)
