@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Provides the WavRead class for reading wave files.
 
@@ -8,7 +6,7 @@ mode.
 """
 from __future__ import annotations
 import os
-from typing import cast, Generator, IO
+from typing import cast, AnyStr, BinaryIO, Generator
 
 from . import base
 from . import chunk
@@ -18,7 +16,7 @@ from . import exception
 class WavRead(base.Wavfile):
     """Class for reading a wave file"""
 
-    def __init__(self, f: str | os.PathLike | IO) -> None:
+    def __init__(self, f: str | os.PathLike[AnyStr] | BinaryIO) -> None:
         """
         Initialise the WavRead object.
 
@@ -26,6 +24,12 @@ class WavRead(base.Wavfile):
         """
         base.Wavfile.__init__(self)
         self._init_fp(f, 'rb')
+
+        self._riff_chunk: chunk.RiffChunk | None = None
+        self._data_chunk: chunk.WavDataChunk | None = None
+        self._fmt_chunk: chunk.WavFmtChunk | None = None
+        self._list_chunk: chunk.ListChunk | None = None
+        self._data_offset_for_deferred: int = 0
 
         # read the file header
         try:
@@ -42,6 +46,42 @@ class WavRead(base.Wavfile):
         """
         return f'{self.__class__.__name__}("{self.fp.name}")'
 
+    def __parse_chunk(self, chnk: chunk.Chunk) -> None:
+        """Parse the chunk."""
+        if self.fp is None:
+            raise exception.ReadError('Audio file pointer must be initialized')
+
+        if chnk.chunk_id == chunk.ChunkID.RIFF_CHUNK:
+            self._riff_chunk = chunk.RiffChunk(self.fp)
+        elif chnk.chunk_id == chunk.ChunkID.FMT_CHUNK:
+            if self._fmt_chunk is not None:
+                raise exception.ReadError('Second format chunk found')
+            # get audio format
+            self.fp.seek(chunk.Chunk.offset, 1)
+            audio_fmt_int = int.from_bytes(
+                self.fp.read(chunk.WavFmtChunk.audio_fmt_size),
+                signed=False,
+                byteorder='little'
+            )
+            try:
+                audio_fmt = chunk.WavFormat(audio_fmt_int)
+            except ValueError as exc:
+                raise exception.ReadError('Unsupported audio format') from exc
+            self.fp.seek(-chunk.Chunk.offset - chunk.WavFmtChunk.audio_fmt_size, 1)
+            if audio_fmt == chunk.WavFormat.EXTENSIBLE:
+                self._fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp)
+            else:
+                self._fmt_chunk = chunk.WavFmtChunk(self.fp)
+        elif chnk.chunk_id == chunk.ChunkID.DATA_CHUNK:
+            if self._data_chunk is not None:
+                raise exception.ReadError('Second data chunk found')
+            if self._fmt_chunk is None:
+                self._data_offset_for_deferred = self.fp.tell()
+                return
+            self._data_chunk = chunk.WavDataChunk(self.fp, self._fmt_chunk)
+        elif chnk.chunk_id == chunk.ChunkID.LIST_CHUNK:
+            self._list_chunk = chunk.ListChunk(self.fp)
+
     def _init_file(self) -> None:
         """
         Read the file and initialise the object properties.
@@ -52,42 +92,52 @@ class WavRead(base.Wavfile):
         self.fp.seek(0, 2)
         file_size = self.fp.tell()
         self.fp.seek(0)
-        fmt_chunk = None
+
+        read_end = file_size
 
         # Read the file
-        while file_size - self.fp.tell() > 0:
+        while read_end - self.fp.tell() > 0:
             chnk = chunk.Chunk(self.fp)
 
             # rewind to chunk start
             self.fp.seek(-chunk.Chunk.offset, 1)
 
-            # interpret each chunk
-            if chnk.chunk_id == chunk.ChunkID.RIFF_CHUNK:
-                self._riff_chunk = chunk.RiffChunk(self.fp)
-            elif chnk.chunk_id == chunk.ChunkID.FMT_CHUNK:
-                # get audio format
-                self.fp.seek(chunk.Chunk.offset, 1)
-                audio_fmt_int = int.from_bytes(
-                    self.fp.read(chunk.WavFmtChunk.audio_fmt_size),
-                    signed=False,
-                    byteorder='little'
-                )
-                audio_fmt = chunk.WavFormat(audio_fmt_int)
-                self.fp.seek(-chunk.Chunk.offset - chunk.WavFmtChunk.audio_fmt_size, 1)
-                if audio_fmt == chunk.WavFormat.EXTENSIBLE:
-                    fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp)
-                else:
-                    fmt_chunk = chunk.WavFmtChunk(self.fp)
-            elif chnk.chunk_id == chunk.ChunkID.DATA_CHUNK:
-                if fmt_chunk is None:
-                    raise exception.ReadError('DATA chunk read before FMT chunk')
-                self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
-            elif chnk.chunk_id == chunk.ChunkID.LIST_CHUNK:
-                self._list_chunk = chunk.ListChunk(self.fp)
+            # parse the chunk
+            self.__parse_chunk(chnk)
+
+            # RIFF chunk should be the first
+            if self._riff_chunk is None:
+                raise exception.ReadError('RIFF chunk not found')
+
+            # check RIFF boundary
+            if self._riff_chunk is not None:
+                if self._riff_chunk.size > file_size - self._riff_chunk.offset:
+                    raise exception.ReadError('RIFF chunk size exceeds file size')
+                if self.fp.tell() > self._riff_chunk.end:
+                    raise exception.ReadError('Reading beyond the end of the RIFF chunk')
+
+            # do not read past the end of the RIFF chunk
+            read_end = self._riff_chunk.end
+
+            # check this chunk's boundary
+            if chnk.end > self._riff_chunk.end:
+                raise exception.ReadError('Chunk end exceeds RIFF chunk boundary')
 
             # skip superfluous bytes
             if chnk.chunk_id != chunk.ChunkID.RIFF_CHUNK:
                 chnk.skip()
+
+        if self._data_offset_for_deferred != 0:
+            # Data chunk parsing was deferred because it landed before the format chunk
+            self.fp.seek(self._data_offset_for_deferred)
+            chnk = chunk.Chunk(self.fp)
+            self.fp.seek(-chunk.Chunk.offset, 1)
+            self.__parse_chunk(chnk)
+
+        if self._fmt_chunk is None:
+            raise exception.ReadError('FMT chunk not found')
+        if self._data_chunk is None:
+            raise exception.ReadError('DATA chunk not found')
 
         # go to data chunk content start ready to read samples
         self.fp.seek(self._data_chunk.content_start)

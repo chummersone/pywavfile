@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Provides test cases for metadata read/write.
 """
@@ -16,7 +14,7 @@ class TestReadMetadata(unittest.TestCase):
 
     def test_read(self):
 
-        filename = get_file_path('noise_44100_24bit_w_metadata.wav')
+        filename = get_file_path('corpus/noise_44100_24bit_w_metadata.wav')
         with wavfile.open(filename, 'r') as wfp:
             self.assertEqual('Joe Bloggs', wfp.metadata['artist'])
             self.assertEqual('Noise', wfp.metadata['track'])
@@ -75,22 +73,19 @@ class TestWavfileWriteMetadata(WavfileWriteTestRunner):
                       len(audio_data_in[0]), metadata=metadata, metadata_mode='post')
 
     def test_metadata_rewrite(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w') as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.add_metadata(comment='test')
             self.assertRaises(wavfile.exception.WriteError, wfp.add_metadata, comment='more')
 
     def test_metadata_write_invalid(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w') as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.exception.WriteError, wfp.add_metadata, invalid='test')
 
     def test_metadata_write_order(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w') as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0]])
             wfp.add_metadata(
                 comment='Write metadata after audio',

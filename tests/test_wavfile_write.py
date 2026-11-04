@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Provides test cases for writing and reading a wave audio file.
 """
@@ -18,7 +16,7 @@ class WavfileWriteTestRunner(unittest.TestCase):
     def run_test(self, audio_data_in, read_callback, sample_rate, bits_per_sample, num_channels,
                  reference=None, metadata=None, metadata_mode='pre', fmt=wavfile.chunk.WavFormat.PCM,
                  write_callback='write'):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=sample_rate,
                           bits_per_sample=bits_per_sample,
@@ -28,7 +26,6 @@ class WavfileWriteTestRunner(unittest.TestCase):
             # write metadata before data
             if metadata is not None and metadata_mode == 'pre':
                 wfp.add_metadata(**metadata)
-            wfp: wavfile.wavwrite.WavWrite
             write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
             self.assertEqual(wfp.bits_per_sample / 8, wfp._bytes_per_sample)
@@ -278,7 +275,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         audio_data_in = [
             [0, 1, 2, 3, 4, 5],
         ]
-        filename = "tmp.wav"
+        filename = get_file_path("corpus/tmp.wav")
         captured_output = io.StringIO()
         sys.stderr = captured_output
         with wavfile.open(filename, 'w', sample_rate=44100) as wav:
@@ -290,26 +287,24 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         self.assertTrue(len(output) > 0)
 
     def test_incorrect_channel_count(self):
-        filename = "tmp.wav"
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.Error, wfp.write, [[0]])
 
     def test_write_after_close(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0, 0]])
         self.assertRaises(ValueError, wfp.write, [[0, 0]])
 
     def test_shortcut_write(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         audio_data_in = [
             [0],
             [256],
@@ -329,7 +324,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         self.assertListEqual(audio_data_in, audio_data_out)
 
     def test_before_write(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16) as wfp:
@@ -364,32 +359,29 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                       bits_per_sample, len(audio_data_in[0]), audio_data_aligned)
 
     def test_write_float_as_int(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0.0, 0.0]])
             self.assertRaises(TypeError, wfp.write_int, [[0.0, 0.0]])
 
     def test_write_int_as_float(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0, 0]])
             self.assertRaises(TypeError, wfp.write_float, [[0, 0]])
 
     def test_write_noop(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([])
             self.assertEqual(wfp.num_frames, 0)
             wfp.write_int([])

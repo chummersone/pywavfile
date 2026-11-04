@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Provides the WavWrite class for writing wave files.
 
@@ -8,7 +6,7 @@ mode.
 """
 import os
 import sys
-from typing import cast, IO, Sequence
+from typing import cast, AnyStr, BinaryIO, Sequence
 
 from . import base
 from . import chunk
@@ -20,7 +18,7 @@ class WavWrite(base.Wavfile):
 
     _is_open: bool
 
-    def __init__(self, fp: str | os.PathLike | IO, sample_rate: int = 44100,
+    def __init__(self, fp: str | os.PathLike[AnyStr] | BinaryIO, sample_rate: int = 44100,
                  num_channels: int | None = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """
@@ -46,11 +44,15 @@ class WavWrite(base.Wavfile):
         if bits_per_sample > 16 or (num_channels is not None and num_channels > 2) or \
                 fmt == chunk.WavFormat.EXTENSIBLE:
             fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp)
-            if fmt != chunk.WavFormat.EXTENSIBLE:
-                fmt_chunk.sub_data_format = fmt
+            fmt_chunk.valid_bits_per_sample = bits_per_sample
+            # ensure the container holds whole bytes
+            if bits_per_sample % 8 != 0:
+                bits_per_sample = bits_per_sample + (8 - (bits_per_sample % 8))
         else:
             fmt_chunk = chunk.WavFmtChunk(self.fp)
-            fmt_chunk.audio_fmt = fmt
+        if fmt == chunk.WavFormat.EXTENSIBLE:
+            fmt = chunk.WavFormat.PCM
+        fmt_chunk.audio_fmt = fmt
         self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
         self._data_chunk.fmt_chunk.sample_rate = int(sample_rate)
         if num_channels is not None:

@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Provides test cases for writing and reading floating-point wave audio files.
 """
@@ -15,13 +13,12 @@ class TestWavfileFloat(unittest.TestCase):
 
     def run_test(self, audio_data_in, read_callback, sample_rate,
                  bits_per_sample, num_channels, reference=None):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=sample_rate,
                           bits_per_sample=bits_per_sample,
                           num_channels=num_channels,
                           fmt=wavfile.chunk.WavFormat.IEEE_FLOAT) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
             # test overwriting the data
@@ -160,12 +157,11 @@ class TestWavfileFloat(unittest.TestCase):
             [-0.1],
             [-0.3],
         ]
-        with wavfile.open(get_file_path('tmp.wav'), 'w',
+        with wavfile.open(get_file_path('corpus/tmp.wav'), 'w',
                           sample_rate=44100,
                           bits_per_sample=24,
                           fmt=wavfile.chunk.WavFormat.IEEE_FLOAT,
                           num_channels=len(audio_data_in[0])) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.Error, wfp.write, audio_data_in)
 
 

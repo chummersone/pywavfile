@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Provides test cases for reading a wave audio file.
 """
@@ -13,8 +11,8 @@ from test_module import get_file_path
 
 class TestWavfileRead(unittest.TestCase):
 
-    filename = get_file_path("osc_tri.wav")
-    filename_unsigned = get_file_path("osc_tri_unsigned.wav")
+    filename = get_file_path("corpus/osc_tri.wav")
+    filename_unsigned = get_file_path("corpus/osc_tri_unsigned.wav")
 
     def test_file_open_filename(self):
         wfp = wavfile.open(self.filename)
@@ -46,7 +44,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_file_read_num_channels(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             self.assertEqual(len(wfp.read_int()[0]), 1)
 
     def test_file_num_frames(self):
@@ -63,7 +60,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_file_read_num_frames(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             self.assertEqual(len(wfp.read_int()), 4096)
 
     def test_file_bits_per_sample(self):
@@ -72,21 +68,18 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_float_range(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             audio = wfp.read_float()
             max_abs = max([max([abs(y) for y in x]) for x in audio])
             self.assertTrue(max_abs < 0.7)
 
     def test_tell(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             self.assertEqual(wfp.tell(), 0)
             wfp.read_int()
             self.assertEqual(wfp.tell(), 4096)
 
     def test_seek(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             wfp.read_int()
             self.assertEqual(wfp.tell(), 4096)
             wfp.seek(0)
@@ -96,7 +89,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_seek_whence_0(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             wfp.read_int()
             self.assertEqual(wfp.tell(), 4096)
             wfp.seek(0, 0)
@@ -106,7 +98,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_seek_whence_1(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             self.assertEqual(wfp.tell(), 0)
             wfp.read_int()
             wfp.seek(-1, 1)
@@ -116,7 +107,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_seek_whence_2(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             wfp.seek(0, 2)
             self.assertEqual(wfp.tell(), 4096)
             wfp.seek(-4096, 2)
@@ -124,7 +114,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_read_int_blocks(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             num_frames = 33
             while True:
                 audio = wfp.read_int(num_frames)
@@ -136,7 +125,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_iter_int_blocks(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             num_frames = 33
             buffer = wfp.iter_int(num_frames)
             for audio in buffer:
@@ -145,7 +133,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_iter_int_next(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             num_frames = 31
             buffer = wfp.iter_int(num_frames)
             audio = next(buffer)
@@ -153,7 +140,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_remaining(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             self.assertEqual(wfp.tell(), 0)
             wfp.read_int()
             end = wfp.read_int()
@@ -161,7 +147,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_read_float_blocks(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             num_frames = 33
             while True:
                 audio = wfp.read_float(num_frames)
@@ -173,7 +158,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_iter_float_blocks(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             num_frames = 29
             buffer = wfp.iter_float(num_frames)
             for audio in buffer:
@@ -182,7 +166,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_iter_float_next(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             num_frames = 27
             buffer = wfp.iter_float(num_frames)
             audio = next(buffer)
@@ -190,7 +173,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_iter_native_blocks(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             self.assertEqual(wfp.format, wavfile.chunk.WavFormat.PCM)
             num_frames = 29
             buffer = wfp.iter(num_frames)
@@ -200,7 +182,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_iter_samples(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             self.assertEqual(wfp.format, wavfile.chunk.WavFormat.PCM)
             num_frames = 1
             buffer = wfp.iter(num_frames)
@@ -209,7 +190,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_read_native_type(self):
         with wavfile.open(self.filename) as wfp:
-            wfp: wavfile.wavread.WavRead
             self.assertEqual(wfp.format, wavfile.chunk.WavFormat.PCM)
             audio = wfp.read()
             for i in range(0, len(audio)):
@@ -218,7 +198,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_read_short(self):
         with wavfile.open(self.filename_unsigned) as wfp:
-            wfp: wavfile.wavread.WavRead
             audio = wfp.read_int()
             for i in range(0, len(audio)):
                 for j in range(0, len(audio[0])):
@@ -240,21 +219,21 @@ class TestWavfileRead(unittest.TestCase):
         self.assertEqual(1, len(audio_data[0]))
 
     def test_read_test_file_1(self):
-        audio_data, fs, bits_per_sample = wavfile.read(get_file_path('test-file-1.wav'))
+        audio_data, fs, bits_per_sample = wavfile.read(get_file_path('corpus/test-file-1.wav'))
         self.assertEqual(44100, fs)
         self.assertEqual(24, bits_per_sample)
         self.assertEqual(44100 * 4, len(audio_data))
         self.assertEqual(2, len(audio_data[0]))
 
     def test_read_test_file_2(self):
-        audio_data, fs, bits_per_sample = wavfile.read(get_file_path('test-file-2.wav'))
+        audio_data, fs, bits_per_sample = wavfile.read(get_file_path('corpus/test-file-2.wav'))
         self.assertEqual(96000, fs)
         self.assertEqual(32, bits_per_sample)
         self.assertEqual(96000, len(audio_data))
         self.assertEqual(1, len(audio_data[0]))
 
     def test_read_test_file_3(self):
-        audio_data, fs, bits_per_sample = wavfile.read(get_file_path('test-file-3.wav'))
+        audio_data, fs, bits_per_sample = wavfile.read(get_file_path('corpus/test-file-3.wav'))
         self.assertEqual(48000, fs)
         self.assertEqual(24, bits_per_sample)
         self.assertEqual(48000, len(audio_data))
@@ -262,7 +241,6 @@ class TestWavfileRead(unittest.TestCase):
 
     def test_read_short_to_float(self):
         with wavfile.open(self.filename_unsigned) as wfp:
-            wfp: wavfile.wavread.WavRead
             audio = wfp.read_float()
             for i in range(0, len(audio)):
                 for j in range(0, len(audio[0])):

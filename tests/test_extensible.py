@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 Provides test cases for writing and reading a wave audio file in extensible format.
 """
@@ -166,26 +164,24 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                       bits_per_sample, len(audio_data_in[0]), fmt=self.fmt)
 
     def test_extensible_incorrect_channel_count(self):
-        filename = "tmp.wav"
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.Error, wfp.write, [[0]])
 
     def test_extensible_write_after_close(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0, 0]])
         self.assertRaises(ValueError, wfp.write, [[0, 0]])
 
     def test_extensible_shortcut_write(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         audio_data_in = [
             [0],
             [256],
@@ -205,7 +201,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         self.assertListEqual(audio_data_in, audio_data_out)
 
     def test_extensible_before_write(self):
-        filename = get_file_path("tmp.wav")
+        filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=44100,
                           bits_per_sample=16) as wfp:
@@ -240,7 +236,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                       bits_per_sample, len(audio_data_in[0]), audio_data_aligned, fmt=self.fmt)
 
     def test_extensible_reference_file(self):
-        filename = get_file_path('noise_44100_24bit_w_metadata.ext.wav')
+        filename = get_file_path('corpus/noise_44100_24bit_w_metadata.ext.wav')
         with wavfile.open(filename, 'r') as wav:
             wav: wavfile.wavread.WavRead
             self.assertEqual(wav.num_frames, 1323000)

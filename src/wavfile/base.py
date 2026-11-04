@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
 """
 The main API for reading and writing wav files.
 """
@@ -7,7 +5,11 @@ from __future__ import annotations
 import builtins
 import os
 from abc import ABC
-from typing import Any, IO, Sequence
+from typing import Any, AnyStr, BinaryIO, Sequence
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from . import chunk
 
@@ -15,7 +17,7 @@ from . import chunk
 class Wavfile(ABC):
     """Abstract base class for wave file read/write"""
 
-    fp: IO | None
+    fp: BinaryIO | None
     _should_close_file: bool
     _riff_chunk: chunk.RiffChunk | None
     _data_chunk: chunk.WavDataChunk | None
@@ -30,7 +32,7 @@ class Wavfile(ABC):
         self._data_chunk = None
         self._list_chunk = None
 
-    def _init_fp(self, f: str | os.PathLike | IO, mode: str) -> None:
+    def _init_fp(self, f: str | os.PathLike[AnyStr] | BinaryIO, mode: str) -> None:
         """
         Initialise the file pointer.
 
@@ -42,6 +44,7 @@ class Wavfile(ABC):
             self._should_close_file = True
         else:
             self.fp = f
+            self._should_close_file = False
 
     @classmethod
     def check_audio_buffer(cls, audio: Sequence[Sequence[float]]) -> \
@@ -166,12 +169,12 @@ class Wavfile(ABC):
     @property
     def format(self) -> chunk.WavFormat:
         """Wave file format code"""
-        return self._data_chunk.fmt_chunk.audio_fmt
+        return self._data_chunk.fmt_chunk._audio_fmt
 
     @property
     def audio_fmt(self) -> chunk.WavFormat:
         """Audio sample format"""
-        return self._data_chunk.audio_fmt
+        return self._data_chunk.fmt_chunk.audio_fmt
 
     @property
     def num_frames(self) -> int:
@@ -254,7 +257,7 @@ class Wavfile(ABC):
         if self._should_close_file:
             self.close()
 
-    def __enter__(self) -> Wavfile:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *args: tuple[Any, ...]) -> None:
