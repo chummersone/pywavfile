@@ -9,6 +9,10 @@ from enum import Enum, IntEnum
 from types import DynamicClassAttribute
 from typing import BinaryIO, Callable, Literal, Sequence
 from warnings import warn
+try:
+    from typing import Self
+except ImportError:
+    from typing_extensions import Self
 
 from . import exception
 
@@ -638,7 +642,7 @@ class WavDataChunk(Chunk):
                     sample = sample_transform(sample)
                 self.write_sample(sample)
 
-    def seek(self, frame_number: int, whence: int = 0) -> WavDataChunk:
+    def seek(self, frame_number: int, whence: int = 0) -> Self:
         """
         Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
         absolute positioning, 1 = relative to current position, 2 = relative to end of last frame.

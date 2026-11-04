@@ -14,6 +14,7 @@ from . import wavwrite
 from .exception import Error, ReadError, WriteError
 from .version import __VERSION__
 
+
 @overload
 def open(
     f: str | os.PathLike[AnyStr] | BinaryIO,
