@@ -24,12 +24,12 @@
       "size_bytes": 52
     },
     "valid_metadata_after_data.wav": {
-      "expected": "valid_or_supported_policy",
+      "expected": "valid",
       "note": "Metadata follows data; parser should not accidentally treat audio end as container end.",
       "size_bytes": 64
     },
     "valid_odd_data_chunk.wav": {
-      "expected": "valid_or_reject_by_format",
+      "expected": "valid",
       "note": "Odd-sized data payload is structurally padded; payload itself is not whole PCM frames.",
       "size_bytes": 48
     },
@@ -49,7 +49,7 @@
       "size_bytes": 76
     },
     "valid_extensible_valid_bits_less_than_container.wav": {
-      "expected": "valid_or_supported_policy",
+      "expected": "valid",
       "note": "20 valid bits in a 24-bit container; support requires correct alignment semantics.",
       "size_bytes": 74
     },

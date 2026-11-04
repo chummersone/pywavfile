@@ -537,7 +537,8 @@ class WavDataChunk(Chunk):
     def read_sample(self) -> int | float:
         """Read a sample from the chunk."""
         if self.fmt_chunk.audio_fmt == WavFormat.PCM:
-            return self.read_int(self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
+            sample = self.read_int(self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
+            return sample >> self._padding_bits
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return self.read_float(self.fmt_chunk.bytes_per_sample)
         raise exception.ReadError('File is invalid')
@@ -570,12 +571,15 @@ class WavDataChunk(Chunk):
     @property
     def _max_val(self) -> float | int:
         """Maximum value"""
+        bits_per_sample = self.fmt_chunk.bits_per_sample
+        if isinstance(self.fmt_chunk, WavFmtExtensibleChunk):
+            bits_per_sample = self.fmt_chunk.valid_bits_per_sample
         if self.fmt_chunk.audio_fmt == WavFormat.PCM:
             if self.fmt_chunk.signed:
                 sign_correction = 1
             else:
                 sign_correction = 0
-            return (2 ** (self.fmt_chunk.bits_per_sample - sign_correction)) - 1
+            return (2 ** (bits_per_sample - sign_correction)) - 1
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return 1.0
         raise exception.ReadError('File is invalid')
@@ -608,6 +612,14 @@ class WavDataChunk(Chunk):
             self.__saturation_warning()
         return val
 
+    @property
+    def _padding_bits(self):
+        """Sample padding bits for extensible format"""
+        padding_bits = 0
+        if isinstance(self.fmt_chunk, WavFmtExtensibleChunk):
+            padding_bits = self.fmt_chunk.bits_per_sample - self.fmt_chunk.valid_bits_per_sample
+        return padding_bits
+
     def write_sample(self, sample: int | float) -> None:
         """
         Write a sample to the chunk.
@@ -616,7 +628,8 @@ class WavDataChunk(Chunk):
         """
         sample = self._saturate(sample)
         if self.fmt_chunk.audio_fmt == WavFormat.PCM:
-            self.write_int(int(sample), self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
+            sample = int(sample) << self._padding_bits
+            self.write_int(sample, self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             self.write_float(sample, self.fmt_chunk.bytes_per_sample)
         else:
