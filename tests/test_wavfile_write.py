@@ -26,7 +26,6 @@ class WavfileWriteTestRunner(unittest.TestCase):
             # write metadata before data
             if metadata is not None and metadata_mode == 'pre':
                 wfp.add_metadata(**metadata)
-            wfp: wavfile.wavwrite.WavWrite
             write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
             self.assertEqual(wfp.bits_per_sample / 8, wfp._bytes_per_sample)
@@ -293,7 +292,6 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.Error, wfp.write, [[0]])
 
     def test_write_after_close(self):
@@ -302,7 +300,6 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0, 0]])
         self.assertRaises(ValueError, wfp.write, [[0, 0]])
 
@@ -367,7 +364,6 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0.0, 0.0]])
             self.assertRaises(TypeError, wfp.write_int, [[0.0, 0.0]])
 
@@ -377,7 +373,6 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([[0, 0]])
             self.assertRaises(TypeError, wfp.write_float, [[0, 0]])
 
@@ -387,7 +382,6 @@ class TestWavfileWrite(WavfileWriteTestRunner):
                           sample_rate=44100,
                           bits_per_sample=16,
                           num_channels=2) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             wfp.write([])
             self.assertEqual(wfp.num_frames, 0)
             wfp.write_int([])

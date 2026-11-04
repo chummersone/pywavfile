@@ -162,7 +162,6 @@ class TestWavfileFloat(unittest.TestCase):
                           bits_per_sample=24,
                           fmt=wavfile.chunk.WavFormat.IEEE_FLOAT,
                           num_channels=len(audio_data_in[0])) as wfp:
-            wfp: wavfile.wavwrite.WavWrite
             self.assertRaises(wavfile.Error, wfp.write, audio_data_in)
 
 
