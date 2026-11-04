@@ -451,18 +451,21 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         self.valid_bits_per_sample = self.read_int(self._valid_bits_per_sample_size, signed=False)
         self.channel_mask = self.read_int(self._channel_mask_size, signed=False)
         sub_format = uuid.UUID(bytes_le=self.read(self._sub_format_size))
+
+        # verify metadata
         try:
             self.sub_data_format = WavFormatExSubformat(sub_format)
         except ValueError as exc:
             raise exception.ReadError('Invalid sub format') from exc
-
-        # verify metadata
         if self.valid_bits_per_sample == 0:
             raise exception.ReadError('Valid bits per sample is 0.')
         if self.valid_bits_per_sample > self.bits_per_sample:
             raise exception.ReadError("Valid bits per sample is exceeds the container's bit per sample")
-        if self.audio_fmt == WavFormat.IEEE_FLOAT and self.valid_bits_per_sample not in (32, 64):
-            raise exception.ReadError('valid_bits_per_sample should be 32 or 64 for IEEE_FLOAT')
+        if self.audio_fmt == WavFormat.IEEE_FLOAT:
+            if self.valid_bits_per_sample not in (32, 64):
+                raise exception.ReadError('valid_bits_per_sample should be 32 or 64 for IEEE_FLOAT')
+            if self.valid_bits_per_sample != self.bits_per_sample:
+                raise exception.ReadError('Valid bits must equal container width for IEEE_FLOAT')
         if self.channel_mask != 0:
             # the channel count mask must have a number of bits set equal to the number of channels
             channel_count = 0
