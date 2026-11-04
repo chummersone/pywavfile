@@ -29,6 +29,7 @@ class WavRead(base.Wavfile):
         self._data_chunk: chunk.WavDataChunk | None = None
         self._fmt_chunk: chunk.WavFmtChunk | None = None
         self._list_chunk: chunk.ListChunk | None = None
+        self._data_offset_for_deferred: int = 0
 
         # read the file header
         try:
@@ -75,7 +76,8 @@ class WavRead(base.Wavfile):
             if self._data_chunk is not None:
                 raise exception.ReadError('Second data chunk found')
             if self._fmt_chunk is None:
-                raise exception.ReadError('DATA chunk read before FMT chunk')
+                self._data_offset_for_deferred = self.fp.tell()
+                return
             self._data_chunk = chunk.WavDataChunk(self.fp, self._fmt_chunk)
         elif chnk.chunk_id == chunk.ChunkID.LIST_CHUNK:
             self._list_chunk = chunk.ListChunk(self.fp)
@@ -115,6 +117,13 @@ class WavRead(base.Wavfile):
                     raise exception.ReadError('RIFF chunk size exceeds file size')
                 if self.fp.tell() > self._riff_chunk.end:
                     raise exception.ReadError('Reading beyond the end of the RIFF chunk')
+
+        if self._data_offset_for_deferred != 0:
+            # Data chunk parsing was deferred because it landed before the format chunk
+            self.fp.seek(self._data_offset_for_deferred)
+            chnk = chunk.Chunk(self.fp)
+            self.fp.seek(-chunk.Chunk.offset, 1)
+            self.__parse_chunk(chnk)
 
         if self._fmt_chunk is None:
             raise exception.ReadError('FMT chunk not found')
