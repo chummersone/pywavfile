@@ -279,7 +279,6 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         captured_output = io.StringIO()
         sys.stderr = captured_output
         with wavfile.open(filename, 'w', sample_rate=44100) as wav:
-            wav: wavfile.wavwrite.WavWrite
             wav.write(audio_data_in)
         sys.stderr = sys.__stderr__
         captured_output.seek(0)
