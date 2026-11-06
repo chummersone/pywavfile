@@ -5,7 +5,7 @@ Chunk-based helper classes for working with RIFF files.
 import struct
 import sys
 import uuid
-from enum import Enum, IntEnum
+from enum import Enum
 from types import DynamicClassAttribute
 from typing import BinaryIO, Callable, Literal, Sequence
 from warnings import warn
@@ -17,7 +17,20 @@ except ImportError:
 from . import exception
 
 
-class BytesEnum(Enum):
+class WavEnum(Enum):
+    """Enum class for wave file chunks"""
+
+    @classmethod
+    def _missing_(cls, value):
+        raise exception.ReadError(
+            '%r is not a valid %s.  Valid types: %s' % (
+                value,
+                cls.__name__,
+                ', '.join([repr(m.value) for m in cls]),
+            ))
+
+
+class BytesEnum(WavEnum):
     """Enum class with bytes values"""
 
     @DynamicClassAttribute
@@ -40,14 +53,14 @@ class ChunkID(BytesEnum):
     UNKNOWN_CHUNK = b'    '
 
 
-class WavFormat(IntEnum):
+class WavFormat(WavEnum):
     """Wav audio data format"""
     PCM = 0x0001
     IEEE_FLOAT = 0x0003
     EXTENSIBLE = 0xFFFE
 
 
-class WavFormatExSubformat(Enum):
+class WavFormatExSubformat(WavEnum):
     """Extensible WAVE sub-format"""
     PCM = uuid.UUID("00000001-0000-0010-8000-00AA00389B71")
     IEEE = uuid.UUID("00000003-0000-0010-8000-00AA00389B71")
@@ -94,7 +107,7 @@ class Chunk:
         if self.read_only:
             try:
                 self.chunk_id = ChunkID(self.read(self.word_size))
-            except ValueError:
+            except exception.ReadError:
                 self.chunk_id = ChunkID.UNKNOWN_CHUNK
             self.size = self.read_int(self.word_size, signed=False)
         else:
@@ -303,10 +316,7 @@ class RiffChunk(Chunk):
         if self.read_only:
             if self.chunk_id != ChunkID.RIFF_CHUNK:
                 raise exception.ReadError('Chunk is not a RIFF chunk')
-            try:
-                self.format = RiffFormat(self.read(self.word_size))
-            except ValueError as exc:
-                raise exception.ReadError('RIFF is not a WAVE file') from exc
+            self.format = RiffFormat(self.read(self.word_size))
         else:
             self.write(RiffFormat.WAVE.value)
 
@@ -354,10 +364,7 @@ class WavFmtChunk(Chunk):
         """Read metadata from the chunk"""
         if self.chunk_id != ChunkID.FMT_CHUNK:
             raise exception.ReadError('Chunk is not a FMT chunk')
-        try:
-            self._audio_fmt = WavFormat(self.read_int(self.audio_fmt_size, signed=False))
-        except ValueError as exc:
-            raise exception.ReadError('Unsupported wav format') from exc
+        self._audio_fmt = WavFormat(self.read_int(self.audio_fmt_size, signed=False))
         self.num_channels = self.read_int(self._num_channels_size, signed=False)
         self.sample_rate = self.read_int(self._sample_rate_size, signed=False)
         self.byte_rate = self.read_int(self._byte_rate_size, signed=False)
@@ -453,10 +460,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         sub_format = uuid.UUID(bytes_le=self.read(self._sub_format_size))
 
         # verify metadata
-        try:
-            self.sub_data_format = WavFormatExSubformat(sub_format)
-        except ValueError as exc:
-            raise exception.ReadError('Invalid sub format') from exc
+        self.sub_data_format = WavFormatExSubformat(sub_format)
         if self.valid_bits_per_sample == 0:
             raise exception.ReadError('Valid bits per sample is 0.')
         if self.valid_bits_per_sample > self.bits_per_sample:
@@ -492,10 +496,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
     @property
     def audio_fmt(self) -> WavFormat:
         """Get the audio sample format."""
-        try:
-            return WavFormat(int.from_bytes(self.sub_data_format.value.bytes_le[0:2], byteorder='little'))
-        except ValueError as exc:
-            raise exception.ReadError('Audio sample format is not supported') from exc
+        return WavFormat(int.from_bytes(self.sub_data_format.value.bytes_le[0:2], byteorder='little'))
 
     @audio_fmt.setter
     def audio_fmt(self, audio_fmt: WavFormat) -> None:
