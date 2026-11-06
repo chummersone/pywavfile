@@ -6,7 +6,6 @@ import struct
 import sys
 import uuid
 from enum import Enum
-from types import DynamicClassAttribute
 from typing import BinaryIO, Callable, Literal, Sequence
 from warnings import warn
 try:
@@ -30,21 +29,12 @@ class WavEnum(Enum):
             ))
 
 
-class BytesEnum(WavEnum):
-    """Enum class with bytes values"""
-
-    @DynamicClassAttribute
-    def value(self) -> bytes:
-        """The value of the Enum member."""
-        return self._value_
-
-
-class RiffFormat(BytesEnum):
+class RiffFormat(WavEnum):
     """RIFF file format"""
     WAVE = b'WAVE'
 
 
-class ChunkID(BytesEnum):
+class ChunkID(WavEnum):
     """RIFF chunk identifiers"""
     RIFF_CHUNK = b'RIFF'
     FMT_CHUNK = b'fmt '
@@ -66,12 +56,12 @@ class WavFormatExSubformat(WavEnum):
     IEEE = uuid.UUID("00000003-0000-0010-8000-00AA00389B71")
 
 
-class ListType(BytesEnum):
+class ListType(WavEnum):
     """LIST chunk list types"""
     INFO = b'INFO'
 
 
-class InfoItem(BytesEnum):
+class InfoItem(WavEnum):
     """Items of the INFO chunk"""
     track = b'INAM'
     album = b'IPRD'
