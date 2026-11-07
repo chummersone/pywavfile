@@ -238,7 +238,6 @@ class TestWavfileWrite(WavfileWriteTestRunner):
     def test_extensible_reference_file(self):
         filename = get_file_path('corpus/noise_44100_24bit_w_metadata.ext.wav')
         with wavfile.open(filename, 'r') as wav:
-            wav: wavfile.wavread.WavRead
             self.assertEqual(wav.num_frames, 1323000)
             self.assertEqual(wav.num_channels, 1)
             self.assertEqual(wav.bits_per_sample, 24)

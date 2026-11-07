@@ -63,10 +63,7 @@ class WavRead(base.Wavfile):
                 signed=False,
                 byteorder='little'
             )
-            try:
-                audio_fmt = chunk.WavFormat(audio_fmt_int)
-            except ValueError as exc:
-                raise exception.ReadError('Unsupported audio format') from exc
+            audio_fmt = chunk.WavFormat(audio_fmt_int)
             self.fp.seek(-chunk.Chunk.offset - chunk.WavFmtChunk.audio_fmt_size, 1)
             if audio_fmt == chunk.WavFormat.EXTENSIBLE:
                 self._fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp)
