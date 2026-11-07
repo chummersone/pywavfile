@@ -5,19 +5,20 @@ The library currently supports PCM (integer) and IEEE float formats, and support
 precision, including: 16-, 24-, 32-, and 64-bit samples.
 """
 import os.path
-from typing import overload, AnyStr, BinaryIO, Literal
+from typing import overload, AnyStr, Literal
 
 
 from . import chunk
 from . import wavread
 from . import wavwrite
+from .base import FileLike
 from .exception import Error, ReadError, WriteError
 from .version import __VERSION__
 
 
 @overload
 def open(
-    f: str | os.PathLike[AnyStr] | BinaryIO,
+    f: str | os.PathLike[AnyStr] | FileLike,
     mode: Literal["r"] = "r",
     *,
     sample_rate: int = 44100,
@@ -29,7 +30,7 @@ def open(
 
 @overload
 def open(
-    f: str | os.PathLike[AnyStr] | BinaryIO,
+    f: str | os.PathLike[AnyStr] | FileLike,
     mode: Literal["w"] = "w",
     *,
     sample_rate: int = 44100,
@@ -41,7 +42,7 @@ def open(
 
 @overload
 def open(
-    f: str | os.PathLike[AnyStr] | BinaryIO,
+    f: str | os.PathLike[AnyStr] | FileLike,
     mode: str,
     *,
     sample_rate: int = 44100,
@@ -52,7 +53,7 @@ def open(
 
 
 def open(
-    f: str | os.PathLike[AnyStr] | BinaryIO,
+    f: str | os.PathLike[AnyStr] | FileLike,
     mode: str = "r",
     *,
     sample_rate: int = 44100,

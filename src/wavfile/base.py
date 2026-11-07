@@ -5,7 +5,7 @@ from __future__ import annotations
 import builtins
 import os
 from abc import ABC
-from typing import Any, AnyStr, BinaryIO, Sequence
+from typing import Any, AnyStr, Literal, Protocol, Sequence
 try:
     from typing import Self
 except ImportError:
@@ -14,25 +14,50 @@ except ImportError:
 from . import chunk
 
 
+class Readable(Protocol):
+    """A binary file-like read-only object."""
+
+    def read(self, size: int = -1) -> bytes:
+        """Read from the file"""
+
+    def tell(self) -> int:
+        """Get the offset in to the file"""
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        """Move to an offset in the file"""
+
+
+class Writable(Readable):
+    """A binary file-like writable object."""
+
+    def write(self, data: bytes) -> int:
+        """Write to the file"""
+
+
+class FileLike(Writable):
+    """A binary file-like object."""
+
+    @property
+    def closed(self) -> bool:
+        """Whether the file is closed"""
+        raise NotImplementedError
+
+
 class Wavfile(ABC):
     """Abstract base class for wave file read/write"""
-
-    fp: BinaryIO | None
-    _should_close_file: bool
-    _riff_chunk: chunk.RiffChunk | None
-    _data_chunk: chunk.WavDataChunk | None
 
     def __init__(self) -> None:
         """
         Initialise the base class.
         """
-        self.fp = None
-        self._should_close_file = False
-        self._riff_chunk = None
-        self._data_chunk = None
-        self._list_chunk = None
+        self.fp: FileLike | None = None
+        self._should_close_file: bool = False
+        self._riff_chunk: chunk.RiffChunk | None = None
+        self._data_chunk: chunk.WavDataChunk | None = None
+        self._list_chunk: chunk.ListChunk | None = None
 
-    def _init_fp(self, f: str | os.PathLike[AnyStr] | BinaryIO, mode: str) -> None:
+    def _init_fp(self, f: str | os.PathLike[AnyStr] | FileLike,
+                 mode: Literal["r", "w"] = 'r') -> None:
         """
         Initialise the file pointer.
 
@@ -40,7 +65,7 @@ class Wavfile(ABC):
         """
         # open the file
         if isinstance(f, (str, os.PathLike)):
-            self.fp = builtins.open(f, mode)
+            self.fp = builtins.open(f, mode + 'b')
             self._should_close_file = True
         else:
             self.fp = f

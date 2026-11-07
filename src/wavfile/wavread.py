@@ -6,7 +6,7 @@ mode.
 """
 from __future__ import annotations
 import os
-from typing import cast, AnyStr, BinaryIO, Generator
+from typing import cast, AnyStr, Generator
 
 from . import base
 from . import chunk
@@ -16,14 +16,14 @@ from . import exception
 class WavRead(base.Wavfile):
     """Class for reading a wave file"""
 
-    def __init__(self, f: str | os.PathLike[AnyStr] | BinaryIO) -> None:
+    def __init__(self, f: str | os.PathLike[AnyStr] | base.Readable) -> None:
         """
         Initialise the WavRead object.
 
         :param f: Either a path to a wave file or a pointer to an open file.
         """
         base.Wavfile.__init__(self)
-        self._init_fp(f, 'rb')
+        self._init_fp(f)
 
         self._riff_chunk: chunk.RiffChunk | None = None
         self._data_chunk: chunk.WavDataChunk | None = None

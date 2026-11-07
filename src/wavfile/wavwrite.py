@@ -6,7 +6,7 @@ mode.
 """
 import os
 import sys
-from typing import cast, AnyStr, BinaryIO, Sequence
+from typing import cast, AnyStr, Sequence
 
 from . import base
 from . import chunk
@@ -16,9 +16,7 @@ from . import exception
 class WavWrite(base.Wavfile):
     """Class for writing a wave file"""
 
-    _is_open: bool
-
-    def __init__(self, fp: str | os.PathLike[AnyStr] | BinaryIO, sample_rate: int = 44100,
+    def __init__(self, fp: str | os.PathLike[AnyStr] | base.Writable, sample_rate: int = 44100,
                  num_channels: int | None = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """
@@ -34,26 +32,26 @@ class WavWrite(base.Wavfile):
         """
         base.Wavfile.__init__(self)
 
-        self._is_open = True
-        self._init_fp(fp, 'wb')
+        self._is_open: bool = True
+        self._init_fp(fp, mode="w")
         if self.fp is None:
             raise exception.WriteError('Failed to open audio file')
 
         # initialise each of the riff chunks
-        self._riff_chunk = chunk.RiffChunk(self.fp)
+        self._riff_chunk = chunk.RiffChunk(self.fp, mode="w")
         if bits_per_sample > 16 or (num_channels is not None and num_channels > 2) or \
                 fmt == chunk.WavFormat.EXTENSIBLE:
-            fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp)
+            fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp, mode="w")
             fmt_chunk.valid_bits_per_sample = bits_per_sample
             # ensure the container holds whole bytes
             if bits_per_sample % 8 != 0:
                 bits_per_sample = bits_per_sample + (8 - (bits_per_sample % 8))
         else:
-            fmt_chunk = chunk.WavFmtChunk(self.fp)
+            fmt_chunk = chunk.WavFmtChunk(self.fp, mode="w")
         if fmt == chunk.WavFormat.EXTENSIBLE:
             fmt = chunk.WavFormat.PCM
         fmt_chunk.audio_fmt = fmt
-        self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
+        self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk, mode="w")
         self._data_chunk.fmt_chunk.sample_rate = int(sample_rate)
         if num_channels is not None:
             self._data_chunk.fmt_chunk.num_channels = int(num_channels)
@@ -182,13 +180,13 @@ class WavWrite(base.Wavfile):
                 self._data_chunk.size +
                 self._data_chunk.pad
             )
-        self._list_chunk = chunk.ListChunk(self.fp)
+        self._list_chunk = chunk.ListChunk(self.fp, mode="w")
         self._list_chunk.info = kwargs
         self._list_chunk.write_info()
         if recreate_data_chunk:
             # recreate data chunk
             fmt_chunk = self._data_chunk.fmt_chunk
-            self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
+            self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk, mode="w")
         self._riff_chunk.size = self._get_total_size()
         self.fp.seek(self._data_chunk.content_start)
 
