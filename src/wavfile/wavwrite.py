@@ -5,8 +5,8 @@ The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
 import os
-import sys
 from typing import cast, AnyStr, Sequence
+from warnings import warn
 
 from . import base
 from . import chunk
@@ -32,12 +32,30 @@ class WavWrite(base.Wavfile):
         """
         base.Wavfile.__init__(self)
 
-        self._is_open: bool = True
         self._init_fp(fp, mode="w")
         if self.fp is None:
             raise exception.WriteError('Failed to open audio file')
 
-        # initialise each of the riff chunks
+        try:
+            # initialise each of the riff chunks
+            self._init_chunks(sample_rate, num_channels, bits_per_sample, fmt)
+
+            # go to data chunk content start ready to write samples
+            self.fp.seek(self._data_chunk.content_start)
+        except Exception:
+            if self._should_close_file:
+                self.fp.close()
+            raise
+
+    def _init_chunks(self, sample_rate: int = 44100,
+                     num_channels: int | None = None, bits_per_sample: int = 16,
+                     fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
+        """
+        Initialise the file chunks.
+        """
+        if self.fp is None:
+            raise exception.WriteError('Failed to open audio file')
+
         self._riff_chunk = chunk.RiffChunk(self.fp, mode="w")
         if bits_per_sample > 16 or (num_channels is not None and num_channels > 2) or \
                 fmt == chunk.WavFormat.EXTENSIBLE:
@@ -57,9 +75,6 @@ class WavWrite(base.Wavfile):
             self._data_chunk.fmt_chunk.num_channels = int(num_channels)
         self._data_chunk.fmt_chunk.bits_per_sample = int(bits_per_sample)
         self._list_chunk = None
-
-        # go to data chunk content start ready to write samples
-        self.fp.seek(self._data_chunk.content_start)
 
     def __repr__(self) -> str:
         """
@@ -192,17 +207,9 @@ class WavWrite(base.Wavfile):
 
     def close(self) -> None:
         """Close the file."""
-        num_align_bytes = self._data_chunk.size % chunk.Chunk.align
-        if num_align_bytes > 0:
-            self._data_chunk.skip(include_pad=False)
-            self._data_chunk.write(bytearray(num_align_bytes), update_size=False)
+        if self._closed:
+            return
         base.Wavfile.close(self)
-        if self._should_close_file:
-            self.fp.close()
-        self._should_close_file = False
-        if self.format != chunk.WavFormat.EXTENSIBLE and \
-                self.num_channels > 2:
-            print('More than two audio channels are present, but the file does not use the '
-                  'EXTENSIBLE format. The file may not be readable in some software.',
-                  file=sys.stderr
-                  )
+        if self.format != chunk.WavFormat.EXTENSIBLE and self.num_channels > 2:
+            warn('More than two audio channels are present, but the file does not use the '
+                 'EXTENSIBLE format. The file may not be readable in some software.')

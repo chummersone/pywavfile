@@ -34,11 +34,11 @@ class WavRead(base.Wavfile):
         # read the file header
         try:
             self._init_file()
-        except BaseException:
-            self.close()
+            self.fp.seek(self._data_chunk.content_start)
+        except Exception:
+            if self._should_close_file:
+                self.fp.close()
             raise
-
-        self.fp.seek(self._data_chunk.content_start)
 
     def __repr__(self) -> str:
         """
@@ -163,16 +163,6 @@ class WavRead(base.Wavfile):
                 yield audio
             else:
                 return
-
-    def close(self) -> None:
-        """Close the wav file."""
-        try:
-            base.Wavfile.close(self)
-        except AttributeError:
-            pass
-        if self._should_close_file:
-            self.fp.close()
-        self._should_close_file = False
 
     def read_int(self, num_frames: int | None = None) -> list[list[int]]:
         """

@@ -14,7 +14,7 @@ except ImportError:
     from typing_extensions import Self
 
 from . import exception
-from .base import FileLike
+from .base import Readable, Writable
 
 
 class WavEnum(Enum):
@@ -81,7 +81,8 @@ class Chunk:
     _min_size: int = 0
     word_size: int = 4
 
-    def __init__(self, fp: FileLike, bigendian: bool = False, mode: Literal["r", "w"] = "r") -> None:
+    def __init__(self, fp: Readable | Writable, bigendian: bool = False,
+                 mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -89,7 +90,7 @@ class Chunk:
         :param bigendian: Is the file bid endian?
         :param mode: File read/write mode.
         """
-        self.fp: FileLike = fp
+        self.fp: Readable | Writable = fp
         if mode not in ("r", "w"):
             raise ValueError("Invalid mode: %s" % mode)
         self.mode: Literal["r", "w"] = mode
@@ -107,9 +108,6 @@ class Chunk:
             self.size = self.read_int(self.word_size, signed=False)
         else:
             self.write_header()
-
-    def __del__(self) -> None:
-        self.close()
 
     @property
     def read_only(self) -> bool:
@@ -279,11 +277,11 @@ class Chunk:
         """
         self.write(self.float_to_bytes(data, nbytes))
 
-    def close(self) -> None:
-        """Close the chunk and update the header."""
-        if self.size < self._min_size:
-            raise exception.WriteError('Required data have not been written to the file')
+    def finalise(self) -> None:
+        """Finalise the chunk and update the header."""
         if (not self.read_only) and (not self.fp.closed):
+            if self.size < self._min_size:
+                raise exception.WriteError('Required data have not been written to the file')
             self.write_header()
 
 
@@ -292,7 +290,7 @@ class RiffChunk(Chunk):
 
     _min_size = 4
 
-    def __init__(self, fp: FileLike, mode: Literal["r", "w"] = "r") -> None:
+    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -311,11 +309,11 @@ class RiffChunk(Chunk):
         else:
             self.write(RiffFormat.WAVE.value)
 
-    def close(self) -> None:
-        """Close the chunk and update the header."""
+    def finalise(self) -> None:
+        """Finalise the chunk and update the header."""
         if self.format is None:
             raise exception.WriteError('RIFF format is not set')
-        Chunk.close(self)
+        Chunk.finalise(self)
 
 
 class WavFmtChunk(Chunk):
@@ -329,7 +327,7 @@ class WavFmtChunk(Chunk):
     _block_align_size: int = 2
     _bits_per_sample_size: int = 2
 
-    def __init__(self, fp: FileLike, mode: Literal["r", "w"] = "r") -> None:
+    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -410,11 +408,11 @@ class WavFmtChunk(Chunk):
         self.write_int(self.block_align, self._block_align_size, signed=False)
         self.write_int(self.bits_per_sample, self._bits_per_sample_size, signed=False)
 
-    def close(self) -> None:
-        """Close the chunk and update the header and format data."""
+    def finalise(self) -> None:
+        """Finalise the chunk and update the header and format data."""
         if (not self.read_only) and (not self.fp.closed):
             self.write_fmt()
-        Chunk.close(self)
+        Chunk.finalise(self)
 
 
 class WavFmtExtensibleChunk(WavFmtChunk):
@@ -426,7 +424,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
     _channel_mask_size: int = 4
     _sub_format_size: int = 16
 
-    def __init__(self, fp: FileLike, mode: Literal["r", "w"] = "r") -> None:
+    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -504,7 +502,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
 class WavDataChunk(Chunk):
     """Wave data chunk read and write"""
 
-    def __init__(self, fp: FileLike, fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk,
+    def __init__(self, fp: Readable | Writable, fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk,
                  mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
@@ -531,10 +529,16 @@ class WavDataChunk(Chunk):
         except ZeroDivisionError:
             return 0
 
-    def close(self) -> None:
-        """Close the chunk and update the header and format data."""
-        self.fmt_chunk.close()
-        Chunk.close(self)
+    def finalise(self) -> None:
+        """Finalise the chunk and update the header and format data."""
+        self.fmt_chunk.finalise()
+        if not self.read_only:
+            num_align_bytes = self.size % Chunk.align
+            if num_align_bytes > 0:
+                self.skip(include_pad=False)
+                self.write(bytearray(num_align_bytes), update_size=False)
+
+        Chunk.finalise(self)
 
     def read_sample(self) -> int | float:
         """Read a sample from the chunk."""
@@ -699,7 +703,7 @@ class WavDataChunk(Chunk):
 class ListChunk(Chunk):
     """List chunk read and write"""
 
-    def __init__(self, fp: FileLike, mode: Literal["r", "w"] = "r") -> None:
+    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 

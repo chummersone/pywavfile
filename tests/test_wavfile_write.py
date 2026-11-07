@@ -276,14 +276,9 @@ class TestWavfileWrite(WavfileWriteTestRunner):
             [0, 1, 2, 3, 4, 5],
         ]
         filename = get_file_path("corpus/tmp.wav")
-        captured_output = io.StringIO()
-        sys.stderr = captured_output
-        with wavfile.open(filename, 'w', sample_rate=44100) as wav:
-            wav.write(audio_data_in)
-        sys.stderr = sys.__stderr__
-        captured_output.seek(0)
-        output = captured_output.read()
-        self.assertTrue(len(output) > 0)
+        with self.assertWarns(UserWarning):
+            with wavfile.open(filename, 'w', sample_rate=44100) as wav:
+                wav.write(audio_data_in)
 
     def test_incorrect_channel_count(self):
         filename = get_file_path("corpus/tmp.wav")
