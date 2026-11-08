@@ -39,9 +39,21 @@ def open(
 ) -> wavwrite.WavWrite: ...
 
 
+@overload
+def open(
+    f: str | os.PathLike | Readable | Writable,
+    mode: str,
+    *,
+    sample_rate: int = 44100,
+    num_channels: int | None = None,
+    bits_per_sample: int = 16,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM
+) -> wavwrite.WavWrite: ...
+
+
 def open(
     f: str | os.PathLike[AnyStr] | Readable | Writable,
-    mode: Literal["r", "w"] = "r",
+    mode: str | Literal["r", "w"] = "r",
     *,
     sample_rate: int = 44100,
     num_channels: int | None = None,
