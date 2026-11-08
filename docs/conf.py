@@ -11,27 +11,23 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import sys
+import tomllib
+from pathlib import Path
 
 import sphinx.ext.apidoc
 
-sys.path.insert(0, os.path.abspath(os.path.join('..')))
-sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
-sys.path.insert(0, os.path.abspath(os.path.join('..', 'src', 'wavfile')))
 
-import project as proj
-from wavfile.version import __VERSION__
+project_root = Path(__file__).resolve().parents[1]
+
+with (project_root / "pyproject.toml").open("rb") as f:
+    pyproject = tomllib.load(f)
 
 # -- Project information -----------------------------------------------------
 
-project = proj.information.name
-copyright = proj.information.copyright
-author = proj.information.author
-
-# The short X.Y version.
-version = __VERSION__
-# The full version, including alpha/beta/rc tags.
-release = version
+release = pyproject["project"]["version"]
+version = release
+project = pyproject["project"]["name"]
+author = pyproject["project"]["authors"][0]["name"]
 
 # -- General configuration ---------------------------------------------------
 

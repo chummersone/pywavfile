@@ -10,9 +10,6 @@ from typing import BinaryIO, Literal, overload
 
 from . import chunk, wavread, wavwrite
 from .exception import Error, ReadError, WriteError
-from .version import __VERSION__
-
-__all__ = ['__VERSION__', 'join', 'open', 'read', 'split', 'write']
 
 
 @overload
