@@ -235,4 +235,4 @@ class WavWrite(base.Wavfile):
         base.Wavfile.close(self)
         if self.format != chunk.WavFormat.EXTENSIBLE and self.num_channels > 2:
             warn('More than two audio channels are present, but the file does not use the '
-                 'EXTENSIBLE format. The file may not be readable in some software.')
+                 'EXTENSIBLE format. The file may not be readable in some software.', stacklevel=2)

@@ -77,7 +77,8 @@ def open(
         raise Error("mode must be 'r', 'rb', 'w', or 'wb'")
 
 
-def read(path: str | os.PathLike[str], fmt: str = 'int') -> tuple[list[list[int | float]], int, int]:
+def read(path: str | os.PathLike[str],
+         fmt: str = 'int') -> tuple[list[list[int | float]], int, int]:
     """
     Shortcut function to read a wave file. The audio can be read directly (``fmt='native'``),
     converted to integers (``fmt='int'``), or converted to floating point (``fmt='float'``).

@@ -11,9 +11,9 @@ import wavfile
 
 class WavfileWriteTestRunner(unittest.TestCase):
 
-    def run_test(self, audio_data_in, read_callback, sample_rate, bits_per_sample, num_channels,
-                 reference=None, metadata=None, metadata_mode='pre', fmt=wavfile.chunk.WavFormat.PCM,
-                 write_callback='write'):
+    def run_test(self, audio_data_in, read_callback, sample_rate, bits_per_sample,
+                 num_channels, reference=None, metadata=None, metadata_mode='pre',
+                 fmt=wavfile.chunk.WavFormat.PCM, write_callback='write'):
         filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, 'w',
                           sample_rate=sample_rate,

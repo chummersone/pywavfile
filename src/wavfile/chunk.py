@@ -26,7 +26,8 @@ class WavEnum(Enum):
     @classmethod
     def _missing_(cls, value):
         raise exception.ReadError(
-            f"{value} is not a valid {cls.__name__}.  Valid types: {', '.join([repr(m.value) for m in cls])}")
+            f"{value} is not a valid {cls.__name__}.  Valid types: "
+            f"{', '.join([repr(m.value) for m in cls])}")
 
 class RiffFormat(WavEnum):
     """RIFF file format"""
@@ -235,7 +236,7 @@ class Chunk:
                 8: 'd',
             }[nbytes]
         except KeyError:
-            raise exception.Error('Cannot convert float with the specified bit depth')
+            raise exception.Error('Cannot convert float with the specified bit depth') from None
 
     def bytes_to_float(self, data: bytes) -> float:
         """
@@ -454,7 +455,8 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         if self.valid_bits_per_sample == 0:
             raise exception.ReadError('Valid bits per sample is 0.')
         if self.valid_bits_per_sample > self.bits_per_sample:
-            raise exception.ReadError("Valid bits per sample is exceeds the container's bit per sample")
+            raise exception.ReadError(
+                "Valid bits per sample is exceeds the container's bit per sample")
         if self.audio_fmt == WavFormat.IEEE_FLOAT:
             if self.valid_bits_per_sample not in (32, 64):
                 raise exception.ReadError('valid_bits_per_sample should be 32 or 64 for IEEE_FLOAT')
@@ -477,7 +479,8 @@ class WavFmtExtensibleChunk(WavFmtChunk):
             self._sub_format_size
         self.write_int(extension_size, self._extension_size_size, signed=False)
         if self.valid_bits_per_sample == 0:
-            warn('valid_bits_per_sample is 0. Interpreting this as full container precision.')
+            warn('valid_bits_per_sample is 0. Interpreting this as full container precision.',
+                 stacklevel=2)
             self.valid_bits_per_sample = self.bits_per_sample
         self.write_int(self.valid_bits_per_sample, self._valid_bits_per_sample_size, signed=False)
         self.write_int(self.channel_mask, self._channel_mask_size, signed=False)
@@ -486,7 +489,8 @@ class WavFmtExtensibleChunk(WavFmtChunk):
     @property
     def audio_fmt(self) -> WavFormat:
         """Get the audio sample format."""
-        return WavFormat(int.from_bytes(self.sub_data_format.value.bytes_le[0:2], byteorder='little'))
+        return WavFormat(int.from_bytes(self.sub_data_format.value.bytes_le[0:2],
+                                        byteorder='little'))
 
     @audio_fmt.setter
     def audio_fmt(self, audio_fmt: WavFormat) -> None:

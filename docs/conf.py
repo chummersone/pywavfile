@@ -11,11 +11,10 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import tomllib
 from pathlib import Path
 
 import sphinx.ext.apidoc
-
+import tomllib
 
 project_root = Path(__file__).resolve().parents[1]
 
@@ -61,7 +60,8 @@ def run_apidoc(_):
     srcdir = os.path.normpath(os.path.join(curdir, '..', 'src'))
     outdir = os.path.normpath(os.path.join(curdir, 'wavfile'))
     templatedir = os.path.normpath(os.path.join(curdir, '_templates'))
-    sphinx.ext.apidoc.main(('-o', outdir, srcdir, '-f', '-M', '-T', '-e', '--templatedir', templatedir))
+    sphinx.ext.apidoc.main(
+        ('-o', outdir, srcdir, '-f', '-M', '-T', '-e', '--templatedir', templatedir))
 
 
 def setup(app):

@@ -24,13 +24,15 @@ class TestCaseWithFile(unittest.TestCase):
 class TestModule(TestCaseWithFile):
 
     def test_write_error(self):
-        self.assertRaises(wavfile.WriteError, wavfile.open, get_file_path('corpus/junk.wav'), 'w', fmt=b'junk')
+        self.assertRaises(wavfile.WriteError, wavfile.open, get_file_path('corpus/junk.wav'), 'w',
+                          fmt=b'junk')
 
     def test_mode_error(self):
         self.assertRaises(wavfile.Error, wavfile.open, get_file_path('corpus/junk.wav'), 'j')
 
     def test_read_error(self):
-        self.assertRaises(wavfile.Error, wavfile.read, get_file_path('corpus/osc_tri.wav'), fmt='junk')
+        self.assertRaises(wavfile.Error, wavfile.read, get_file_path('corpus/osc_tri.wav'),
+                          fmt='junk')
 
     def test_split(self):
         wavfile.split(get_file_path('corpus/test-file-3.wav'))

@@ -28,7 +28,7 @@ def requires_open(func):
     return wrapper
 
 
-class Wavfile(ABC):
+class Wavfile(ABC):  # noqa: B024
     """Abstract base class for wave file read/write"""
 
     def __init__(self) -> None:
@@ -281,8 +281,8 @@ class Wavfile(ABC):
         if self._data_chunk is None:
             return 0
         total_size = self._data_chunk.size + self._data_chunk.pad + chunk.Chunk.offset + \
-            self._data_chunk.fmt_chunk.size + self._data_chunk.fmt_chunk.pad + chunk.Chunk.offset + \
-            chunk.Chunk.word_size  # riff chunk contains four bytes indicating the format
+            self._data_chunk.fmt_chunk.size + self._data_chunk.fmt_chunk.pad + \
+                     chunk.Chunk.offset + chunk.Chunk.word_size
         if self._list_chunk is not None:
             total_size += self._list_chunk.size + self._list_chunk.pad + chunk.Chunk.offset
         return total_size
