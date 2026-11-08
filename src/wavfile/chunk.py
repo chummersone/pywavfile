@@ -717,8 +717,17 @@ class ListChunk(Chunk):
         if self.read_only:
             if self.chunk_id != ChunkID.LIST_CHUNK:
                 raise exception.ReadError('Chunk is not a LIST chunk')
-            subchnk = self.read(self.word_size)
+
+            # get end
+            file_pos = fp.tell()
+            self.fp.seek(0, 2)
+            file_size = self.fp.tell()
+            if (self.content_start + self.size) > file_size:
+                raise exception.ReadError('Chunk exceeds file size')
+            self.fp.seek(file_pos)
+
             # read the INFO content of the LIST
+            subchnk = self.read(self.word_size)
             if subchnk == ListType.INFO.value:
                 self.info = {}
                 while self.fp.tell() < self.content_start + self.size:
@@ -740,6 +749,8 @@ class ListChunk(Chunk):
                     # check boundary
                     if self.fp.tell() > self.end:
                         raise exception.ReadError('Reading beyond the end of the LIST chunk')
+                    if self.fp.tell() > file_size:
+                        raise exception.ReadError('Reading beyond the end of the file')
 
     def write_info(self):
         """
