@@ -17,7 +17,7 @@ from .version import __VERSION__
 
 @overload
 def open(
-    f: str | os.PathLike | Readable,
+    f: str | os.PathLike[AnyStr] | Readable,
     mode: Literal["r"] = "r",
     *,
     sample_rate: int = 44100,
@@ -29,7 +29,7 @@ def open(
 
 @overload
 def open(
-    f: str | os.PathLike | Readable,
+    f: str | os.PathLike[AnyStr] | Readable,
     mode: Literal["w"] = "w",
     *,
     sample_rate: int = 44100,
@@ -41,7 +41,7 @@ def open(
 
 @overload
 def open(
-    f: str | os.PathLike | Readable | Writable,
+    f: str | os.PathLike[AnyStr] | Readable | Writable,
     mode: str,
     *,
     sample_rate: int = 44100,
