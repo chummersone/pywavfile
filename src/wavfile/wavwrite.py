@@ -4,6 +4,7 @@ Provides the WavWrite class for writing wave files.
 The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
+import io
 import os
 from collections.abc import Sequence
 from typing import BinaryIO, cast
@@ -34,12 +35,12 @@ class WavWrite(base.Wavfile):
         self._init_fp(fp, mode="w")
         if self.fp is None:
             raise exception.WriteError('Failed to open audio file')
-        if self._data_chunk is None:
-            raise exception.WriteError('Audio data chunk must be initialised')
 
         try:
             # initialise each of the riff chunks
             self._init_chunks(sample_rate, num_channels, bits_per_sample, fmt)
+            if self._data_chunk is None:
+                raise exception.WriteError('Audio data chunk must be initialised')
 
             # go to data chunk content start ready to write samples
             self.fp.seek(self._data_chunk.content_start)
@@ -81,7 +82,15 @@ class WavWrite(base.Wavfile):
         """
         Return the object representation in string format.
         """
-        return f'{self.__class__.__name__}("{self.fp!r}", sample_rate={self.sample_rate}, ' + \
+        if self.fp is None:
+            source = 'closed'
+        elif isinstance(self.fp, (io.BufferedReader, io.BufferedWriter)):
+            source = repr(self.fp.name)
+        elif isinstance(self.fp, io.BytesIO):
+            source = 'BytesIO'
+        else:
+            source = type(self.fp).__name__
+        return f'{self.__class__.__name__}({source}, sample_rate={self.sample_rate}, ' + \
                f'num_channels={self.num_channels}, bits_per_sample={self.bits_per_sample}, ' + \
                f'fmt={self.format.__class__.__name__}.{self.format.name})'
 

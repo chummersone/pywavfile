@@ -6,6 +6,7 @@ mode.
 """
 from __future__ import annotations
 
+import io
 import os
 from collections.abc import Generator
 from typing import BinaryIO, cast
@@ -50,7 +51,15 @@ class WavRead(base.Wavfile):
         """
         Return the object representation in string format.
         """
-        return f'{self.__class__.__name__}("{self.fp!r}")'
+        if self.fp is None:
+            source = 'closed'
+        elif isinstance(self.fp, (io.BufferedReader, io.BufferedWriter)):
+            source = repr(self.fp.name)
+        elif isinstance(self.fp, io.BytesIO):
+            source = 'BytesIO'
+        else:
+            source = type(self.fp).__name__
+        return f'{self.__class__.__name__}({source})'
 
     def __parse_chunk(self, chnk: chunk.Chunk) -> None:
         """Parse the chunk."""
