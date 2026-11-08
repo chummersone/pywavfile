@@ -81,7 +81,7 @@ class WavWrite(base.Wavfile):
         """
         Return the object representation in string format.
         """
-        return f'{self.__class__.__name__}("{repr(self.fp)}", sample_rate={self.sample_rate}, ' + \
+        return f'{self.__class__.__name__}("{self.fp!r}", sample_rate={self.sample_rate}, ' + \
                f'num_channels={self.num_channels}, bits_per_sample={self.bits_per_sample}, ' + \
                f'fmt={self.format.__class__.__name__}.{self.format.name})'
 

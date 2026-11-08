@@ -50,7 +50,7 @@ class WavRead(base.Wavfile):
         """
         Return the object representation in string format.
         """
-        return f'{self.__class__.__name__}("{repr(self.fp)}")'
+        return f'{self.__class__.__name__}("{self.fp!r}")'
 
     def __parse_chunk(self, chnk: chunk.Chunk) -> None:
         """Parse the chunk."""
