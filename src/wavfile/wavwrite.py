@@ -8,6 +8,7 @@ mode.
 import io
 import os
 from collections.abc import Sequence
+from pathlib import Path
 from typing import BinaryIO, cast
 from warnings import warn
 
@@ -98,7 +99,7 @@ class WavWrite(base.Wavfile):
         if self.fp is None:
             source = "closed"
         elif isinstance(self.fp, (io.BufferedReader, io.BufferedWriter)):
-            source = repr(self.fp.name)
+            source = repr(Path(self.fp.name).as_posix())
         elif isinstance(self.fp, io.BytesIO):
             source = "BytesIO"
         else:

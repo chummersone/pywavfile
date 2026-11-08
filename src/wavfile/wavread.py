@@ -10,6 +10,7 @@ from __future__ import annotations
 import io
 import os
 from collections.abc import Generator
+from pathlib import Path
 from typing import BinaryIO, cast
 
 from . import base, chunk, exception
@@ -54,7 +55,7 @@ class WavRead(base.Wavfile):
         if self.fp is None:
             source = "closed"
         elif isinstance(self.fp, (io.BufferedReader, io.BufferedWriter)):
-            source = repr(self.fp.name)
+            source = repr(Path(self.fp.name).as_posix())
         elif isinstance(self.fp, io.BytesIO):
             source = "BytesIO"
         else:
