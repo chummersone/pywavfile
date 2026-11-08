@@ -28,7 +28,31 @@ def open(
 @overload
 def open(
     f: str | os.PathLike[str] | BinaryIO,
+    mode: Literal["rb"] = "rb",
+    *,
+    sample_rate: int = 44100,
+    num_channels: int | None = None,
+    bits_per_sample: int = 16,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+) -> wavread.WavRead: ...
+
+
+@overload
+def open(
+    f: str | os.PathLike[str] | BinaryIO,
     mode: Literal["w"],
+    *,
+    sample_rate: int = 44100,
+    num_channels: int | None = None,
+    bits_per_sample: int = 16,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+) -> wavwrite.WavWrite: ...
+
+
+@overload
+def open(
+    f: str | os.PathLike[str] | BinaryIO,
+    mode: Literal["wb"],
     *,
     sample_rate: int = 44100,
     num_channels: int | None = None,
@@ -39,7 +63,7 @@ def open(
 
 def open(
     f: str | os.PathLike[str] | BinaryIO,
-    mode: Literal["r", "w"] = "r",
+    mode: Literal["r", "rb", "w", "wb"] = "r",
     *,
     sample_rate: int = 44100,
     num_channels: int | None = None,
