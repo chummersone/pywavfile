@@ -11,9 +11,11 @@ import wavfile.base
 import wavfile.chunk
 import wavfile.exception
 
-valid_wav_file = (b'\x52\x49\x46\x46\x2C\x00\x00\x00\x57\x41\x56\x45\x66\x6D\x74\x20\x10\x00\x00'
-                  b'\x00\x01\x00\x02\x00\x80\xBB\x00\x00\x00\xEE\x02\x00\x04\x00\x10\x00\x64\x61'
-                  b'\x74\x61\x08\x00\x00\x00\x64\x00\x9C\xFF\xC8\x00\x38\xFF')
+valid_wav_file = (
+    b"\x52\x49\x46\x46\x2c\x00\x00\x00\x57\x41\x56\x45\x66\x6d\x74\x20\x10\x00\x00"
+    b"\x00\x01\x00\x02\x00\x80\xbb\x00\x00\x00\xee\x02\x00\x04\x00\x10\x00\x64\x61"
+    b"\x74\x61\x08\x00\x00\x00\x64\x00\x9c\xff\xc8\x00\x38\xff"
+)
 
 
 def test_reader_does_not_close_borrowed_stream():
@@ -84,8 +86,7 @@ def test_close_is_idempotent(tmp_path):
 def test_context_manager_closes_on_exception(tmp_path):
     path = tmp_path / "test.wav"
     fp = None
-    with pytest.raises(RuntimeError), \
-            wavfile.open(path, "w", num_channels=2) as wav:
+    with pytest.raises(RuntimeError), wavfile.open(path, "w", num_channels=2) as wav:
         fp = wav.fp
         raise RuntimeError("test exception")
 

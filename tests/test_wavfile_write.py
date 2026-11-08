@@ -10,19 +10,31 @@ import wavfile
 
 
 class WavfileWriteTestRunner(unittest.TestCase):
-
-    def run_test(self, audio_data_in, read_callback, sample_rate, bits_per_sample, num_channels,
-                 reference=None, metadata=None, metadata_mode='pre', fmt=wavfile.chunk.WavFormat.PCM,
-                 write_callback='write'):
+    def run_test(
+        self,
+        audio_data_in,
+        read_callback,
+        sample_rate,
+        bits_per_sample,
+        num_channels,
+        reference=None,
+        metadata=None,
+        metadata_mode="pre",
+        fmt=wavfile.chunk.WavFormat.PCM,
+        write_callback="write",
+    ):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w',
-                          sample_rate=sample_rate,
-                          bits_per_sample=bits_per_sample,
-                          num_channels=None,
-                          fmt=fmt) as wfp:
+        with wavfile.open(
+            filename,
+            "w",
+            sample_rate=sample_rate,
+            bits_per_sample=bits_per_sample,
+            num_channels=None,
+            fmt=fmt,
+        ) as wfp:
             write = getattr(wfp, write_callback)
             # write metadata before data
-            if metadata is not None and metadata_mode == 'pre':
+            if metadata is not None and metadata_mode == "pre":
                 wfp.add_metadata(**metadata)
             write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
@@ -32,11 +44,11 @@ class WavfileWriteTestRunner(unittest.TestCase):
             write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
             # write metadata after data
-            if metadata is not None and metadata_mode == 'post':
+            if metadata is not None and metadata_mode == "post":
                 wfp.add_metadata(**metadata)
 
         audio_out = []
-        with wavfile.open(filename, 'r') as wfp:
+        with wavfile.open(filename, "r") as wfp:
             audio_out = getattr(wfp, read_callback)()
 
         if reference is None:
@@ -46,8 +58,9 @@ class WavfileWriteTestRunner(unittest.TestCase):
         self.assertEqual(len(reference[0]), len(audio_out[0]))
         for i in range(len(audio_out)):
             for j in range(len(audio_out[0])):
-                self.assertAlmostEqual(audio_out[i][j], reference[i][j],
-                                       delta=(2.0 ** (-bits_per_sample + 1)))
+                self.assertAlmostEqual(
+                    audio_out[i][j], reference[i][j], delta=(2.0 ** (-bits_per_sample + 1))
+                )
 
         self.assertEqual(wfp.sample_rate, sample_rate)
         self.assertEqual(wfp.bits_per_sample, bits_per_sample)
@@ -62,7 +75,6 @@ class WavfileWriteTestRunner(unittest.TestCase):
 
 
 class TestWavfileWrite(WavfileWriteTestRunner):
-
     def test_read_write_audio_short_int_1(self):
         audio_data_in = [
             [0, 0],
@@ -74,8 +86,9 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 44100
         bits_per_sample = 8
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_read_write_int_audio_short_int_1(self):
         audio_data_in = [
@@ -89,9 +102,14 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         write_callback = "write_int"
         sample_rate = 44100
         bits_per_sample = 8
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]),
-                      write_callback=write_callback)
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            write_callback=write_callback,
+        )
 
     def test_read_write_audio_short_float_1(self):
         audio_data_in = [
@@ -111,8 +129,14 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_float"
         sample_rate = 44100
         bits_per_sample = 8
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]), reference)
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            reference,
+        )
 
     def test_read_write_audio_float_short_1(self):
         reference = [
@@ -132,8 +156,14 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 44100
         bits_per_sample = 8
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]), reference)
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            reference,
+        )
 
     def test_read_write_audio_int16(self):
         audio_data_in = [
@@ -146,8 +176,9 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 48000
         bits_per_sample = 16
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_read_write_audio_int24(self):
         audio_data_in = [
@@ -160,8 +191,9 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 48000
         bits_per_sample = 24
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_read_write_audio_int32(self):
         audio_data_in = [
@@ -174,8 +206,9 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 48000
         bits_per_sample = 24
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_read_write_audio_int64(self):
         audio_data_in = [
@@ -188,8 +221,9 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 48000
         bits_per_sample = 64
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_read_write_audio_int24_mono(self):
         audio_data_in = [
@@ -202,21 +236,22 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 32000
         bits_per_sample = 24
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_write_out_of_range_signed(self):
         audio_data_in = [
-            [2 ** 15],
-            [(-2 ** 15) - 1],
+            [2**15],
+            [(-(2**15)) - 1],
             [512],
             [-256],
             [-512],
             [0],
         ]
         clipped = [
-            [(2 ** 15) - 1],
-            [-2 ** 15],
+            [(2**15) - 1],
+            [-(2**15)],
             [512],
             [-256],
             [-512],
@@ -225,8 +260,14 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 32000
         bits_per_sample = 16
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]), clipped)
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            clipped,
+        )
 
     def test_write_out_of_range_unsigned(self):
         audio_data_in = [
@@ -248,51 +289,55 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 32000
         bits_per_sample = 8
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]), clipped)
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            clipped,
+        )
 
     def test_read_write_audio_int24_6channel(self):
         audio_data_in = [
             [0, 1, 2, 3, 4, 5],
             [256, 255, 254, 253, 252, 251],
             [512, 513, 514, 515, 516, 517],
-            [0x7FFFFF, -1, -2**23, 0x3A3A3A, 0x0, 0x00DEAD],
+            [0x7FFFFF, -1, -(2**23), 0x3A3A3A, 0x0, 0x00DEAD],
             [5, 4, 3, 2, 1, 0],
             [0, 1, 2, 3, 4, 5],
             [256, 255, 254, 253, 252, 251],
             [512, 513, 514, 515, 516, 517],
-            [0x7FFFFF, -1, -2**23, 0x3A3A3A, 0x0, 0x00DEAD],
+            [0x7FFFFF, -1, -(2**23), 0x3A3A3A, 0x0, 0x00DEAD],
             [5, 4, 3, 2, 1, 0],
         ]
         read_callback = "read_int"
         sample_rate = 96000
         bits_per_sample = 24
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_read_write_audio_int16_6channel_warning(self):
         audio_data_in = [
             [0, 1, 2, 3, 4, 5],
         ]
         filename = get_file_path("corpus/tmp.wav")
-        with self.assertWarns(UserWarning), \
-                wavfile.open(filename, 'w', sample_rate=44100) as wav:
+        with self.assertWarns(UserWarning), wavfile.open(filename, "w", sample_rate=44100) as wav:
             wav.write(audio_data_in)
 
     def test_incorrect_channel_count(self):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w',
-                          sample_rate=44100,
-                          bits_per_sample=16,
-                          num_channels=2) as wfp:
+        with wavfile.open(
+            filename, "w", sample_rate=44100, bits_per_sample=16, num_channels=2
+        ) as wfp:
             self.assertRaises(wavfile.Error, wfp.write, [[0]])
 
     def test_write_after_close(self):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w',
-                          sample_rate=44100,
-                          bits_per_sample=16,
-                          num_channels=2) as wfp:
+        with wavfile.open(
+            filename, "w", sample_rate=44100, bits_per_sample=16, num_channels=2
+        ) as wfp:
             wfp.write([[0, 0]])
         self.assertRaises(ValueError, wfp.write, [[0, 0]])
 
@@ -307,10 +352,9 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         ]
         sample_rate_in = 48000
         bits_per_sample_in = 24
-        wavfile.write(filename,
-                      audio_data_in,
-                      sample_rate=sample_rate_in,
-                      bits_per_sample=bits_per_sample_in)
+        wavfile.write(
+            filename, audio_data_in, sample_rate=sample_rate_in, bits_per_sample=bits_per_sample_in
+        )
         audio_data_out, sample_rate_out, bits_per_sample_out = wavfile.read(filename)
         self.assertEqual(sample_rate_in, sample_rate_out)
         self.assertEqual(bits_per_sample_in, bits_per_sample_out)
@@ -318,9 +362,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
 
     def test_before_write(self):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w',
-                          sample_rate=44100,
-                          bits_per_sample=16) as wfp:
+        with wavfile.open(filename, "w", sample_rate=44100, bits_per_sample=16) as wfp:
             self.assertEqual(wfp.tell(), 0)
             self.assertRaises(wavfile.Error, wfp.seek, 1)
             self.assertEqual(wfp.bits_per_sample, 16)
@@ -328,7 +370,7 @@ class TestWavfileWrite(WavfileWriteTestRunner):
             self.assertEqual(wfp.sample_rate, 44100)
             self.assertEqual(wfp.num_frames, 0)
             self.assertEqual(wfp.duration, 0)
-            self.assertEqual(wfp.hms, '0:00:00.00')
+            self.assertEqual(wfp.hms, "0:00:00.00")
 
     def test_wav_data_aligned(self):
         audio_data_in = [
@@ -348,33 +390,36 @@ class TestWavfileWrite(WavfileWriteTestRunner):
         read_callback = "read_int"
         sample_rate = 44100
         bits_per_sample = 8
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]), audio_data_aligned)
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            audio_data_aligned,
+        )
 
     def test_write_float_as_int(self):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w',
-                          sample_rate=44100,
-                          bits_per_sample=16,
-                          num_channels=2) as wfp:
+        with wavfile.open(
+            filename, "w", sample_rate=44100, bits_per_sample=16, num_channels=2
+        ) as wfp:
             wfp.write([[0.0, 0.0]])
             self.assertRaises(TypeError, wfp.write_int, [[0.0, 0.0]])
 
     def test_write_int_as_float(self):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w',
-                          sample_rate=44100,
-                          bits_per_sample=16,
-                          num_channels=2) as wfp:
+        with wavfile.open(
+            filename, "w", sample_rate=44100, bits_per_sample=16, num_channels=2
+        ) as wfp:
             wfp.write([[0, 0]])
             self.assertRaises(TypeError, wfp.write_float, [[0, 0]])
 
     def test_write_noop(self):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w',
-                          sample_rate=44100,
-                          bits_per_sample=16,
-                          num_channels=2) as wfp:
+        with wavfile.open(
+            filename, "w", sample_rate=44100, bits_per_sample=16, num_channels=2
+        ) as wfp:
             wfp.write([])
             self.assertEqual(wfp.num_frames, 0)
             wfp.write_int([])
@@ -383,5 +428,5 @@ class TestWavfileWrite(WavfileWriteTestRunner):
             self.assertEqual(wfp.num_frames, 0)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

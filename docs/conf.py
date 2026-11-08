@@ -11,27 +11,22 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
-import sys
+from pathlib import Path
 
 import sphinx.ext.apidoc
+import tomllib
 
-sys.path.insert(0, os.path.abspath(os.path.join('..')))
-sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
-sys.path.insert(0, os.path.abspath(os.path.join('..', 'src', 'wavfile')))
+project_root = Path(__file__).resolve().parents[1]
 
-import project as proj
-from wavfile.version import __VERSION__
+with (project_root / "pyproject.toml").open("rb") as f:
+    pyproject = tomllib.load(f)
 
 # -- Project information -----------------------------------------------------
 
-project = proj.information.name
-copyright = proj.information.copyright
-author = proj.information.author
-
-# The short X.Y version.
-version = __VERSION__
-# The full version, including alpha/beta/rc tags.
-release = version
+release = pyproject["project"]["version"]
+version = release
+project = pyproject["project"]["name"]
+author = pyproject["project"]["authors"][0]["name"]
 
 # -- General configuration ---------------------------------------------------
 
@@ -39,37 +34,39 @@ release = version
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
+    "sphinx.ext.autodoc",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 autodoc_default_options = {
-    'show-inheritance': False,
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__, __copy__, __enter__, __exit__',
-    'undoc-members': True,
-    'exclude-members': '__weakref__'
+    "show-inheritance": False,
+    "members": True,
+    "member-order": "bysource",
+    "special-members": "__init__, __copy__, __enter__, __exit__",
+    "undoc-members": True,
+    "exclude-members": "__weakref__",
 }
 
 
 def run_apidoc(_):
     curdir = os.path.abspath(os.path.dirname(__file__))
-    srcdir = os.path.normpath(os.path.join(curdir, '..', 'src'))
-    outdir = os.path.normpath(os.path.join(curdir, 'wavfile'))
-    templatedir = os.path.normpath(os.path.join(curdir, '_templates'))
-    sphinx.ext.apidoc.main(('-o', outdir, srcdir, '-f', '-M', '-T', '-e', '--templatedir', templatedir))
+    srcdir = os.path.normpath(os.path.join(curdir, "..", "src"))
+    outdir = os.path.normpath(os.path.join(curdir, "wavfile"))
+    templatedir = os.path.normpath(os.path.join(curdir, "_templates"))
+    sphinx.ext.apidoc.main(
+        ("-o", outdir, srcdir, "-f", "-M", "-T", "-e", "--templatedir", templatedir)
+    )
 
 
 def setup(app):
-    app.connect('builder-inited', run_apidoc)
+    app.connect("builder-inited", run_apidoc)
 
 
 rst_prolog = """
@@ -113,7 +110,7 @@ rst_prolog = """
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,

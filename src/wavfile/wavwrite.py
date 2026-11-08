@@ -4,9 +4,11 @@ Provides the WavWrite class for writing wave files.
 The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
+
 import io
 import os
 from collections.abc import Sequence
+from pathlib import Path
 from typing import BinaryIO, cast
 from warnings import warn
 
@@ -16,9 +18,14 @@ from . import base, chunk, exception
 class WavWrite(base.Wavfile):
     """Class for writing a wave file"""
 
-    def __init__(self, fp: str | os.PathLike[str] | BinaryIO, sample_rate: int = 44100,
-                 num_channels: int | None = None, bits_per_sample: int = 16,
-                 fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
+    def __init__(
+        self,
+        fp: str | os.PathLike[str] | BinaryIO,
+        sample_rate: int = 44100,
+        num_channels: int | None = None,
+        bits_per_sample: int = 16,
+        fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+    ) -> None:
         """
         Initialise the WavWrite object. The `fmt` argument may be any of the enumerations of
         `wavfile.chunk.WavFormat`. If `wavfile.chunk.WavFormat.EXTENSIBLE` is specified, then the
@@ -34,13 +41,13 @@ class WavWrite(base.Wavfile):
 
         self._init_fp(fp, mode="w")
         if self.fp is None:
-            raise exception.WriteError('Failed to open audio file')
+            raise exception.WriteError("Failed to open audio file")
 
         try:
             # initialise each of the riff chunks
             self._init_chunks(sample_rate, num_channels, bits_per_sample, fmt)
             if self._data_chunk is None:
-                raise exception.WriteError('Audio data chunk must be initialised')
+                raise exception.WriteError("Audio data chunk must be initialised")
 
             # go to data chunk content start ready to write samples
             self.fp.seek(self._data_chunk.content_start)
@@ -49,18 +56,25 @@ class WavWrite(base.Wavfile):
                 self.fp.close()
             raise
 
-    def _init_chunks(self, sample_rate: int = 44100,
-                     num_channels: int | None = None, bits_per_sample: int = 16,
-                     fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
+    def _init_chunks(
+        self,
+        sample_rate: int = 44100,
+        num_channels: int | None = None,
+        bits_per_sample: int = 16,
+        fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+    ) -> None:
         """
         Initialise the file chunks.
         """
         if self.fp is None:
-            raise exception.WriteError('Failed to open audio file')
+            raise exception.WriteError("Failed to open audio file")
 
         self._riff_chunk = chunk.RiffChunk(self.fp, mode="w")
-        if bits_per_sample > 16 or (num_channels is not None and num_channels > 2) or \
-                fmt == chunk.WavFormat.EXTENSIBLE:
+        if (
+            bits_per_sample > 16
+            or (num_channels is not None and num_channels > 2)
+            or fmt == chunk.WavFormat.EXTENSIBLE
+        ):
             fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp, mode="w")
             fmt_chunk.valid_bits_per_sample = bits_per_sample
             # ensure the container holds whole bytes
@@ -83,37 +97,35 @@ class WavWrite(base.Wavfile):
         Return the object representation in string format.
         """
         if self.fp is None:
-            source = 'closed'
+            source = "closed"
         elif isinstance(self.fp, (io.BufferedReader, io.BufferedWriter)):
-            source = repr(self.fp.name)
+            source = repr(Path(self.fp.name).as_posix())
         elif isinstance(self.fp, io.BytesIO):
-            source = 'BytesIO'
+            source = "BytesIO"
         else:
             source = type(self.fp).__name__
-        return f'{self.__class__.__name__}({source}, sample_rate={self.sample_rate}, ' + \
-               f'num_channels={self.num_channels}, bits_per_sample={self.bits_per_sample}, ' + \
-               f'fmt={self.format.__class__.__name__}.{self.format.name})'
+        return (
+            f"{self.__class__.__name__}({source}, sample_rate={self.sample_rate}, "
+            + f"num_channels={self.num_channels}, bits_per_sample={self.bits_per_sample}, "
+            + f"fmt={self.format.__class__.__name__}.{self.format.name})"
+        )
 
     def __check_metadata(self) -> None:
         """
         Prevent new audio data from overwriting the metadata chunk.
         """
         if self._data_chunk is None:
-            raise exception.WriteError('Audio data chunk must be initialised')
+            raise exception.WriteError("Audio data chunk must be initialised")
         if self._list_chunk is not None and self._list_chunk.start > self._data_chunk.start:
-            raise exception.WriteError('Audio may overwrite metadata chunk')
+            raise exception.WriteError("Audio may overwrite metadata chunk")
 
     def __write_float(self, audio: Sequence[Sequence[float]]) -> None:
         """
         Write float data to the file.
         """
         if self._data_chunk is None:
-            raise exception.WriteError('Audio data chunk must be initialised')
-        convert = (
-            self._convert_float_to_int
-            if self.audio_fmt == chunk.WavFormat.PCM
-            else None
-        )
+            raise exception.WriteError("Audio data chunk must be initialised")
+        convert = self._convert_float_to_int if self.audio_fmt == chunk.WavFormat.PCM else None
         self._data_chunk.write_frames(audio, convert)
 
     @base.requires_open
@@ -137,7 +149,7 @@ class WavWrite(base.Wavfile):
         Write integer data to the file.
         """
         if self._data_chunk is None:
-            raise exception.WriteError('Audio data chunk must be initialised')
+            raise exception.WriteError("Audio data chunk must be initialised")
         if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
             convert = self._convert_int_to_float
         else:
@@ -193,17 +205,18 @@ class WavWrite(base.Wavfile):
         :param kwargs: The metadata to write, provided as keyword arguments.
         """
         if self.fp is None:
-            raise exception.WriteError('Audio file pointer must be initialized')
+            raise exception.WriteError("Audio file pointer must be initialized")
 
         if self._riff_chunk is None:
-            raise exception.WriteError('RIFF chunk must be initialized')
+            raise exception.WriteError("RIFF chunk must be initialized")
 
         if self._data_chunk is None:
-            raise exception.WriteError('Audio data chunk must be initialized')
+            raise exception.WriteError("Audio data chunk must be initialized")
 
         if self._list_chunk is not None:
-            raise exception.WriteError('Metadata already written to file. '
-                                       'Editing is not currently supported.')
+            raise exception.WriteError(
+                "Metadata already written to file. Editing is not currently supported."
+            )
 
         # if the data chunk is empty, then overwrite it and recreate it after the metadata
         recreate_data_chunk = False
@@ -214,9 +227,7 @@ class WavWrite(base.Wavfile):
         else:
             # write after data
             self.fp.seek(
-                self._data_chunk.content_start +
-                self._data_chunk.size +
-                self._data_chunk.pad
+                self._data_chunk.content_start + self._data_chunk.size + self._data_chunk.pad
             )
         self._list_chunk = chunk.ListChunk(self.fp, mode="w")
         self._list_chunk.info = kwargs
@@ -234,5 +245,8 @@ class WavWrite(base.Wavfile):
             return
         base.Wavfile.close(self)
         if self.format != chunk.WavFormat.EXTENSIBLE and self.num_channels > 2:
-            warn('More than two audio channels are present, but the file does not use the '
-                 'EXTENSIBLE format. The file may not be readable in some software.')
+            warn(
+                "More than two audio channels are present, but the file does not use the "
+                "EXTENSIBLE format. The file may not be readable in some software.",
+                stacklevel=2,
+            )

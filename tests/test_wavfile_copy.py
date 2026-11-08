@@ -12,7 +12,6 @@ import wavfile
 
 
 class TestWavReadCopy(unittest.TestCase):
-
     filename = get_file_path("corpus/test-file-1.wav")
 
     def test_basic_copy(self):
@@ -36,6 +35,5 @@ class TestWavReadCopy(unittest.TestCase):
         with wavfile.open(self.filename) as wfp:
             wfc = copy.copy(wfp)
             num_frames = 1
-            for x, y in itertools.zip_longest(wfp.iter_int(num_frames),
-                                              wfc.iter_int(num_frames)):
+            for x, y in itertools.zip_longest(wfp.iter_int(num_frames), wfc.iter_int(num_frames)):
                 self.assertListEqual(x[0], y[0])

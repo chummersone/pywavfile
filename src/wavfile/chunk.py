@@ -11,13 +11,13 @@ from typing import BinaryIO, Literal, TypeVar
 from warnings import warn
 
 try:
-    from typing import Self
+    from typing import Self  # pyright: ignore[reportAttributeAccessIssue]
 except ImportError:
     from typing_extensions import Self
 
 from . import exception
 
-T = TypeVar('T', int, float)
+T = TypeVar("T", int, float)
 
 
 class WavEnum(Enum):
@@ -26,24 +26,30 @@ class WavEnum(Enum):
     @classmethod
     def _missing_(cls, value):
         raise exception.ReadError(
-            f"{value} is not a valid {cls.__name__}.  Valid types: {', '.join([repr(m.value) for m in cls])}")
+            f"{value} is not a valid {cls.__name__}.  Valid types: "
+            f"{', '.join([repr(m.value) for m in cls])}"
+        )
+
 
 class RiffFormat(WavEnum):
     """RIFF file format"""
-    WAVE = b'WAVE'
+
+    WAVE = b"WAVE"
 
 
 class ChunkID(WavEnum):
     """RIFF chunk identifiers"""
-    RIFF_CHUNK = b'RIFF'
-    FMT_CHUNK = b'fmt '
-    DATA_CHUNK = b'data'
-    LIST_CHUNK = b'LIST'
-    UNKNOWN_CHUNK = b'    '
+
+    RIFF_CHUNK = b"RIFF"
+    FMT_CHUNK = b"fmt "
+    DATA_CHUNK = b"data"
+    LIST_CHUNK = b"LIST"
+    UNKNOWN_CHUNK = b"    "
 
 
 class WavFormat(WavEnum):
     """Wav audio data format"""
+
     PCM = 0x0001
     IEEE_FLOAT = 0x0003
     EXTENSIBLE = 0xFFFE
@@ -51,24 +57,27 @@ class WavFormat(WavEnum):
 
 class WavFormatExSubformat(WavEnum):
     """Extensible WAVE sub-format"""
+
     PCM = uuid.UUID("00000001-0000-0010-8000-00AA00389B71")
     IEEE = uuid.UUID("00000003-0000-0010-8000-00AA00389B71")
 
 
 class ListType(WavEnum):
     """LIST chunk list types"""
-    INFO = b'INFO'
+
+    INFO = b"INFO"
 
 
 class InfoItem(WavEnum):
     """Items of the INFO chunk"""
-    track = b'INAM'
-    album = b'IPRD'
-    artist = b'IART'
-    date = b'ICRD'
-    track_number = b'ITRK'
-    comment = b'ICMT'
-    genre = b'IGNR'
+
+    track = b"INAM"
+    album = b"IPRD"
+    artist = b"IART"
+    date = b"ICRD"
+    track_number = b"ITRK"
+    comment = b"ICMT"
+    genre = b"IGNR"
 
 
 class Chunk:
@@ -79,8 +88,9 @@ class Chunk:
     _min_size: int = 0
     word_size: int = 4
 
-    def __init__(self, fp: BinaryIO, bigendian: bool = False,
-                 mode: Literal["r", "w"] = "r") -> None:
+    def __init__(
+        self, fp: BinaryIO, bigendian: bool = False, mode: Literal["r", "w"] = "r"
+    ) -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -93,7 +103,7 @@ class Chunk:
             raise ValueError(f"Invalid mode: {mode}")
         self.mode: Literal["r", "w"] = mode
         self.bigendian: bool = bigendian
-        if not hasattr(self, 'chunk_id'):
+        if not hasattr(self, "chunk_id"):
             self.chunk_id: ChunkID = ChunkID.UNKNOWN_CHUNK
         self.size: int = 0
         self.start: int = self.fp.tell()
@@ -110,15 +120,15 @@ class Chunk:
     @property
     def read_only(self) -> bool:
         """Check whether the file is read-only"""
-        return 'r' == self.mode
+        return "r" == self.mode
 
     @property
-    def endianness(self) -> Literal['big', 'little']:
+    def endianness(self) -> Literal["big", "little"]:
         """The endianness in text form."""
         if self.bigendian:
-            return 'big'
+            return "big"
         else:
-            return 'little'
+            return "little"
 
     @property
     def content_start(self) -> int:
@@ -156,7 +166,7 @@ class Chunk:
         """
         data = self.fp.read(nbytes)
         if len(data) < nbytes:
-            raise exception.ReadError('Could not read enough bytes. Maybe EOF.')
+            raise exception.ReadError("Could not read enough bytes. Maybe EOF.")
         return data
 
     def write(self, data: bytes, update_size: bool = True) -> None:
@@ -228,14 +238,17 @@ class Chunk:
         :param nbytes: Number of bytes per audio sample.
         """
 
-        endianness = '<' if self.endianness == 'little' else '>'
+        endianness = "<" if self.endianness == "little" else ">"
         try:
-            return endianness + {
-                4: 'f',
-                8: 'd',
-            }[nbytes]
+            return (
+                endianness
+                + {
+                    4: "f",
+                    8: "d",
+                }[nbytes]
+            )
         except KeyError:
-            raise exception.Error('Cannot convert float with the specified bit depth')
+            raise exception.Error("Cannot convert float with the specified bit depth") from None
 
     def bytes_to_float(self, data: bytes) -> float:
         """
@@ -279,7 +292,7 @@ class Chunk:
         """Finalise the chunk and update the header."""
         if (not self.read_only) and (not self.fp.closed):
             if self.size < self._min_size:
-                raise exception.WriteError('Required data have not been written to the file')
+                raise exception.WriteError("Required data have not been written to the file")
             self.write_header()
 
 
@@ -302,7 +315,7 @@ class RiffChunk(Chunk):
 
         if self.read_only:
             if self.chunk_id != ChunkID.RIFF_CHUNK:
-                raise exception.ReadError('Chunk is not a RIFF chunk')
+                raise exception.ReadError("Chunk is not a RIFF chunk")
             self.format = RiffFormat(self.read(self.word_size))
         else:
             self.write(RiffFormat.WAVE.value)
@@ -310,7 +323,7 @@ class RiffChunk(Chunk):
     def finalise(self) -> None:
         """Finalise the chunk and update the header."""
         if self.format is None:
-            raise exception.WriteError('RIFF format is not set')
+            raise exception.WriteError("RIFF format is not set")
         Chunk.finalise(self)
 
 
@@ -333,7 +346,7 @@ class WavFmtChunk(Chunk):
         :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.FMT_CHUNK
-        if not hasattr(self, '_audio_fmt'):
+        if not hasattr(self, "_audio_fmt"):
             self._audio_fmt: WavFormat = WavFormat.PCM
         self.num_channels: int = 0
         self.sample_rate: int = 0
@@ -351,7 +364,7 @@ class WavFmtChunk(Chunk):
     def _read(self) -> None:
         """Read metadata from the chunk"""
         if self.chunk_id != ChunkID.FMT_CHUNK:
-            raise exception.ReadError('Chunk is not a FMT chunk')
+            raise exception.ReadError("Chunk is not a FMT chunk")
         self._audio_fmt = WavFormat(self.read_int(self.audio_fmt_size, signed=False))
         self.num_channels = self.read_int(self._num_channels_size, signed=False)
         self.sample_rate = self.read_int(self._sample_rate_size, signed=False)
@@ -360,21 +373,21 @@ class WavFmtChunk(Chunk):
         self.bits_per_sample = self.read_int(self._bits_per_sample_size, signed=False)
 
         if self.num_channels == 0:
-            raise exception.ReadError('Number of channels is 0')
+            raise exception.ReadError("Number of channels is 0")
         if self.sample_rate == 0:
-            raise exception.ReadError('Sample rate is 0')
+            raise exception.ReadError("Sample rate is 0")
         if self.bits_per_sample == 0:
-            raise exception.ReadError('bits_per_sample is 0')
+            raise exception.ReadError("bits_per_sample is 0")
         if self.bits_per_sample % 8 != 0:
-            raise exception.ReadError('bits_per_sample should be a multiple of 8')
+            raise exception.ReadError("bits_per_sample should be a multiple of 8")
         expected_block_align = self.num_channels * self.bits_per_sample // 8
         if self.block_align != expected_block_align:
-            raise exception.ReadError('block_align set incorrectly')
-        expected_byte_rate = (self.sample_rate * self.block_align)
+            raise exception.ReadError("block_align set incorrectly")
+        expected_byte_rate = self.sample_rate * self.block_align
         if self.byte_rate != expected_byte_rate:
-            raise exception.ReadError('byte_rate set incorrectly')
+            raise exception.ReadError("byte_rate set incorrectly")
         if self.audio_fmt == WavFormat.IEEE_FLOAT and self.bits_per_sample not in (32, 64):
-            raise exception.ReadError('bits_per_sample should be 32 or 64 for IEEE_FLOAT')
+            raise exception.ReadError("bits_per_sample should be 32 or 64 for IEEE_FLOAT")
 
     @property
     def audio_fmt(self) -> WavFormat:
@@ -441,10 +454,10 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         super()._read()
         self.extension_size = self.read_int(self._extension_size_size, signed=False)
         if self.extension_size < self._min_size:
-            raise exception.ReadError('Extension size is too small')
+            raise exception.ReadError("Extension size is too small")
         here = self.fp.tell()
         if (here + self.extension_size) > self.end:
-            raise exception.ReadError('Extension size exceeds chunk size')
+            raise exception.ReadError("Extension size exceeds chunk size")
         self.valid_bits_per_sample = self.read_int(self._valid_bits_per_sample_size, signed=False)
         self.channel_mask = self.read_int(self._channel_mask_size, signed=False)
         sub_format = uuid.UUID(bytes_le=self.read(self._sub_format_size))
@@ -452,32 +465,36 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         # verify metadata
         self.sub_data_format = WavFormatExSubformat(sub_format)
         if self.valid_bits_per_sample == 0:
-            raise exception.ReadError('Valid bits per sample is 0.')
+            raise exception.ReadError("Valid bits per sample is 0.")
         if self.valid_bits_per_sample > self.bits_per_sample:
-            raise exception.ReadError("Valid bits per sample is exceeds the container's bit per sample")
+            raise exception.ReadError(
+                "Valid bits per sample is exceeds the container's bit per sample"
+            )
         if self.audio_fmt == WavFormat.IEEE_FLOAT:
             if self.valid_bits_per_sample not in (32, 64):
-                raise exception.ReadError('valid_bits_per_sample should be 32 or 64 for IEEE_FLOAT')
+                raise exception.ReadError("valid_bits_per_sample should be 32 or 64 for IEEE_FLOAT")
             if self.valid_bits_per_sample != self.bits_per_sample:
-                raise exception.ReadError('Valid bits must equal container width for IEEE_FLOAT')
+                raise exception.ReadError("Valid bits must equal container width for IEEE_FLOAT")
         if self.channel_mask != 0:
             # the channel count mask must have a number of bits set equal to the number of channels
             channel_count = 0
             for i in range(self._channel_mask_size * 8):
-                channel_count += ((self.channel_mask >> i) & 0x1)
+                channel_count += (self.channel_mask >> i) & 0x1
             if channel_count != self.num_channels:
-                raise exception.ReadError('Invalid channel mask')
+                raise exception.ReadError("Invalid channel mask")
 
     def write_fmt(self) -> None:
         """Write the format data to the file."""
         super().write_fmt()
-        extension_size = \
-            self._valid_bits_per_sample_size + \
-            self._channel_mask_size + \
-            self._sub_format_size
+        extension_size = (
+            self._valid_bits_per_sample_size + self._channel_mask_size + self._sub_format_size
+        )
         self.write_int(extension_size, self._extension_size_size, signed=False)
         if self.valid_bits_per_sample == 0:
-            warn('valid_bits_per_sample is 0. Interpreting this as full container precision.')
+            warn(
+                "valid_bits_per_sample is 0. Interpreting this as full container precision.",
+                stacklevel=2,
+            )
             self.valid_bits_per_sample = self.bits_per_sample
         self.write_int(self.valid_bits_per_sample, self._valid_bits_per_sample_size, signed=False)
         self.write_int(self.channel_mask, self._channel_mask_size, signed=False)
@@ -486,7 +503,9 @@ class WavFmtExtensibleChunk(WavFmtChunk):
     @property
     def audio_fmt(self) -> WavFormat:
         """Get the audio sample format."""
-        return WavFormat(int.from_bytes(self.sub_data_format.value.bytes_le[0:2], byteorder='little'))
+        return WavFormat(
+            int.from_bytes(self.sub_data_format.value.bytes_le[0:2], byteorder="little")
+        )
 
     @audio_fmt.setter
     def audio_fmt(self, audio_fmt: WavFormat) -> None:
@@ -500,8 +519,12 @@ class WavFmtExtensibleChunk(WavFmtChunk):
 class WavDataChunk(Chunk):
     """Wave data chunk read and write"""
 
-    def __init__(self, fp: BinaryIO, fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk,
-                 mode: Literal["r", "w"] = "r") -> None:
+    def __init__(
+        self,
+        fp: BinaryIO,
+        fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk,
+        mode: Literal["r", "w"] = "r",
+    ) -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -516,7 +539,7 @@ class WavDataChunk(Chunk):
         self.fmt_chunk = fmt_chunk
 
         if self.read_only and self.chunk_id != ChunkID.DATA_CHUNK:
-            raise exception.ReadError('Chunk is not a DATA chunk')
+            raise exception.ReadError("Chunk is not a DATA chunk")
 
     @property
     def num_frames(self) -> int:
@@ -544,7 +567,7 @@ class WavDataChunk(Chunk):
             return sample >> self._padding_bits
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return self.read_float(self.fmt_chunk.bytes_per_sample)
-        raise exception.ReadError('File is invalid')
+        raise exception.ReadError("File is invalid")
 
     def read_frames(self, nframes: int | None = None) -> list[list[int | float]]:
         """
@@ -563,9 +586,7 @@ class WavDataChunk(Chunk):
         num_frames = min(nframes, self.num_frames - self.tell())
 
         audio = [
-            [
-                self.read_sample() for _ in range(self.fmt_chunk.num_channels)
-            ]
+            [self.read_sample() for _ in range(self.fmt_chunk.num_channels)]
             for _ in range(num_frames)
         ]
 
@@ -585,7 +606,7 @@ class WavDataChunk(Chunk):
             return (2 ** (bits_per_sample - sign_correction)) - 1
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return 1.0
-        raise exception.ReadError('File is invalid')
+        raise exception.ReadError("File is invalid")
 
     @property
     def _min_val(self) -> float | int:
@@ -597,13 +618,13 @@ class WavDataChunk(Chunk):
                 return 0
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return -1.0
-        raise exception.ReadError('File is invalid')
+        raise exception.ReadError("File is invalid")
 
     def __saturation_warning(self) -> None:
         """Print a warning to stderr about out-of-range sample values."""
         if not self.__did_warn:
             self.__did_warn = True
-            print('Saturating one of more sample values that are out-of-range', file=sys.stderr)
+            print("Saturating one of more sample values that are out-of-range", file=sys.stderr)
 
     def _saturate(self, val: float) -> int | float:
         """Saturate out-of-range sample values."""
@@ -636,10 +657,11 @@ class WavDataChunk(Chunk):
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             self.write_float(sample, self.fmt_chunk.bytes_per_sample)
         else:
-            raise exception.ReadError('File is invalid')
+            raise exception.ReadError("File is invalid")
 
-    def write_frames(self, audio: Sequence[Sequence[T]],
-                     sample_transform: Callable[[T], int | float] | None) -> None:
+    def write_frames(
+        self, audio: Sequence[Sequence[T]], sample_transform: Callable[[T], int | float] | None
+    ) -> None:
         """
         Write one or more frames of audio to the chunk. Assumes that the audio buffer is
         well-formed. Use Wavfile.check_audio_buffer to validate a buffer.
@@ -652,11 +674,12 @@ class WavDataChunk(Chunk):
             if self.fmt_chunk.num_channels == 0:
                 self.fmt_chunk.num_channels = num_channels
             else:
-                raise exception.WriteError('Number of channels does not match the format chunk')
+                raise exception.WriteError("Number of channels does not match the format chunk")
 
         if self.fmt_chunk.block_align == 0:
-            self.fmt_chunk.block_align = \
+            self.fmt_chunk.block_align = (
                 self.fmt_chunk.num_channels * self.fmt_chunk.bytes_per_sample
+            )
             self.fmt_chunk.byte_rate = self.fmt_chunk.block_align * self.fmt_chunk.sample_rate
 
         for frame in audio:
@@ -675,7 +698,7 @@ class WavDataChunk(Chunk):
         :return: The method returns the object.
         """
         if frame_number > self.num_frames:
-            raise exception.Error('Frame number exceeds number of frames in file')
+            raise exception.Error("Frame number exceeds number of frames in file")
         relative_pos = self.content_start
         if whence == 0:
             pass
@@ -684,7 +707,7 @@ class WavDataChunk(Chunk):
         elif whence == 2:
             relative_pos = self.content_start + self.size
         else:
-            raise exception.Error('Invalid whence parameter')
+            raise exception.Error("Invalid whence parameter")
         self.fp.seek(relative_pos + (frame_number * self.fmt_chunk.block_align))
         return self
 
@@ -693,8 +716,7 @@ class WavDataChunk(Chunk):
         if self.fmt_chunk.block_align == 0:
             return 0
         else:
-            return (self.fp.tell() - self.content_start) // \
-                   self.fmt_chunk.block_align
+            return (self.fp.tell() - self.content_start) // self.fmt_chunk.block_align
 
 
 class ListChunk(Chunk):
@@ -713,14 +735,14 @@ class ListChunk(Chunk):
 
         if self.read_only:
             if self.chunk_id != ChunkID.LIST_CHUNK:
-                raise exception.ReadError('Chunk is not a LIST chunk')
+                raise exception.ReadError("Chunk is not a LIST chunk")
 
             # get end
             file_pos = fp.tell()
             self.fp.seek(0, 2)
             file_size = self.fp.tell()
             if (self.content_start + self.size) > file_size:
-                raise exception.ReadError('Chunk exceeds file size')
+                raise exception.ReadError("Chunk exceeds file size")
             self.fp.seek(file_pos)
 
             # read the INFO content of the LIST
@@ -733,7 +755,7 @@ class ListChunk(Chunk):
                     pad = size % self.align
                     if key in [e.value for e in InfoItem]:
                         field: str = InfoItem(key).name
-                        data = self.read(size).decode('ascii').rstrip('\x00')
+                        data = self.read(size).decode("ascii").rstrip("\x00")
                         try:
                             data = int(data)
                         except ValueError:
@@ -745,9 +767,9 @@ class ListChunk(Chunk):
 
                     # check boundary
                     if self.fp.tell() > self.end:
-                        raise exception.ReadError('Reading beyond the end of the LIST chunk')
+                        raise exception.ReadError("Reading beyond the end of the LIST chunk")
                     if self.fp.tell() > file_size:
-                        raise exception.ReadError('Reading beyond the end of the file')
+                        raise exception.ReadError("Reading beyond the end of the file")
 
     def write_info(self):
         """
@@ -759,18 +781,20 @@ class ListChunk(Chunk):
             # write each item
             for key, val in self.info.items():
                 if key not in InfoItem.__members__:
-                    raise exception.WriteError('Unknown metadata field. Valid fields are: ' +
-                                               ', '.join([e.name for e in InfoItem]))
+                    raise exception.WriteError(
+                        "Unknown metadata field. Valid fields are: "
+                        + ", ".join([e.name for e in InfoItem])
+                    )
                 self.write(InfoItem[key].value)
                 # convert to bytes
                 decoder = {
-                    int: lambda x: str(x).encode('ascii'),
-                    str: lambda x: x.encode('ascii'),
+                    int: lambda x: str(x).encode("ascii"),
+                    str: lambda x: x.encode("ascii"),
                 }.get(type(val))
                 if decoder is not None:
                     data = decoder(val)
                 else:
-                    raise exception.WriteError('Unknown metadata type')
+                    raise exception.WriteError("Unknown metadata type")
                 size = len(data)
                 self.write_int(size, self.word_size)
                 self.write(data)

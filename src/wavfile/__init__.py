@@ -4,15 +4,13 @@ Read/write wave audio files to/from lists of native Python types.
 The library currently supports PCM (integer) and IEEE float formats, and supports arbitrary integer
 precision, including: 16-, 24-, 32-, and 64-bit samples.
 """
+
 import os.path
 from collections.abc import Sequence
 from typing import BinaryIO, Literal, overload
 
 from . import chunk, wavread, wavwrite
 from .exception import Error, ReadError, WriteError
-from .version import __VERSION__
-
-__all__ = ['__VERSION__', 'join', 'open', 'read', 'split', 'write']
 
 
 @overload
@@ -23,7 +21,7 @@ def open(
     sample_rate: int = 44100,
     num_channels: int | None = None,
     bits_per_sample: int = 16,
-    fmt: chunk.WavFormat = chunk.WavFormat.PCM
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
 ) -> wavread.WavRead: ...
 
 
@@ -35,7 +33,7 @@ def open(
     sample_rate: int = 44100,
     num_channels: int | None = None,
     bits_per_sample: int = 16,
-    fmt: chunk.WavFormat = chunk.WavFormat.PCM
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
 ) -> wavwrite.WavWrite: ...
 
 
@@ -69,18 +67,25 @@ def open(
     :param fmt: The format code (write only) (:class:`chunk.WavFormat`)
     :return: Returns a :class:`wavread.WavRead` object or :class:`wavwrite.WavWrite` object.
     """
-    if mode in ('r', 'rb'):
+    if mode in ("r", "rb"):
         return wavread.WavRead(f)
-    elif mode in ('w', 'wb'):
+    elif mode in ("w", "wb"):
         if not isinstance(fmt, chunk.WavFormat):
-            raise WriteError('Invalid format')
-        return wavwrite.WavWrite(f, sample_rate=sample_rate, num_channels=num_channels,
-                                 bits_per_sample=bits_per_sample, fmt=fmt)
+            raise WriteError("Invalid format")
+        return wavwrite.WavWrite(
+            f,
+            sample_rate=sample_rate,
+            num_channels=num_channels,
+            bits_per_sample=bits_per_sample,
+            fmt=fmt,
+        )
     else:
         raise Error("mode must be 'r', 'rb', 'w', or 'wb'")
 
 
-def read(path: str | os.PathLike[str], fmt: str = 'int') -> tuple[list[list[int | float]], int, int]:
+def read(
+    path: str | os.PathLike[str], fmt: str = "int"
+) -> tuple[list[list[int | float]], int, int]:
     """
     Shortcut function to read a wave file. The audio can be read directly (``fmt='native'``),
     converted to integers (``fmt='int'``), or converted to floating point (``fmt='float'``).
@@ -89,26 +94,30 @@ def read(path: str | os.PathLike[str], fmt: str = 'int') -> tuple[list[list[int 
     :param fmt: Read the file as 'int', 'float', or 'native'.
     :return: The audio data, the sample rate, and the bit depth.
     """
-    with open(path, 'r') as wf:
+    with open(path, "r") as wf:
         fs = wf.sample_rate
         bits_per_sample = wf.bits_per_sample
         fmt_methods = {
-            'int': wf.read_int,
-            'float': wf.read_float,
-            'native': wf.read,
+            "int": wf.read_int,
+            "float": wf.read_float,
+            "native": wf.read,
         }
         try:
             audio_data = fmt_methods[fmt]()
         except KeyError:
-            raise Error('Unknown format. Options are: ' + ', '.join(fmt_methods.keys())) from None
+            raise Error("Unknown format. Options are: " + ", ".join(fmt_methods.keys())) from None
         return audio_data, fs, bits_per_sample
-    raise ReadError('Error reading file.')
+    raise ReadError("Error reading file.")
 
 
-def write(path: str | os.PathLike[str], audio_data: Sequence[Sequence[int | float]],
-          sample_rate: int = 44100, bits_per_sample: int = 16,
-          fmt: chunk.WavFormat = chunk.WavFormat.PCM,
-          metadata: dict[str, int | str] | None = None) -> None:
+def write(
+    path: str | os.PathLike[str],
+    audio_data: Sequence[Sequence[int | float]],
+    sample_rate: int = 44100,
+    bits_per_sample: int = 16,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+    metadata: dict[str, int | str] | None = None,
+) -> None:
     """
     Shortcut function to write a wave file. The data should be contained in a list of lists with
     size (N,C), where C is the number of audio channels. The data may be int or float. The data may
@@ -124,7 +133,7 @@ def write(path: str | os.PathLike[str], audio_data: Sequence[Sequence[int | floa
     :param fmt: The audio format (:class:`chunk.WavFormat`)
     :param metadata: The metadata to write, provided as a dictionary.
     """
-    with open(path, 'w', sample_rate=sample_rate, bits_per_sample=bits_per_sample, fmt=fmt) as wf:
+    with open(path, "w", sample_rate=sample_rate, bits_per_sample=bits_per_sample, fmt=fmt) as wf:
         if metadata is not None:
             wf.add_metadata(**metadata)
         wf.write(audio_data)
@@ -137,14 +146,14 @@ def split(path: str | os.PathLike[str]) -> None:
     :param path: Path to the multichannel wave file.
     """
 
-    with open(path, 'r') as wfp:
+    with open(path, "r") as wfp:
         num_channels = wfp.num_channels
 
         # filenames for new files
         filenames = []
         base, ext = os.path.splitext(path)
         for i in range(num_channels):
-            filenames.append(f'{base}_{i:02d}{ext}')
+            filenames.append(f"{base}_{i:02d}{ext}")
 
         # open the wave files for writing
         outs = []
@@ -155,7 +164,7 @@ def split(path: str | os.PathLike[str]) -> None:
                     sample_rate=wfp.sample_rate,
                     num_channels=1,
                     bits_per_sample=wfp.bits_per_sample,
-                    fmt=wfp.format
+                    fmt=wfp.format,
                 )
             )
 
@@ -186,27 +195,32 @@ def join(filename: str | os.PathLike[str], *paths: str | os.PathLike[str]) -> No
     bits_per_sample = 0
     num_channels = 0
     for file in paths:
-        with open(file, 'r') as fp:
+        with open(file, "r") as fp:
             # check matching sample rates
             if sample_rate is None:
                 sample_rate = fp.sample_rate
             else:
                 if fp.sample_rate != sample_rate:
-                    raise ReadError('Sample rates of input files do not match')
+                    raise ReadError("Sample rates of input files do not match")
             num_frames.append(fp.num_frames)
             bits_per_sample = max(bits_per_sample, fp.bits_per_sample)
             num_channels += fp.num_channels
 
     if sample_rate is None:
-        raise ReadError('Sample rates of input files cannot be determined')
+        raise ReadError("Sample rates of input files cannot be determined")
 
     # join files
-    with open(filename, mode='w', bits_per_sample=bits_per_sample, sample_rate=sample_rate,
-              num_channels=num_channels) as wfp:
+    with open(
+        filename,
+        mode="w",
+        bits_per_sample=bits_per_sample,
+        sample_rate=sample_rate,
+        num_channels=num_channels,
+    ) as wfp:
         # open files
         file_pointers = []
         for file in paths:
-            file_pointers.append(open(file, 'r'))
+            file_pointers.append(open(file, "r"))
 
         # write each frame
         for frame_num in range(max(num_frames)):
