@@ -103,6 +103,7 @@ class WavWrite(base.Wavfile):
         )
         self._data_chunk.write_frames(audio, convert)
 
+    @base.requires_open
     def write_float(self, audio: Sequence[Sequence[float]]) -> None:
         """
         Write float data to the file. If the file format is `PCM` then the data will be converted to
@@ -129,6 +130,7 @@ class WavWrite(base.Wavfile):
         )
         self._data_chunk.write_frames(audio, convert)
 
+    @base.requires_open
     def write_int(self, audio: Sequence[Sequence[int]]) -> None:
         """
         Write integer data to the file. If the file format is `IEEE_FLOAT` then the data will be
@@ -144,6 +146,7 @@ class WavWrite(base.Wavfile):
             raise TypeError("Audio samples must be integers")
         self.__write_int(audio)
 
+    @base.requires_open
     def write(self, audio: Sequence[Sequence[int | float]]) -> None:
         """
         Write audio data to the file. The data should be a list of lists with dimensions `(N,C)`,

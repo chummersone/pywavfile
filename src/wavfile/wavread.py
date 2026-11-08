@@ -164,6 +164,7 @@ class WavRead(base.Wavfile):
             else:
                 return
 
+    @base.requires_open
     def read_int(self, num_frames: int | None = None) -> list[list[int]]:
         """
         Read, at most, num_frames frames from the audio stream in integer format. The method returns
@@ -180,6 +181,7 @@ class WavRead(base.Wavfile):
                     audio[n][m] = self._convert_float_to_int(audio[n][m])
         return cast(list[list[int]], audio)
 
+    @base.requires_open
     def iter_int(self, num_frames: int | None = None) -> Generator[list[list[int]], None, None]:
         """
         This method is equivalent to :meth:`read_int`, except that it returns a generator rather
@@ -191,6 +193,7 @@ class WavRead(base.Wavfile):
         return cast(Generator[list[list[int]], None, None],
                     self._block_iterator('read_int', num_frames))
 
+    @base.requires_open
     def read_float(self, num_frames: int | None = None) -> list[list[float]]:
         """
         Read, at most, num_frames frames from the audio stream in float format in the range [-1, 1).
@@ -209,6 +212,7 @@ class WavRead(base.Wavfile):
 
         return audio
 
+    @base.requires_open
     def iter_float(self, num_frames: int | None = None) -> \
             Generator[list[list[float]], None, None]:
         """
@@ -220,6 +224,7 @@ class WavRead(base.Wavfile):
         """
         return self._block_iterator('read_float', num_frames)
 
+    @base.requires_open
     def read(self, num_frames: int | None = None) -> list[list[int | float]]:
         """
         Read, at most, `num_frames` frames from the audio stream in its native format. The method
@@ -231,6 +236,7 @@ class WavRead(base.Wavfile):
         """
         return self._data_chunk.read_frames(num_frames)
 
+    @base.requires_open
     def iter(self, num_frames=None) -> Generator[list[list[int | float]], None, None]:
         """
         This method is equivalent to :meth:`read`, except that it returns a generator rather than

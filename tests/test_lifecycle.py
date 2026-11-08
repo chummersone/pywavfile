@@ -42,7 +42,6 @@ def test_writer_does_not_close_borrowed_stream():
 
 
 def test_reader_closes_owned_file(tmp_path):
-
     path = tmp_path / "test.wav"
     path.write_bytes(valid_wav_file)
 
@@ -175,3 +174,48 @@ def test_reader_borrowed_file_remains_open_when_initialisation_fails():
         wavfile.open(fp, mode="r")
 
     assert not fp.closed
+
+
+def test_reader_except_after_close(tmp_path):
+    path = tmp_path / "test.wav"
+    path.write_bytes(valid_wav_file)
+
+    with wavfile.open(path, mode="r") as fp:
+        fp.read(1)
+
+    assert fp.closed
+
+    with pytest.raises(ValueError):
+        fp.read(1)
+
+    with pytest.raises(ValueError):
+        fp.seek(0)
+
+    with pytest.raises(ValueError):
+        fp.tell()
+
+    with pytest.raises(ValueError):
+        with fp:
+            fp.seek(0)
+
+
+def test_writer_except_after_close(tmp_path):
+    path = tmp_path / "test.wav"
+
+    with wavfile.open(path, mode="w", num_channels=1) as fp:
+        fp.write([[0], [0]])
+
+    assert fp.closed
+
+    with pytest.raises(ValueError):
+        fp.write([[0], [0]])
+
+    with pytest.raises(ValueError):
+        fp.seek(0)
+
+    with pytest.raises(ValueError):
+        fp.tell()
+
+    with pytest.raises(ValueError):
+        with fp:
+            fp.seek(0)

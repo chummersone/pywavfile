@@ -5,6 +5,7 @@ from __future__ import annotations
 import builtins
 import os
 from abc import ABC
+from functools import wraps
 from typing import AnyStr, Literal, Protocol, Sequence
 try:
     from typing import Self
@@ -43,6 +44,16 @@ class Writable(BasicFile, Protocol):
 
     def write(self, data: bytes) -> int:
         """Write to the file"""
+
+
+def requires_open(func):
+    """Throw an exception on IO operations if the file is not open."""
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self.closed:
+            raise ValueError("I/O operation on closed WAV file")
+        return func(self, *args, **kwargs)
+    return wrapper
 
 
 class Wavfile(ABC):
@@ -180,6 +191,11 @@ class Wavfile(ABC):
         return self._data_chunk.fmt_chunk.bytes_per_sample
 
     @property
+    def closed(self) -> bool:
+        """Whether the file is closed"""
+        return self._closed
+
+    @property
     def num_channels(self) -> int:
         """Number of audio channels in the file"""
         return self._data_chunk.fmt_chunk.num_channels
@@ -246,6 +262,7 @@ class Wavfile(ABC):
         """
         return max([max([abs(y) for y in x]) for x in data])
 
+    @requires_open
     def seek(self, frame_number: int, whence: int = 0) -> Wavfile:
         """
         Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
@@ -258,6 +275,7 @@ class Wavfile(ABC):
         self._data_chunk.seek(frame_number, whence)
         return self
 
+    @requires_open
     def tell(self) -> int:
         """Get the current frame number."""
         return self._data_chunk.tell()
@@ -299,6 +317,7 @@ class Wavfile(ABC):
             if self._should_close_file and self.fp is not None:
                 self.fp.close()
 
+    @requires_open
     def __enter__(self) -> Self:
         return self
 
