@@ -18,7 +18,7 @@ class TestCaseWithFile(unittest.TestCase):
 
     def assertIsFile(self, path):
         if not pathlib.Path(path).resolve().is_file():
-            raise AssertionError("File does not exist: {}".format(str(path)))
+            raise AssertionError(f"File does not exist: {path!s}")
 
 
 class TestModule(TestCaseWithFile):

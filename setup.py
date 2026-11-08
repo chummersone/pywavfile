@@ -4,6 +4,7 @@ Build the wavfile package.
 
 import pathlib
 import sys
+
 from setuptools import find_packages, setup
 
 import project

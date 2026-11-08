@@ -2,15 +2,18 @@
 The main API for reading and writing wav files.
 """
 from __future__ import annotations
+
 import builtins
 import os
 from abc import ABC
+from collections.abc import Sequence
 from functools import wraps
-from typing import AnyStr, Literal, Protocol, Sequence
+from typing import AnyStr, Literal, Protocol
+
 try:
     from typing import Self
 except ImportError:
-    from typing_extensions import Self
+    from typing import Self
 
 from . import chunk
 
@@ -79,7 +82,7 @@ class Wavfile(ABC):
         """
         # open the file
         if isinstance(f, (str, os.PathLike)):
-            self.fp = builtins.open(f, mode + 'b')
+            self.fp = builtins.open(f, mode + 'b')  # noqa: SIM115
             self._should_close_file = True
         else:
             self.fp = f
@@ -87,7 +90,7 @@ class Wavfile(ABC):
 
     @classmethod
     def check_audio_buffer(cls, audio: Sequence[Sequence[float]]) -> \
-            type[int] | type[float] | None:
+            type[int | float] | None:
         """
         Validate the audio buffer layout and type. The buffer must have a consistent audio sample
         type and channel count.
@@ -162,7 +165,7 @@ class Wavfile(ABC):
         :param x: The float value to convert.
         :return: The integer equivalent in the current range.
         """
-        return int(round(((x + 1.0) / 2.0) * (2.0 ** self.bits_per_sample)))
+        return round(((x + 1.0) / 2.0) * (2.0 ** self.bits_per_sample))
 
     def _convert_float_to_signed_int(self, x: float) -> int:
         """
@@ -171,7 +174,7 @@ class Wavfile(ABC):
         :param x: The float value to convert.
         :return: The integer equivalent in the current range.
         """
-        return int(round(x * (2.0 ** (self.bits_per_sample - 1.0))))
+        return round(x * (2.0 ** (self.bits_per_sample - 1.0)))
 
     def _convert_float_to_int(self, x: float) -> int:
         """

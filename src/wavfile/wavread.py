@@ -5,12 +5,12 @@ The WavRead class is returned by wavfile.open() when opening a file in read
 mode.
 """
 from __future__ import annotations
-import os
-from typing import cast, AnyStr, Generator
 
-from . import base
-from . import chunk
-from . import exception
+import os
+from collections.abc import Generator
+from typing import AnyStr, cast
+
+from . import base, chunk, exception
 
 
 class WavRead(base.Wavfile):

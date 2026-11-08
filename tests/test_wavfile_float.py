@@ -4,9 +4,9 @@ Provides test cases for writing and reading floating-point wave audio files.
 
 import unittest
 
-import wavfile
-
 from test_module import get_file_path
+
+import wavfile
 
 
 class TestWavfileFloat(unittest.TestCase):
@@ -34,8 +34,8 @@ class TestWavfileFloat(unittest.TestCase):
 
         self.assertEqual(len(reference), len(audio_out))
         self.assertEqual(len(reference[0]), len(audio_out[0]))
-        for i in range(0, len(audio_out)):
-            for j in range(0, len(audio_out[0])):
+        for i in range(len(audio_out)):
+            for j in range(len(audio_out[0])):
                 self.assertAlmostEqual(audio_out[i][j], reference[i][j],
                                        delta=1e-7)
 

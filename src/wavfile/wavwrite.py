@@ -5,12 +5,11 @@ The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
 import os
-from typing import cast, AnyStr, Sequence
+from collections.abc import Sequence
+from typing import AnyStr, cast
 from warnings import warn
 
-from . import base
-from . import chunk
-from . import exception
+from . import base, chunk, exception
 
 
 class WavWrite(base.Wavfile):
@@ -88,9 +87,8 @@ class WavWrite(base.Wavfile):
         """
         Prevent new audio data from overwriting the metadata chunk.
         """
-        if self._list_chunk is not None:
-            if self._list_chunk.start > self._data_chunk.start:
-                raise exception.WriteError('Audio may overwrite metadata chunk')
+        if self._list_chunk is not None and self._list_chunk.start > self._data_chunk.start:
+            raise exception.WriteError('Audio may overwrite metadata chunk')
 
     def __write_float(self, audio: Sequence[Sequence[float]]) -> None:
         """

@@ -5,14 +5,14 @@ The library currently supports PCM (integer) and IEEE float formats, and support
 precision, including: 16-, 24-, 32-, and 64-bit samples.
 """
 import os.path
-from typing import overload, AnyStr, Literal
+from typing import AnyStr, Literal, overload
 
-from . import chunk
-from . import wavread
-from . import wavwrite
+from . import chunk, wavread, wavwrite
 from .base import Readable, Writable
 from .exception import Error, ReadError, WriteError
 from .version import __VERSION__
+
+__all__ = ['__VERSION__', 'join', 'open', 'read', 'split', 'write']
 
 
 @overload

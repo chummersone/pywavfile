@@ -4,10 +4,10 @@ Provides test cases for metadata read/write.
 
 import unittest
 
-import wavfile
-
 from test_module import get_file_path
 from test_wavfile_write import WavfileWriteTestRunner
+
+import wavfile
 
 
 class TestReadMetadata(unittest.TestCase):

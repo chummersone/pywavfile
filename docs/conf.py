@@ -15,14 +15,12 @@ import sys
 
 import sphinx.ext.apidoc
 
-
 sys.path.insert(0, os.path.abspath(os.path.join('..')))
 sys.path.insert(0, os.path.abspath(os.path.join('..', 'src')))
 sys.path.insert(0, os.path.abspath(os.path.join('..', 'src', 'wavfile')))
 
 import project as proj
 from wavfile.version import __VERSION__
-
 
 # -- Project information -----------------------------------------------------
 

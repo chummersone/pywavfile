@@ -4,11 +4,11 @@ Provides test cases for unusual wav files from the fixture.
 
 import json
 from pathlib import Path
+
 import pytest
+from test_module import get_file_path
 
 import wavfile
-
-from test_module import get_file_path
 
 ROOT = Path(__file__).parents[1]
 FIXTURES = Path(get_file_path("fixtures/unusual"))

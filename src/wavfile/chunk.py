@@ -5,13 +5,15 @@ Chunk-based helper classes for working with RIFF files.
 import struct
 import sys
 import uuid
+from collections.abc import Callable, Sequence
 from enum import Enum
-from typing import Callable, Literal, Sequence
+from typing import Literal
 from warnings import warn
+
 try:
     from typing import Self
 except ImportError:
-    from typing_extensions import Self
+    from typing import Self
 
 from . import exception
 from .base import Readable, Writable
@@ -23,12 +25,7 @@ class WavEnum(Enum):
     @classmethod
     def _missing_(cls, value):
         raise exception.ReadError(
-            '%r is not a valid %s.  Valid types: %s' % (
-                value,
-                cls.__name__,
-                ', '.join([repr(m.value) for m in cls]),
-            ))
-
+            f"{value} is not a valid {cls.__name__}.  Valid types: {', '.join([repr(m.value) for m in cls])}")
 
 class RiffFormat(WavEnum):
     """RIFF file format"""
@@ -92,7 +89,7 @@ class Chunk:
         """
         self.fp: Readable | Writable = fp
         if mode not in ("r", "w"):
-            raise ValueError("Invalid mode: %s" % mode)
+            raise ValueError(f"Invalid mode: {mode}")
         self.mode: Literal["r", "w"] = mode
         self.bigendian: bool = bigendian
         if not hasattr(self, 'chunk_id'):
@@ -517,9 +514,8 @@ class WavDataChunk(Chunk):
         self.__did_warn = False
         self.fmt_chunk = fmt_chunk
 
-        if self.read_only:
-            if self.chunk_id != ChunkID.DATA_CHUNK:
-                raise exception.ReadError('Chunk is not a DATA chunk')
+        if self.read_only and self.chunk_id != ChunkID.DATA_CHUNK:
+            raise exception.ReadError('Chunk is not a DATA chunk')
 
     @property
     def num_frames(self) -> int:
@@ -608,7 +604,7 @@ class WavDataChunk(Chunk):
             self.__did_warn = True
             print('Saturating one of more sample values that are out-of-range', file=sys.stderr)
 
-    def _saturate(self, val: int | float) -> int | float:
+    def _saturate(self, val: float) -> int | float:
         """Saturate out-of-range sample values."""
         if val > self._max_val:
             val = self._max_val
@@ -626,7 +622,7 @@ class WavDataChunk(Chunk):
             padding_bits = self.fmt_chunk.bits_per_sample - self.fmt_chunk.valid_bits_per_sample
         return padding_bits
 
-    def write_sample(self, sample: int | float) -> None:
+    def write_sample(self, sample: float) -> None:
         """
         Write a sample to the chunk.
 
@@ -766,10 +762,10 @@ class ListChunk(Chunk):
                                                ', '.join([e.name for e in InfoItem]))
                 self.write(InfoItem[key].value)
                 # convert to bytes
-                data = dict([
-                    (int, lambda x: str(x).encode('ascii')),
-                    (str, lambda x: x.encode('ascii')),
-                ]).get(type(val))(val)
+                data = {
+                    int: lambda x: str(x).encode('ascii'),
+                    str: lambda x: x.encode('ascii'),
+                }.get(type(val))(val)
                 size = len(data)
                 self.write_int(size, self.word_size)
                 self.write(data)

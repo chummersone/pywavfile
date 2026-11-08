@@ -4,10 +4,10 @@ Provides test cases for writing and reading a wave audio file in extensible form
 
 import unittest
 
-import wavfile
-
 from test_module import get_file_path
 from test_wavfile_write import WavfileWriteTestRunner
+
+import wavfile
 
 
 class TestWavfileWrite(WavfileWriteTestRunner):

@@ -6,9 +6,9 @@ import copy
 import itertools
 import unittest
 
-import wavfile
-
 from test_module import get_file_path
+
+import wavfile
 
 
 class TestWavReadCopy(unittest.TestCase):
