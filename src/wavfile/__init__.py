@@ -5,7 +5,8 @@ The library currently supports PCM (integer) and IEEE float formats, and support
 precision, including: 16-, 24-, 32-, and 64-bit samples.
 """
 import os.path
-from typing import BinaryIO, Literal, overload, Sequence
+from collections.abc import Sequence
+from typing import BinaryIO, Literal, overload
 
 from . import chunk, wavread, wavwrite
 from .exception import Error, ReadError, WriteError

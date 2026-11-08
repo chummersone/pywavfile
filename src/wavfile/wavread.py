@@ -42,9 +42,8 @@ class WavRead(base.Wavfile):
                 raise exception.ReadError('Audio data chunk not initialised')
             self.fp.seek(self._data_chunk.content_start)
         except Exception:
-            if self._should_close_file:
-                if self.fp is not None:
-                    self.fp.close()
+            if self._should_close_file and self.fp is not None:
+                self.fp.close()
             raise
 
     def __repr__(self) -> str:
