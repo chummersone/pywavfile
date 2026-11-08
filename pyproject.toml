@@ -45,7 +45,7 @@ where = ["src"]
 [tool.pyright]
 pythonVersion = "3.10"
 typeCheckingMode = "standard"
-exclude = ["docs/conf.py"]
+exclude = ["docs"]
 
 [tool.ruff]
 line-length = 100
