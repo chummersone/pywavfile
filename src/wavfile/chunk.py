@@ -11,7 +11,7 @@ from typing import BinaryIO, Literal, TypeVar
 from warnings import warn
 
 try:
-    from typing import Self
+    from typing import Self  # pyright: ignore[reportAttributeAccessIssue]
 except ImportError:
     from typing_extensions import Self
 

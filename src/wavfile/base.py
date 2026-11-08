@@ -11,7 +11,7 @@ from functools import wraps
 from typing import BinaryIO, Literal
 
 try:
-    from typing import Self
+    from typing import Self  # pyright: ignore[reportAttributeAccessIssue]
 except ImportError:
     from typing_extensions import Self
 
