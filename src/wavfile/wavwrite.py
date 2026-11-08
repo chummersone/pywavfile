@@ -6,7 +6,7 @@ mode.
 """
 import os
 from collections.abc import Sequence
-from typing import AnyStr, cast
+from typing import BinaryIO, cast
 from warnings import warn
 
 from . import base, chunk, exception
@@ -15,7 +15,7 @@ from . import base, chunk, exception
 class WavWrite(base.Wavfile):
     """Class for writing a wave file"""
 
-    def __init__(self, fp: str | os.PathLike[AnyStr] | base.Writable, sample_rate: int = 44100,
+    def __init__(self, fp: str | os.PathLike[str] | BinaryIO, sample_rate: int = 44100,
                  num_channels: int | None = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """
@@ -34,6 +34,8 @@ class WavWrite(base.Wavfile):
         self._init_fp(fp, mode="w")
         if self.fp is None:
             raise exception.WriteError('Failed to open audio file')
+        if self._data_chunk is None:
+            raise exception.WriteError('Audio data chunk must be initialised')
 
         try:
             # initialise each of the riff chunks
@@ -79,7 +81,7 @@ class WavWrite(base.Wavfile):
         """
         Return the object representation in string format.
         """
-        return f'{self.__class__.__name__}("{self.fp.name}", sample_rate={self.sample_rate}, ' + \
+        return f'{self.__class__.__name__}("{repr(self.fp)}", sample_rate={self.sample_rate}, ' + \
                f'num_channels={self.num_channels}, bits_per_sample={self.bits_per_sample}, ' + \
                f'fmt={self.format.__class__.__name__}.{self.format.name})'
 
@@ -87,6 +89,8 @@ class WavWrite(base.Wavfile):
         """
         Prevent new audio data from overwriting the metadata chunk.
         """
+        if self._data_chunk is None:
+            raise exception.WriteError('Audio data chunk must be initialised')
         if self._list_chunk is not None and self._list_chunk.start > self._data_chunk.start:
             raise exception.WriteError('Audio may overwrite metadata chunk')
 
@@ -94,6 +98,8 @@ class WavWrite(base.Wavfile):
         """
         Write float data to the file.
         """
+        if self._data_chunk is None:
+            raise exception.WriteError('Audio data chunk must be initialised')
         convert = (
             self._convert_float_to_int
             if self.audio_fmt == chunk.WavFormat.PCM
@@ -121,11 +127,12 @@ class WavWrite(base.Wavfile):
         """
         Write integer data to the file.
         """
-        convert = (
-            self._convert_int_to_float
-            if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT
-            else None
-        )
+        if self._data_chunk is None:
+            raise exception.WriteError('Audio data chunk must be initialised')
+        if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
+            convert = self._convert_int_to_float
+        else:
+            convert = None
         self._data_chunk.write_frames(audio, convert)
 
     @base.requires_open
@@ -178,6 +185,12 @@ class WavWrite(base.Wavfile):
         """
         if self.fp is None:
             raise exception.WriteError('Audio file pointer must be initialized')
+
+        if self._riff_chunk is None:
+            raise exception.WriteError('RIFF chunk must be initialized')
+
+        if self._data_chunk is None:
+            raise exception.WriteError('Audio data chunk must be initialized')
 
         if self._list_chunk is not None:
             raise exception.WriteError('Metadata already written to file. '

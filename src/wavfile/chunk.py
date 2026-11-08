@@ -7,7 +7,7 @@ import sys
 import uuid
 from collections.abc import Callable, Sequence
 from enum import Enum
-from typing import Literal
+from typing import BinaryIO, Literal, TypeVar
 from warnings import warn
 
 try:
@@ -16,7 +16,9 @@ except ImportError:
     from typing import Self
 
 from . import exception
-from .base import Readable, Writable
+
+
+T = TypeVar('T', int, float)
 
 
 class WavEnum(Enum):
@@ -78,7 +80,7 @@ class Chunk:
     _min_size: int = 0
     word_size: int = 4
 
-    def __init__(self, fp: Readable | Writable, bigendian: bool = False,
+    def __init__(self, fp: BinaryIO, bigendian: bool = False,
                  mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
@@ -87,7 +89,7 @@ class Chunk:
         :param bigendian: Is the file bid endian?
         :param mode: File read/write mode.
         """
-        self.fp: Readable | Writable = fp
+        self.fp: BinaryIO = fp
         if mode not in ("r", "w"):
             raise ValueError(f"Invalid mode: {mode}")
         self.mode: Literal["r", "w"] = mode
@@ -287,7 +289,7 @@ class RiffChunk(Chunk):
 
     _min_size = 4
 
-    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
+    def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -324,7 +326,7 @@ class WavFmtChunk(Chunk):
     _block_align_size: int = 2
     _bits_per_sample_size: int = 2
 
-    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
+    def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -421,7 +423,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
     _channel_mask_size: int = 4
     _sub_format_size: int = 16
 
-    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
+    def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -499,7 +501,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
 class WavDataChunk(Chunk):
     """Wave data chunk read and write"""
 
-    def __init__(self, fp: Readable | Writable, fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk,
+    def __init__(self, fp: BinaryIO, fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk,
                  mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
@@ -532,7 +534,7 @@ class WavDataChunk(Chunk):
             num_align_bytes = self.size % Chunk.align
             if num_align_bytes > 0:
                 self.skip(include_pad=False)
-                self.write(bytearray(num_align_bytes), update_size=False)
+                self.write(bytes(bytearray(num_align_bytes)), update_size=False)
 
         Chunk.finalise(self)
 
@@ -637,8 +639,8 @@ class WavDataChunk(Chunk):
         else:
             raise exception.ReadError('File is invalid')
 
-    def write_frames(self, audio: Sequence[Sequence[int | float]],
-                     sample_transform: Callable[[int | float], int | float] | None = None) -> None:
+    def write_frames(self, audio: Sequence[Sequence[T]],
+                     sample_transform: Callable[[T], int | float] | None) -> None:
         """
         Write one or more frames of audio to the chunk. Assumes that the audio buffer is
         well-formed. Use Wavfile.check_audio_buffer to validate a buffer.
@@ -699,7 +701,7 @@ class WavDataChunk(Chunk):
 class ListChunk(Chunk):
     """List chunk read and write"""
 
-    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
+    def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
@@ -762,14 +764,18 @@ class ListChunk(Chunk):
                                                ', '.join([e.name for e in InfoItem]))
                 self.write(InfoItem[key].value)
                 # convert to bytes
-                data = {
+                decoder = {
                     int: lambda x: str(x).encode('ascii'),
                     str: lambda x: x.encode('ascii'),
-                }.get(type(val))(val)
+                }.get(type(val))
+                if decoder is not None:
+                    data = decoder(val)
+                else:
+                    raise exception.WriteError('Unknown metadata type')
                 size = len(data)
                 self.write_int(size, self.word_size)
                 self.write(data)
                 # align next item
                 pad = self.fp.tell() % self.align
                 if pad > 0:
-                    self.write(bytearray(pad), update_size=False)
+                    self.write(bytes(bytearray(pad)), update_size=False)
