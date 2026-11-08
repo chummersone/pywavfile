@@ -11,7 +11,6 @@ import wavfile.base
 import wavfile.chunk
 import wavfile.exception
 
-
 valid_wav_file = (b'\x52\x49\x46\x46\x2C\x00\x00\x00\x57\x41\x56\x45\x66\x6D\x74\x20\x10\x00\x00'
                   b'\x00\x01\x00\x02\x00\x80\xBB\x00\x00\x00\xEE\x02\x00\x04\x00\x10\x00\x64\x61'
                   b'\x74\x61\x08\x00\x00\x00\x64\x00\x9C\xFF\xC8\x00\x38\xFF')
@@ -47,7 +46,7 @@ def test_reader_closes_owned_file(tmp_path):
 
     wav = wavfile.open(path, "r")
     fp = wav.fp
-
+    assert fp is not None
     assert not fp.closed
 
     wav.close()
@@ -64,6 +63,7 @@ def test_writer_closes_owned_file(tmp_path):
     wav.write([[100, 200], [300, 400]])
     wav.close()
 
+    assert fp is not None
     assert fp.closed
     assert path.stat().st_size > 0
 
@@ -77,17 +77,19 @@ def test_close_is_idempotent(tmp_path):
     wav.close()
     wav.close()
 
+    assert wav.fp is not None
     assert wav.fp.closed
 
 
 def test_context_manager_closes_on_exception(tmp_path):
     path = tmp_path / "test.wav"
+    fp = None
+    with pytest.raises(RuntimeError), \
+            wavfile.open(path, "w", num_channels=2) as wav:
+        fp = wav.fp
+        raise RuntimeError("test exception")
 
-    with pytest.raises(RuntimeError):
-        with wavfile.open(path, "w", num_channels=2) as wav:
-            fp = wav.fp
-            raise RuntimeError("test exception")
-
+    assert fp is not None
     assert fp.closed
 
 
@@ -140,6 +142,7 @@ def test_owned_file_closed_when_finalisation_fails(tmp_path, monkeypatch):
 
     wav = wavfile.open(path, "w", num_channels=2)
     fp = wav.fp
+    assert fp is not None
 
     def fail_finalisation():
         raise wavfile.WriteError("Simulated finalisation failure")
@@ -194,9 +197,8 @@ def test_reader_except_after_close(tmp_path):
     with pytest.raises(ValueError):
         fp.tell()
 
-    with pytest.raises(ValueError):
-        with fp:
-            fp.seek(0)
+    with pytest.raises(ValueError), fp:
+        fp.seek(0)
 
 
 def test_writer_except_after_close(tmp_path):
@@ -216,6 +218,5 @@ def test_writer_except_after_close(tmp_path):
     with pytest.raises(ValueError):
         fp.tell()
 
-    with pytest.raises(ValueError):
-        with fp:
-            fp.seek(0)
+    with pytest.raises(ValueError), fp:
+        fp.seek(0)

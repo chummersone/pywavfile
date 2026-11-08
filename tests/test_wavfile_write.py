@@ -2,13 +2,11 @@
 Provides test cases for writing and reading a wave audio file.
 """
 
-import io
-import sys
 import unittest
 
-import wavfile
-
 from test_module import get_file_path
+
+import wavfile
 
 
 class WavfileWriteTestRunner(unittest.TestCase):
@@ -37,6 +35,7 @@ class WavfileWriteTestRunner(unittest.TestCase):
             if metadata is not None and metadata_mode == 'post':
                 wfp.add_metadata(**metadata)
 
+        audio_out = []
         with wavfile.open(filename, 'r') as wfp:
             audio_out = getattr(wfp, read_callback)()
 
@@ -45,8 +44,8 @@ class WavfileWriteTestRunner(unittest.TestCase):
 
         self.assertEqual(len(reference), len(audio_out))
         self.assertEqual(len(reference[0]), len(audio_out[0]))
-        for i in range(0, len(audio_out)):
-            for j in range(0, len(audio_out[0])):
+        for i in range(len(audio_out)):
+            for j in range(len(audio_out[0])):
                 self.assertAlmostEqual(audio_out[i][j], reference[i][j],
                                        delta=(2.0 ** (-bits_per_sample + 1)))
 
@@ -56,7 +55,7 @@ class WavfileWriteTestRunner(unittest.TestCase):
         self.assertEqual(wfp.num_frames, len(reference))
         self.assertEqual(wfp.duration, len(reference) / sample_rate)
         self.assertIn(fmt, (wfp.audio_fmt, wfp.format))
-        if metadata is not None:
+        if metadata is not None and wfp.metadata is not None:
             self.assertDictEqual(metadata, wfp.metadata)
         else:
             self.assertIsNone(wfp.metadata)
@@ -276,9 +275,9 @@ class TestWavfileWrite(WavfileWriteTestRunner):
             [0, 1, 2, 3, 4, 5],
         ]
         filename = get_file_path("corpus/tmp.wav")
-        with self.assertWarns(UserWarning):
-            with wavfile.open(filename, 'w', sample_rate=44100) as wav:
-                wav.write(audio_data_in)
+        with self.assertWarns(UserWarning), \
+                wavfile.open(filename, 'w', sample_rate=44100) as wav:
+            wav.write(audio_data_in)
 
     def test_incorrect_channel_count(self):
         filename = get_file_path("corpus/tmp.wav")

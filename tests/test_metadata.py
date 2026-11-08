@@ -4,10 +4,10 @@ Provides test cases for metadata read/write.
 
 import unittest
 
-import wavfile
-
 from test_module import get_file_path
 from test_wavfile_write import WavfileWriteTestRunner
+
+import wavfile
 
 
 class TestReadMetadata(unittest.TestCase):
@@ -16,6 +16,8 @@ class TestReadMetadata(unittest.TestCase):
 
         filename = get_file_path('corpus/noise_44100_24bit_w_metadata.wav')
         with wavfile.open(filename, 'r') as wfp:
+            if not isinstance(wfp.metadata, dict):
+                self.fail('Invalid metadata')
             self.assertEqual('Joe Bloggs', wfp.metadata['artist'])
             self.assertEqual('Noise', wfp.metadata['track'])
             self.assertEqual('pywavfile', wfp.metadata['album'])

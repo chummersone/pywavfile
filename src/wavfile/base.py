@@ -2,48 +2,20 @@
 The main API for reading and writing wav files.
 """
 from __future__ import annotations
+
 import builtins
 import os
 from abc import ABC
+from collections.abc import Sequence
 from functools import wraps
-from typing import AnyStr, Literal, Protocol, Sequence
+from typing import BinaryIO, Literal
+
 try:
     from typing import Self
 except ImportError:
     from typing_extensions import Self
 
-from . import chunk
-
-
-class BasicFile(Protocol):
-    """A binary file-like read-only object."""
-
-    def tell(self) -> int:
-        """Get the offset in to the file"""
-
-    def seek(self, offset: int, whence: int = 0) -> int:
-        """Move to an offset in the file"""
-
-    def close(self) -> None:
-        """Close the file"""
-
-    @property
-    def closed(self) -> bool:
-        """File is closed"""
-
-
-class Readable(BasicFile, Protocol):
-    """A binary file-like read-only object."""
-
-    def read(self, size: int = -1) -> bytes:
-        """Read from the file"""
-
-
-class Writable(BasicFile, Protocol):
-    """A binary file-like writable object."""
-
-    def write(self, data: bytes) -> int:
-        """Write to the file"""
+from . import chunk, exception
 
 
 def requires_open(func):
@@ -63,14 +35,14 @@ class Wavfile(ABC):
         """
         Initialise the base class.
         """
-        self.fp: Readable | Writable | None = None
+        self.fp: BinaryIO | None = None
         self._should_close_file: bool = False
         self._closed: bool = False
         self._riff_chunk: chunk.RiffChunk | None = None
         self._data_chunk: chunk.WavDataChunk | None = None
         self._list_chunk: chunk.ListChunk | None = None
 
-    def _init_fp(self, f: str | os.PathLike[AnyStr] | Readable | Writable,
+    def _init_fp(self, f: str | os.PathLike[str] | BinaryIO,
                  mode: Literal["r", "w"] = 'r') -> None:
         """
         Initialise the file pointer.
@@ -79,7 +51,7 @@ class Wavfile(ABC):
         """
         # open the file
         if isinstance(f, (str, os.PathLike)):
-            self.fp = builtins.open(f, mode + 'b')
+            self.fp = builtins.open(f, mode + 'b')  # noqa: SIM115
             self._should_close_file = True
         else:
             self.fp = f
@@ -87,7 +59,7 @@ class Wavfile(ABC):
 
     @classmethod
     def check_audio_buffer(cls, audio: Sequence[Sequence[float]]) -> \
-            type[int] | type[float] | None:
+            type[int | float] | None:
         """
         Validate the audio buffer layout and type. The buffer must have a consistent audio sample
         type and channel count.
@@ -150,6 +122,8 @@ class Wavfile(ABC):
         :param x: The integer value to convert.
         :return: The float equivalent in the current range.
         """
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         if self._data_chunk.fmt_chunk.signed:
             return self._convert_signed_int_to_float(x)
         else:
@@ -162,7 +136,7 @@ class Wavfile(ABC):
         :param x: The float value to convert.
         :return: The integer equivalent in the current range.
         """
-        return int(round(((x + 1.0) / 2.0) * (2.0 ** self.bits_per_sample)))
+        return round(((x + 1.0) / 2.0) * (2.0 ** self.bits_per_sample))
 
     def _convert_float_to_signed_int(self, x: float) -> int:
         """
@@ -171,7 +145,7 @@ class Wavfile(ABC):
         :param x: The float value to convert.
         :return: The integer equivalent in the current range.
         """
-        return int(round(x * (2.0 ** (self.bits_per_sample - 1.0))))
+        return round(x * (2.0 ** (self.bits_per_sample - 1.0)))
 
     def _convert_float_to_int(self, x: float) -> int:
         """
@@ -180,6 +154,8 @@ class Wavfile(ABC):
         :param x: The float value to convert.
         :return: The integer equivalent in the current range.
         """
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         if self._data_chunk.fmt_chunk.signed:
             return self._convert_float_to_signed_int(x)
         else:
@@ -188,6 +164,8 @@ class Wavfile(ABC):
     @property
     def _bytes_per_sample(self) -> int:
         """Number of bytes per audio sample"""
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         return self._data_chunk.fmt_chunk.bytes_per_sample
 
     @property
@@ -198,31 +176,43 @@ class Wavfile(ABC):
     @property
     def num_channels(self) -> int:
         """Number of audio channels in the file"""
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         return self._data_chunk.fmt_chunk.num_channels
 
     @property
     def sample_rate(self) -> int:
         """Sampling rate of the audio data"""
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         return self._data_chunk.fmt_chunk.sample_rate
 
     @property
     def bits_per_sample(self) -> int:
         """Number of bits per audio sample"""
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         return self._data_chunk.fmt_chunk.bits_per_sample
 
     @property
     def format(self) -> chunk.WavFormat:
         """Wave file format code"""
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         return self._data_chunk.fmt_chunk._audio_fmt
 
     @property
     def audio_fmt(self) -> chunk.WavFormat:
         """Audio sample format"""
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         return self._data_chunk.fmt_chunk.audio_fmt
 
     @property
     def num_frames(self) -> int:
         """Number of audio frames in the file"""
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         try:
             return self._data_chunk.size // self._block_align
         except ZeroDivisionError:
@@ -243,6 +233,8 @@ class Wavfile(ABC):
     @property
     def _block_align(self) -> int:
         """Number of audio frames in the file"""
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         return self._data_chunk.fmt_chunk.block_align
 
     @property
@@ -272,12 +264,16 @@ class Wavfile(ABC):
         :param whence: The frame positioning mode.
         :return: The method returns the object.
         """
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         self._data_chunk.seek(frame_number, whence)
         return self
 
     @requires_open
     def tell(self) -> int:
         """Get the current frame number."""
+        if self._data_chunk is None:
+            raise exception.Error('Audio data chunk is not initialised.')
         return self._data_chunk.tell()
 
     def _get_total_size(self) -> int:

@@ -4,11 +4,11 @@ Provides test cases for unusual wav files from the fixture.
 
 import json
 from pathlib import Path
+
 import pytest
+from test_module import get_file_path
 
 import wavfile
-
-from test_module import get_file_path
 
 ROOT = Path(__file__).parents[1]
 FIXTURES = Path(get_file_path("fixtures/unusual"))
@@ -27,6 +27,7 @@ def test_fixture_is_present_and_matches_manifest(filename, metadata):
 
 @pytest.mark.parametrize("filename, metadata", MANIFEST["fixtures"].items())
 def test_reader_behaviour(filename, metadata):
+    outcome = ''
     try:
         with wavfile.open(FIXTURES / filename):
             outcome = "valid"

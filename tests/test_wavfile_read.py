@@ -4,9 +4,9 @@ Provides test cases for reading a wave audio file.
 
 import unittest
 
-import wavfile
-
 from test_module import get_file_path
+
+import wavfile
 
 
 class TestWavfileRead(unittest.TestCase):
@@ -19,12 +19,19 @@ class TestWavfileRead(unittest.TestCase):
         self.assertEqual(wfp.sample_rate, 44100)
         self.assertEqual(wfp.format, wavfile.chunk.WavFormat.PCM)
         wfp.close()
+        if wfp.fp is None:
+            self.fail("wfp.fp is None")
         self.assertTrue(wfp.fp.closed)
 
     def test_file_open_filename_with(self):
+        fp = None
         with wavfile.open(self.filename) as wfp:
             fp = wfp
             self.assertEqual(wfp.sample_rate, 44100)
+        if fp is None:
+            self.fail("fp is None")
+        if fp.fp is None:
+            self.fail("fp.fp is None")
         self.assertTrue(fp.fp.closed)
 
     def test_file_open_file(self):
@@ -34,9 +41,8 @@ class TestWavfileRead(unittest.TestCase):
             wfp.close()
 
     def test_file_open_file_with(self):
-        with open(self.filename, "rb") as fp:
-            with wavfile.open(fp) as wfp:
-                self.assertEqual(wfp.sample_rate, 44100)
+        with open(self.filename, "rb") as fp, wavfile.open(fp) as wfp:
+            self.assertEqual(wfp.sample_rate, 44100)
 
     def test_file_num_channels(self):
         with wavfile.open(self.filename) as wfp:
@@ -192,15 +198,15 @@ class TestWavfileRead(unittest.TestCase):
         with wavfile.open(self.filename) as wfp:
             self.assertEqual(wfp.format, wavfile.chunk.WavFormat.PCM)
             audio = wfp.read()
-            for i in range(0, len(audio)):
-                for j in range(0, len(audio[0])):
+            for i in range(len(audio)):
+                for j in range(len(audio[0])):
                     self.assertIsInstance(audio[i][j], int)
 
     def test_read_short(self):
         with wavfile.open(self.filename_unsigned) as wfp:
             audio = wfp.read_int()
-            for i in range(0, len(audio)):
-                for j in range(0, len(audio[0])):
+            for i in range(len(audio)):
+                for j in range(len(audio[0])):
                     self.assertTrue(0 <= audio[i][j] < 2**8)
 
     def test_seek_error(self):
@@ -242,8 +248,8 @@ class TestWavfileRead(unittest.TestCase):
     def test_read_short_to_float(self):
         with wavfile.open(self.filename_unsigned) as wfp:
             audio = wfp.read_float()
-            for i in range(0, len(audio)):
-                for j in range(0, len(audio[0])):
+            for i in range(len(audio)):
+                for j in range(len(audio[0])):
                     self.assertTrue(-1 <= audio[i][j] < 1)
 
 

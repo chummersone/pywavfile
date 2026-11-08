@@ -5,24 +5,26 @@ The WavRead class is returned by wavfile.open() when opening a file in read
 mode.
 """
 from __future__ import annotations
-import os
-from typing import cast, AnyStr, Generator
 
-from . import base
-from . import chunk
-from . import exception
+import io
+import os
+from collections.abc import Generator
+from typing import BinaryIO, cast
+
+from . import base, chunk, exception
 
 
 class WavRead(base.Wavfile):
     """Class for reading a wave file"""
 
-    def __init__(self, f: str | os.PathLike[AnyStr] | base.Readable) -> None:
+    def __init__(self, f: str | os.PathLike[str] | BinaryIO) -> None:
         """
         Initialise the WavRead object.
 
         :param f: Either a path to a wave file or a pointer to an open file.
         """
         base.Wavfile.__init__(self)
+        self._f = f
         self._init_fp(f)
 
         self._riff_chunk: chunk.RiffChunk | None = None
@@ -34,9 +36,13 @@ class WavRead(base.Wavfile):
         # read the file header
         try:
             self._init_file()
+            if self.fp is None:
+                raise exception.ReadError('Audio file pointer must be initialized')
+            if self._data_chunk is None:
+                raise exception.ReadError('Audio data chunk not initialised')
             self.fp.seek(self._data_chunk.content_start)
         except Exception:
-            if self._should_close_file:
+            if self._should_close_file and self.fp is not None:
                 self.fp.close()
             raise
 
@@ -44,7 +50,15 @@ class WavRead(base.Wavfile):
         """
         Return the object representation in string format.
         """
-        return f'{self.__class__.__name__}("{self.fp.name}")'
+        if self.fp is None:
+            source = 'closed'
+        elif isinstance(self.fp, (io.BufferedReader, io.BufferedWriter)):
+            source = repr(self.fp.name)
+        elif isinstance(self.fp, io.BytesIO):
+            source = 'BytesIO'
+        else:
+            source = type(self.fp).__name__
+        return f'{self.__class__.__name__}({source})'
 
     def __parse_chunk(self, chnk: chunk.Chunk) -> None:
         """Parse the chunk."""
@@ -143,10 +157,12 @@ class WavRead(base.Wavfile):
         """
         Create a shallow copy of the WavRead object.
         """
-        newobj = type(self)(self.fp.name)
-        newobj.__dict__.update({key: value for key, value in self.__dict__.items()
-                                if key not in ('fp', '_riff_chunk', '_data_chunk')})
-        newobj.fp.seek(self.fp.tell())
+        newobj = type(self)(self._f)
+        for key, value in self.__dict__.items():
+            if key not in ('fp', '_riff_chunk', '_data_chunk'):
+                setattr(newobj, key, value)
+        if self.fp is not None and newobj.fp is not None:
+            newobj.fp.seek(self.fp.tell())
         return newobj
 
     def _block_iterator(self, method: str, num_frames: int | None = None) -> \
@@ -174,6 +190,8 @@ class WavRead(base.Wavfile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
+        if self._data_chunk is None:
+            raise exception.ReadError('Audio data chunk must be initialised')
         audio = self._data_chunk.read_frames(num_frames)
         if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
             for n in range(len(audio)):
@@ -203,6 +221,8 @@ class WavRead(base.Wavfile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
+        if self._data_chunk is None:
+            raise exception.ReadError('Audio data chunk must be initialised')
         audio = []
         if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
             audio = self._data_chunk.read_frames(num_frames)
@@ -234,6 +254,8 @@ class WavRead(base.Wavfile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
+        if self._data_chunk is None:
+            raise exception.ReadError('Audio data chunk must be initialised')
         return self._data_chunk.read_frames(num_frames)
 
     @base.requires_open
