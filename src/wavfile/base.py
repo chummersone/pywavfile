@@ -296,7 +296,7 @@ class Wavfile(ABC):  # noqa: B024
         """
         if self._riff_chunk is not None:
             self._riff_chunk.size = self._get_total_size()
-        if self._data_chunk:
+        if self._data_chunk is not None:
             self._data_chunk.finalise()
         if self._list_chunk is not None:
             self._list_chunk.finalise()
