@@ -19,12 +19,19 @@ class TestWavfileRead(unittest.TestCase):
         self.assertEqual(wfp.sample_rate, 44100)
         self.assertEqual(wfp.format, wavfile.chunk.WavFormat.PCM)
         wfp.close()
+        if wfp.fp is None:
+            self.fail("wfp.fp is None")
         self.assertTrue(wfp.fp.closed)
 
     def test_file_open_filename_with(self):
+        fp = None
         with wavfile.open(self.filename) as wfp:
             fp = wfp
             self.assertEqual(wfp.sample_rate, 44100)
+        if fp is None:
+            self.fail("fp is None")
+        if fp.fp is None:
+            self.fail("fp.fp is None")
         self.assertTrue(fp.fp.closed)
 
     def test_file_open_file(self):

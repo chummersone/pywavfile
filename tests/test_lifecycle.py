@@ -46,7 +46,7 @@ def test_reader_closes_owned_file(tmp_path):
 
     wav = wavfile.open(path, "r")
     fp = wav.fp
-
+    assert fp is not None
     assert not fp.closed
 
     wav.close()
@@ -63,6 +63,7 @@ def test_writer_closes_owned_file(tmp_path):
     wav.write([[100, 200], [300, 400]])
     wav.close()
 
+    assert fp is not None
     assert fp.closed
     assert path.stat().st_size > 0
 
@@ -76,17 +77,19 @@ def test_close_is_idempotent(tmp_path):
     wav.close()
     wav.close()
 
+    assert wav.fp is not None
     assert wav.fp.closed
 
 
 def test_context_manager_closes_on_exception(tmp_path):
     path = tmp_path / "test.wav"
-
+    fp = None
     with pytest.raises(RuntimeError), \
             wavfile.open(path, "w", num_channels=2) as wav:
         fp = wav.fp
         raise RuntimeError("test exception")
 
+    assert fp is not None
     assert fp.closed
 
 
@@ -139,6 +142,7 @@ def test_owned_file_closed_when_finalisation_fails(tmp_path, monkeypatch):
 
     wav = wavfile.open(path, "w", num_channels=2)
     fp = wav.fp
+    assert fp is not None
 
     def fail_finalisation():
         raise wavfile.WriteError("Simulated finalisation failure")

@@ -18,6 +18,10 @@ class TestWavReadCopy(unittest.TestCase):
     def test_basic_copy(self):
         with wavfile.open(self.filename) as wfp:
             wfc = copy.copy(wfp)
+            if wfp.fp is None:
+                self.fail("wfp.fp is None")
+            if wfc.fp is None:
+                self.fail("wfc.fp is None")
             self.assertTrue(wfc._should_close_file)
             self.assertEqual(wfp.fp.name, wfc.fp.name)
             self.assertEqual(wfp.fp.tell(), wfc.fp.tell())

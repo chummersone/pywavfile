@@ -69,6 +69,8 @@ class TestModule(TestCaseWithFile):
             metadata=metadata
         )
         with wavfile.open(filename) as wf:
+            if not (isinstance(metadata, dict) and isinstance(wf.metadata, dict)):
+                self.fail('Invalid metadata')
             self.assertDictEqual(metadata, wf.metadata)
 
     def test_repr(self):

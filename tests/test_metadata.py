@@ -16,6 +16,8 @@ class TestReadMetadata(unittest.TestCase):
 
         filename = get_file_path('corpus/noise_44100_24bit_w_metadata.wav')
         with wavfile.open(filename, 'r') as wfp:
+            if not isinstance(wfp.metadata, dict):
+                self.fail('Invalid metadata')
             self.assertEqual('Joe Bloggs', wfp.metadata['artist'])
             self.assertEqual('Noise', wfp.metadata['track'])
             self.assertEqual('pywavfile', wfp.metadata['album'])

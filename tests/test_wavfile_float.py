@@ -26,6 +26,7 @@ class TestWavfileFloat(unittest.TestCase):
             wfp.write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
 
+        audio_out = []
         with wavfile.open(filename, 'r') as wfp:
             audio_out = getattr(wfp, read_callback)()
 

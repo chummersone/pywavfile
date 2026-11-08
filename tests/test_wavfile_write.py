@@ -35,6 +35,7 @@ class WavfileWriteTestRunner(unittest.TestCase):
             if metadata is not None and metadata_mode == 'post':
                 wfp.add_metadata(**metadata)
 
+        audio_out = []
         with wavfile.open(filename, 'r') as wfp:
             audio_out = getattr(wfp, read_callback)()
 
@@ -54,7 +55,7 @@ class WavfileWriteTestRunner(unittest.TestCase):
         self.assertEqual(wfp.num_frames, len(reference))
         self.assertEqual(wfp.duration, len(reference) / sample_rate)
         self.assertIn(fmt, (wfp.audio_fmt, wfp.format))
-        if metadata is not None:
+        if metadata is not None and wfp.metadata is not None:
             self.assertDictEqual(metadata, wfp.metadata)
         else:
             self.assertIsNone(wfp.metadata)

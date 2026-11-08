@@ -5,7 +5,7 @@ The library currently supports PCM (integer) and IEEE float formats, and support
 precision, including: 16-, 24-, 32-, and 64-bit samples.
 """
 import os.path
-from typing import BinaryIO, Literal, overload
+from typing import BinaryIO, Literal, overload, Sequence
 
 from . import chunk, wavread, wavwrite
 from .exception import Error, ReadError, WriteError
@@ -104,7 +104,7 @@ def read(path: str | os.PathLike[str], fmt: str = 'int') -> tuple[list[list[int 
     raise ReadError('Error reading file.')
 
 
-def write(path: str | os.PathLike[str], audio_data: list[list[int | float]],
+def write(path: str | os.PathLike[str], audio_data: Sequence[Sequence[int | float]],
           sample_rate: int = 44100, bits_per_sample: int = 16,
           fmt: chunk.WavFormat = chunk.WavFormat.PCM,
           metadata: dict[str, int | str] | None = None) -> None:

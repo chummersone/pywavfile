@@ -35,6 +35,8 @@ class TestExceptions(unittest.TestCase):
     def test_data_wrong_type(self):
         with open(get_file_path("corpus/osc_tri.wav"), 'rb') as fp1:
             wav = wavfile.wavread.WavRead(fp1)
+        if wav._data_chunk is None:
+            self.fail('Data chunk not initialised')
         with open(__file__, 'rb') as fp2:
             self.assertRaises(wavfile.exception.ReadError,
                               wavfile.chunk.WavDataChunk,
