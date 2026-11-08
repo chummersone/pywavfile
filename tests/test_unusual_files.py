@@ -14,6 +14,7 @@ ROOT = Path(__file__).parents[1]
 FIXTURES = Path(get_file_path("fixtures/unusual"))
 MANIFEST = json.loads((FIXTURES / "manifest.json").read_text())
 
+
 @pytest.mark.parametrize(
     "filename, metadata",
     MANIFEST["fixtures"].items(),
@@ -27,7 +28,7 @@ def test_fixture_is_present_and_matches_manifest(filename, metadata):
 
 @pytest.mark.parametrize("filename, metadata", MANIFEST["fixtures"].items())
 def test_reader_behaviour(filename, metadata):
-    outcome = ''
+    outcome = ""
     try:
         with wavfile.open(FIXTURES / filename):
             outcome = "valid"

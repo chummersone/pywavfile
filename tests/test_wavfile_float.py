@@ -10,15 +10,24 @@ import wavfile
 
 
 class TestWavfileFloat(unittest.TestCase):
-
-    def run_test(self, audio_data_in, read_callback, sample_rate,
-                 bits_per_sample, num_channels, reference=None):
+    def run_test(
+        self,
+        audio_data_in,
+        read_callback,
+        sample_rate,
+        bits_per_sample,
+        num_channels,
+        reference=None,
+    ):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w',
-                          sample_rate=sample_rate,
-                          bits_per_sample=bits_per_sample,
-                          num_channels=num_channels,
-                          fmt=wavfile.chunk.WavFormat.IEEE_FLOAT) as wfp:
+        with wavfile.open(
+            filename,
+            "w",
+            sample_rate=sample_rate,
+            bits_per_sample=bits_per_sample,
+            num_channels=num_channels,
+            fmt=wavfile.chunk.WavFormat.IEEE_FLOAT,
+        ) as wfp:
             wfp.write(audio_data_in)
             self.assertEqual(wfp.tell(), len(audio_data_in))
             # test overwriting the data
@@ -27,7 +36,7 @@ class TestWavfileFloat(unittest.TestCase):
             self.assertEqual(wfp.tell(), len(audio_data_in))
 
         audio_out = []
-        with wavfile.open(filename, 'r') as wfp:
+        with wavfile.open(filename, "r") as wfp:
             audio_out = getattr(wfp, read_callback)()
 
         if reference is None:
@@ -37,8 +46,7 @@ class TestWavfileFloat(unittest.TestCase):
         self.assertEqual(len(reference[0]), len(audio_out[0]))
         for i in range(len(audio_out)):
             for j in range(len(audio_out[0])):
-                self.assertAlmostEqual(audio_out[i][j], reference[i][j],
-                                       delta=1e-7)
+                self.assertAlmostEqual(audio_out[i][j], reference[i][j], delta=1e-7)
 
         self.assertEqual(wfp.sample_rate, sample_rate)
         self.assertEqual(wfp.bits_per_sample, bits_per_sample)
@@ -56,8 +64,9 @@ class TestWavfileFloat(unittest.TestCase):
         read_callback = "read"
         sample_rate = 44100
         bits_per_sample = 32
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_read_write_audio_float_2(self):
         audio_data_in = [
@@ -77,8 +86,14 @@ class TestWavfileFloat(unittest.TestCase):
         read_callback = "read_float"
         sample_rate = 44100
         bits_per_sample = 32
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]), reference)
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            reference,
+        )
 
     def test_read_write_audio_float_int(self):
         audio_data_in = [
@@ -98,8 +113,14 @@ class TestWavfileFloat(unittest.TestCase):
         read_callback = "read_int"
         sample_rate = 44100
         bits_per_sample = 32
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]), reference)
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            reference,
+        )
 
     def test_read_write_audio_int_float(self):
         audio_data_in = [
@@ -119,8 +140,14 @@ class TestWavfileFloat(unittest.TestCase):
         read_callback = "read"
         sample_rate = 44100
         bits_per_sample = 32
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]), reference)
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            reference,
+        )
 
     def test_read_write_audio_float_mono(self):
         audio_data_in = [
@@ -133,8 +160,9 @@ class TestWavfileFloat(unittest.TestCase):
         read_callback = "read"
         sample_rate = 32000
         bits_per_sample = 32
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_read_write_audio_double_mono(self):
         audio_data_in = [
@@ -147,8 +175,9 @@ class TestWavfileFloat(unittest.TestCase):
         read_callback = "read"
         sample_rate = 32000
         bits_per_sample = 64
-        self.run_test(audio_data_in, read_callback, sample_rate,
-                      bits_per_sample, len(audio_data_in[0]))
+        self.run_test(
+            audio_data_in, read_callback, sample_rate, bits_per_sample, len(audio_data_in[0])
+        )
 
     def test_invalid_bitdepth(self):
         audio_data_in = [
@@ -158,13 +187,16 @@ class TestWavfileFloat(unittest.TestCase):
             [-0.1],
             [-0.3],
         ]
-        with wavfile.open(get_file_path('corpus/tmp.wav'), 'w',
-                          sample_rate=44100,
-                          bits_per_sample=24,
-                          fmt=wavfile.chunk.WavFormat.IEEE_FLOAT,
-                          num_channels=len(audio_data_in[0])) as wfp:
+        with wavfile.open(
+            get_file_path("corpus/tmp.wav"),
+            "w",
+            sample_rate=44100,
+            bits_per_sample=24,
+            fmt=wavfile.chunk.WavFormat.IEEE_FLOAT,
+            num_channels=len(audio_data_in[0]),
+        ) as wfp:
             self.assertRaises(wavfile.Error, wfp.write, audio_data_in)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

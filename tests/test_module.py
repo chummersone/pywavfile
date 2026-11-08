@@ -15,33 +15,33 @@ def get_file_path(*args):
 
 
 class TestCaseWithFile(unittest.TestCase):
-
     def assertIsFile(self, path):
         if not pathlib.Path(path).resolve().is_file():
             raise AssertionError(f"File does not exist: {path!s}")
 
 
 class TestModule(TestCaseWithFile):
-
     def test_write_error(self):
-        self.assertRaises(wavfile.WriteError, wavfile.open, get_file_path('corpus/junk.wav'), 'w',
-                          fmt=b'junk')
+        self.assertRaises(
+            wavfile.WriteError, wavfile.open, get_file_path("corpus/junk.wav"), "w", fmt=b"junk"
+        )
 
     def test_mode_error(self):
-        self.assertRaises(wavfile.Error, wavfile.open, get_file_path('corpus/junk.wav'), 'j')
+        self.assertRaises(wavfile.Error, wavfile.open, get_file_path("corpus/junk.wav"), "j")
 
     def test_read_error(self):
-        self.assertRaises(wavfile.Error, wavfile.read, get_file_path('corpus/osc_tri.wav'),
-                          fmt='junk')
+        self.assertRaises(
+            wavfile.Error, wavfile.read, get_file_path("corpus/osc_tri.wav"), fmt="junk"
+        )
 
     def test_split(self):
-        wavfile.split(get_file_path('corpus/test-file-3.wav'))
+        wavfile.split(get_file_path("corpus/test-file-3.wav"))
         filenames = [
-            'corpus/test-file-3_00.wav',
-            'corpus/test-file-3_01.wav',
-            'corpus/test-file-3_02.wav',
-            'corpus/test-file-3_03.wav',
-            'corpus/test-file-3_04.wav'
+            "corpus/test-file-3_00.wav",
+            "corpus/test-file-3_01.wav",
+            "corpus/test-file-3_02.wav",
+            "corpus/test-file-3_03.wav",
+            "corpus/test-file-3_04.wav",
         ]
         for f in filenames:
             self.assertIsFile(get_file_path(f))
@@ -49,13 +49,13 @@ class TestModule(TestCaseWithFile):
 
     def test_metadata(self):
         metadata = {
-            'artist': 'Testy McTestface',
-            'track': 'test_metadata',
-            'album': 'test suite',
-            'date': 'today',
-            'track_number': 99,
-            'comment': 'Test',
-            'genre': 'testing'
+            "artist": "Testy McTestface",
+            "track": "test_metadata",
+            "album": "test suite",
+            "date": "today",
+            "track_number": 99,
+            "comment": "Test",
+            "genre": "testing",
         }
         filename = get_file_path("corpus/tmp.wav")
         wavfile.write(
@@ -68,38 +68,35 @@ class TestModule(TestCaseWithFile):
             ],
             48000,
             24,
-            metadata=metadata
+            metadata=metadata,
         )
         with wavfile.open(filename) as wf:
             if not (isinstance(metadata, dict) and isinstance(wf.metadata, dict)):
-                self.fail('Invalid metadata')
+                self.fail("Invalid metadata")
             self.assertDictEqual(metadata, wf.metadata)
 
     def test_repr(self):
         filename = get_file_path("corpus/osc_tri.wav")
-        with wavfile.open(filename, 'r') as wfp:
+        with wavfile.open(filename, "r") as wfp:
             self.assertEqual(repr(wfp), f"WavRead('{filename}')")
-        filename = get_file_path('corpus/tmp.wav')
-        with wavfile.open(filename, 'w') as wfp:
-            self.assertEqual(repr(wfp), f"WavWrite('{filename}', " +
-                             'sample_rate=44100, num_channels=0, bits_per_sample=16, ' +
-                             'fmt=WavFormat.PCM)')
+        filename = get_file_path("corpus/tmp.wav")
+        with wavfile.open(filename, "w") as wfp:
+            self.assertEqual(
+                repr(wfp),
+                f"WavWrite('{filename}', "
+                + "sample_rate=44100, num_channels=0, bits_per_sample=16, "
+                + "fmt=WavFormat.PCM)",
+            )
 
     def test_join(self):
-        files = (
-            get_file_path('corpus/test-file-1.wav'),
-            get_file_path('corpus/osc_tri.wav')
-        )
-        filename = 'corpus/join-tmp.wav'
+        files = (get_file_path("corpus/test-file-1.wav"), get_file_path("corpus/osc_tri.wav"))
+        filename = "corpus/join-tmp.wav"
         wavfile.join(get_file_path(filename), *files)
         self.assertIsFile(get_file_path(filename))
-        with wavfile.open(get_file_path(filename), 'r') as wfp:
+        with wavfile.open(get_file_path(filename), "r") as wfp:
             self.assertEqual(wfp.num_channels, 3)
 
     def test_join_mismatch_fs(self):
-        files = (
-            get_file_path('corpus/test-file-2.wav'),
-            get_file_path('corpus/osc_tri.wav')
-        )
-        filename = 'join-tmp.wav'
+        files = (get_file_path("corpus/test-file-2.wav"), get_file_path("corpus/osc_tri.wav"))
+        filename = "join-tmp.wav"
         self.assertRaises(wavfile.exception.ReadError, wavfile.join, filename, *files)

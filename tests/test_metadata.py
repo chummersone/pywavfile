@@ -11,23 +11,21 @@ import wavfile
 
 
 class TestReadMetadata(unittest.TestCase):
-
     def test_read(self):
 
-        filename = get_file_path('corpus/noise_44100_24bit_w_metadata.wav')
-        with wavfile.open(filename, 'r') as wfp:
+        filename = get_file_path("corpus/noise_44100_24bit_w_metadata.wav")
+        with wavfile.open(filename, "r") as wfp:
             if not isinstance(wfp.metadata, dict):
-                self.fail('Invalid metadata')
-            self.assertEqual('Joe Bloggs', wfp.metadata['artist'])
-            self.assertEqual('Noise', wfp.metadata['track'])
-            self.assertEqual('pywavfile', wfp.metadata['album'])
-            self.assertEqual('This is a comment', wfp.metadata['comment'])
-            self.assertEqual('postmodern', wfp.metadata['genre'])
-            self.assertEqual(1, wfp.metadata['track_number'])
+                self.fail("Invalid metadata")
+            self.assertEqual("Joe Bloggs", wfp.metadata["artist"])
+            self.assertEqual("Noise", wfp.metadata["track"])
+            self.assertEqual("pywavfile", wfp.metadata["album"])
+            self.assertEqual("This is a comment", wfp.metadata["comment"])
+            self.assertEqual("postmodern", wfp.metadata["genre"])
+            self.assertEqual(1, wfp.metadata["track_number"])
 
 
 class TestWavfileWriteMetadata(WavfileWriteTestRunner):
-
     def test_metadata_pre(self):
         audio_data_in = [
             [0, 0],
@@ -40,16 +38,23 @@ class TestWavfileWriteMetadata(WavfileWriteTestRunner):
         sample_rate = 48000
         bits_per_sample = 16
         metadata = {
-            'artist': 'Joey',
-            'track': 'test_metadata_pre',
-            'album': 'test suite',
-            'date': 'today',
-            'track_number': 1,
-            'comment': 'Short comment',
-            'genre': 'chillout'
+            "artist": "Joey",
+            "track": "test_metadata_pre",
+            "album": "test suite",
+            "date": "today",
+            "track_number": 1,
+            "comment": "Short comment",
+            "genre": "chillout",
         }
-        self.run_test(audio_data_in, read_callback, sample_rate, bits_per_sample,
-                      len(audio_data_in[0]), metadata=metadata, metadata_mode='pre')
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            metadata=metadata,
+            metadata_mode="pre",
+        )
 
     def test_metadata_post(self):
         audio_data_in = [
@@ -63,33 +68,40 @@ class TestWavfileWriteMetadata(WavfileWriteTestRunner):
         sample_rate = 48000
         bits_per_sample = 16
         metadata = {
-            'artist': 'Wavey McWaveface',
-            'track': 'test_metadata_post',
-            'album': 'test suite',
-            'date': 'yesterday',
-            'track_number': 'one',
-            'comment': 'this is a slightly longer comment',
-            'genre': 'postmodern'
+            "artist": "Wavey McWaveface",
+            "track": "test_metadata_post",
+            "album": "test suite",
+            "date": "yesterday",
+            "track_number": "one",
+            "comment": "this is a slightly longer comment",
+            "genre": "postmodern",
         }
-        self.run_test(audio_data_in, read_callback, sample_rate, bits_per_sample,
-                      len(audio_data_in[0]), metadata=metadata, metadata_mode='post')
+        self.run_test(
+            audio_data_in,
+            read_callback,
+            sample_rate,
+            bits_per_sample,
+            len(audio_data_in[0]),
+            metadata=metadata,
+            metadata_mode="post",
+        )
 
     def test_metadata_rewrite(self):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w') as wfp:
-            wfp.add_metadata(comment='test')
-            self.assertRaises(wavfile.exception.WriteError, wfp.add_metadata, comment='more')
+        with wavfile.open(filename, "w") as wfp:
+            wfp.add_metadata(comment="test")
+            self.assertRaises(wavfile.exception.WriteError, wfp.add_metadata, comment="more")
 
     def test_metadata_write_invalid(self):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w') as wfp:
-            self.assertRaises(wavfile.exception.WriteError, wfp.add_metadata, invalid='test')
+        with wavfile.open(filename, "w") as wfp:
+            self.assertRaises(wavfile.exception.WriteError, wfp.add_metadata, invalid="test")
 
     def test_metadata_write_order(self):
         filename = get_file_path("corpus/tmp.wav")
-        with wavfile.open(filename, 'w') as wfp:
+        with wavfile.open(filename, "w") as wfp:
             wfp.write([[0]])
             wfp.add_metadata(
-                comment='Write metadata after audio',
+                comment="Write metadata after audio",
             )
             self.assertRaises(wavfile.exception.WriteError, wfp.write, [[0]])

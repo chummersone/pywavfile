@@ -34,38 +34,39 @@ author = pyproject["project"]["authors"][0]["name"]
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    'sphinx.ext.autodoc',
+    "sphinx.ext.autodoc",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
-templates_path = ['_templates']
+templates_path = ["_templates"]
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
+exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 autodoc_default_options = {
-    'show-inheritance': False,
-    'members': True,
-    'member-order': 'bysource',
-    'special-members': '__init__, __copy__, __enter__, __exit__',
-    'undoc-members': True,
-    'exclude-members': '__weakref__'
+    "show-inheritance": False,
+    "members": True,
+    "member-order": "bysource",
+    "special-members": "__init__, __copy__, __enter__, __exit__",
+    "undoc-members": True,
+    "exclude-members": "__weakref__",
 }
 
 
 def run_apidoc(_):
     curdir = os.path.abspath(os.path.dirname(__file__))
-    srcdir = os.path.normpath(os.path.join(curdir, '..', 'src'))
-    outdir = os.path.normpath(os.path.join(curdir, 'wavfile'))
-    templatedir = os.path.normpath(os.path.join(curdir, '_templates'))
+    srcdir = os.path.normpath(os.path.join(curdir, "..", "src"))
+    outdir = os.path.normpath(os.path.join(curdir, "wavfile"))
+    templatedir = os.path.normpath(os.path.join(curdir, "_templates"))
     sphinx.ext.apidoc.main(
-        ('-o', outdir, srcdir, '-f', '-M', '-T', '-e', '--templatedir', templatedir))
+        ("-o", outdir, srcdir, "-f", "-M", "-T", "-e", "--templatedir", templatedir)
+    )
 
 
 def setup(app):
-    app.connect('builder-inited', run_apidoc)
+    app.connect("builder-inited", run_apidoc)
 
 
 rst_prolog = """
@@ -109,7 +110,7 @@ rst_prolog = """
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = "sphinx_rtd_theme"
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
