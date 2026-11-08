@@ -48,7 +48,7 @@ def open(
     num_channels: int | None = None,
     bits_per_sample: int = 16,
     fmt: chunk.WavFormat = chunk.WavFormat.PCM
-) -> wavwrite.WavWrite: ...
+) -> wavread.WavRead | wavwrite.WavWrite: ...
 
 
 def open(
