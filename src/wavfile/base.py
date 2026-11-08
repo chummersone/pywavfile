@@ -5,7 +5,8 @@ from __future__ import annotations
 import builtins
 import os
 from abc import ABC
-from typing import Any, AnyStr, BinaryIO, Sequence
+from functools import wraps
+from typing import AnyStr, Literal, Protocol, Sequence
 try:
     from typing import Self
 except ImportError:
@@ -14,25 +15,63 @@ except ImportError:
 from . import chunk
 
 
+class BasicFile(Protocol):
+    """A binary file-like read-only object."""
+
+    def tell(self) -> int:
+        """Get the offset in to the file"""
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        """Move to an offset in the file"""
+
+    def close(self) -> None:
+        """Close the file"""
+
+    @property
+    def closed(self) -> bool:
+        """File is closed"""
+
+
+class Readable(BasicFile, Protocol):
+    """A binary file-like read-only object."""
+
+    def read(self, size: int = -1) -> bytes:
+        """Read from the file"""
+
+
+class Writable(BasicFile, Protocol):
+    """A binary file-like writable object."""
+
+    def write(self, data: bytes) -> int:
+        """Write to the file"""
+
+
+def requires_open(func):
+    """Throw an exception on IO operations if the file is not open."""
+    @wraps(func)
+    def wrapper(self, *args, **kwargs):
+        if self.closed:
+            raise ValueError("I/O operation on closed WAV file")
+        return func(self, *args, **kwargs)
+    return wrapper
+
+
 class Wavfile(ABC):
     """Abstract base class for wave file read/write"""
-
-    fp: BinaryIO | None
-    _should_close_file: bool
-    _riff_chunk: chunk.RiffChunk | None
-    _data_chunk: chunk.WavDataChunk | None
 
     def __init__(self) -> None:
         """
         Initialise the base class.
         """
-        self.fp = None
-        self._should_close_file = False
-        self._riff_chunk = None
-        self._data_chunk = None
-        self._list_chunk = None
+        self.fp: Readable | Writable | None = None
+        self._should_close_file: bool = False
+        self._closed: bool = False
+        self._riff_chunk: chunk.RiffChunk | None = None
+        self._data_chunk: chunk.WavDataChunk | None = None
+        self._list_chunk: chunk.ListChunk | None = None
 
-    def _init_fp(self, f: str | os.PathLike[AnyStr] | BinaryIO, mode: str) -> None:
+    def _init_fp(self, f: str | os.PathLike[AnyStr] | Readable | Writable,
+                 mode: Literal["r", "w"] = 'r') -> None:
         """
         Initialise the file pointer.
 
@@ -40,7 +79,7 @@ class Wavfile(ABC):
         """
         # open the file
         if isinstance(f, (str, os.PathLike)):
-            self.fp = builtins.open(f, mode)
+            self.fp = builtins.open(f, mode + 'b')
             self._should_close_file = True
         else:
             self.fp = f
@@ -152,6 +191,11 @@ class Wavfile(ABC):
         return self._data_chunk.fmt_chunk.bytes_per_sample
 
     @property
+    def closed(self) -> bool:
+        """Whether the file is closed"""
+        return self._closed
+
+    @property
     def num_channels(self) -> int:
         """Number of audio channels in the file"""
         return self._data_chunk.fmt_chunk.num_channels
@@ -218,6 +262,7 @@ class Wavfile(ABC):
         """
         return max([max([abs(y) for y in x]) for x in data])
 
+    @requires_open
     def seek(self, frame_number: int, whence: int = 0) -> Wavfile:
         """
         Move to the specified frame number. The frame positioning mode ``whence`` are: 0 (default) =
@@ -230,12 +275,15 @@ class Wavfile(ABC):
         self._data_chunk.seek(frame_number, whence)
         return self
 
+    @requires_open
     def tell(self) -> int:
         """Get the current frame number."""
         return self._data_chunk.tell()
 
     def _get_total_size(self) -> int:
         """Get the total size of the file"""
+        if self._data_chunk is None:
+            return 0
         total_size = self._data_chunk.size + self._data_chunk.pad + chunk.Chunk.offset + \
             self._data_chunk.fmt_chunk.size + self._data_chunk.fmt_chunk.pad + chunk.Chunk.offset + \
             chunk.Chunk.word_size  # riff chunk contains four bytes indicating the format
@@ -243,22 +291,36 @@ class Wavfile(ABC):
             total_size += self._list_chunk.size + self._list_chunk.pad + chunk.Chunk.offset
         return total_size
 
+    def _finalise(self) -> None:
+        """
+        Finalise the file.
+        """
+        if self._riff_chunk is not None:
+            self._riff_chunk.size = self._get_total_size()
+        if self._data_chunk:
+            self._data_chunk.finalise()
+        if self._list_chunk is not None:
+            self._list_chunk.finalise()
+        if self._riff_chunk is not None:
+            self._riff_chunk.finalise()
+
     def close(self) -> None:
         """
         Close the wav file.
         """
-        self._riff_chunk.size = self._get_total_size()
-        self._data_chunk.close()
-        if self._list_chunk is not None:
-            self._list_chunk.close()
-        self._riff_chunk.close()
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self._finalise()
+        finally:
+            if self._should_close_file and self.fp is not None:
+                self.fp.close()
 
-    def __del__(self) -> None:
-        if self._should_close_file:
-            self.close()
-
+    @requires_open
     def __enter__(self) -> Self:
         return self
 
-    def __exit__(self, *args: tuple[Any, ...]) -> None:
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:
         self.close()
+        return False

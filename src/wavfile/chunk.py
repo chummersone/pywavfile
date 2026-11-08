@@ -6,7 +6,7 @@ import struct
 import sys
 import uuid
 from enum import Enum
-from typing import BinaryIO, Callable, Literal, Sequence
+from typing import Callable, Literal, Sequence
 from warnings import warn
 try:
     from typing import Self
@@ -14,6 +14,7 @@ except ImportError:
     from typing_extensions import Self
 
 from . import exception
+from .base import Readable, Writable
 
 
 class WavEnum(Enum):
@@ -80,14 +81,19 @@ class Chunk:
     _min_size: int = 0
     word_size: int = 4
 
-    def __init__(self, fp: BinaryIO, bigendian: bool = False) -> None:
+    def __init__(self, fp: Readable | Writable, bigendian: bool = False,
+                 mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
         :param fp: Open file pointer.
         :param bigendian: Is the file bid endian?
+        :param mode: File read/write mode.
         """
-        self.fp: BinaryIO = fp
+        self.fp: Readable | Writable = fp
+        if mode not in ("r", "w"):
+            raise ValueError("Invalid mode: %s" % mode)
+        self.mode: Literal["r", "w"] = mode
         self.bigendian: bool = bigendian
         if not hasattr(self, 'chunk_id'):
             self.chunk_id: ChunkID = ChunkID.UNKNOWN_CHUNK
@@ -103,18 +109,10 @@ class Chunk:
         else:
             self.write_header()
 
-    def __del__(self) -> None:
-        self.close()
-
-    @staticmethod
-    def _file_is_read_only(fp: BinaryIO) -> bool:
-        """Check whether a file is read-only"""
-        return 'r' in fp.mode and '+' not in fp.mode
-
     @property
     def read_only(self) -> bool:
         """Check whether the file is read-only"""
-        return self._file_is_read_only(self.fp)
+        return 'r' == self.mode
 
     @property
     def endianness(self) -> Literal['big', 'little']:
@@ -279,11 +277,11 @@ class Chunk:
         """
         self.write(self.float_to_bytes(data, nbytes))
 
-    def close(self) -> None:
-        """Close the chunk and update the header."""
-        if self.size < self._min_size:
-            raise exception.WriteError('Required data have not been written to the file')
-        if 'w' in self.fp.mode and not self.fp.closed:
+    def finalise(self) -> None:
+        """Finalise the chunk and update the header."""
+        if (not self.read_only) and (not self.fp.closed):
+            if self.size < self._min_size:
+                raise exception.WriteError('Required data have not been written to the file')
             self.write_header()
 
 
@@ -292,16 +290,17 @@ class RiffChunk(Chunk):
 
     _min_size = 4
 
-    def __init__(self, fp: BinaryIO) -> None:
+    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
         :param fp: Open file pointer.
+        :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.RIFF_CHUNK
         self.format: RiffFormat = RiffFormat.WAVE
 
-        Chunk.__init__(self, fp, bigendian=False)
+        Chunk.__init__(self, fp, bigendian=False, mode=mode)
 
         if self.read_only:
             if self.chunk_id != ChunkID.RIFF_CHUNK:
@@ -310,11 +309,11 @@ class RiffChunk(Chunk):
         else:
             self.write(RiffFormat.WAVE.value)
 
-    def close(self) -> None:
-        """Close the chunk and update the header."""
+    def finalise(self) -> None:
+        """Finalise the chunk and update the header."""
         if self.format is None:
             raise exception.WriteError('RIFF format is not set')
-        Chunk.close(self)
+        Chunk.finalise(self)
 
 
 class WavFmtChunk(Chunk):
@@ -328,11 +327,12 @@ class WavFmtChunk(Chunk):
     _block_align_size: int = 2
     _bits_per_sample_size: int = 2
 
-    def __init__(self, fp: BinaryIO) -> None:
+    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
         :param fp: Open file pointer.
+        :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.FMT_CHUNK
         if not hasattr(self, '_audio_fmt'):
@@ -343,7 +343,7 @@ class WavFmtChunk(Chunk):
         self.block_align: int = 0
         self.bits_per_sample: int = 0
 
-        Chunk.__init__(self, fp, bigendian=False)
+        Chunk.__init__(self, fp, bigendian=False, mode=mode)
 
         if self.read_only:
             self._read()
@@ -408,14 +408,15 @@ class WavFmtChunk(Chunk):
         self.write_int(self.block_align, self._block_align_size, signed=False)
         self.write_int(self.bits_per_sample, self._bits_per_sample_size, signed=False)
 
-    def close(self) -> None:
-        """Close the chunk and update the header and format data."""
-        if 'w' in self.fp.mode and not self.fp.closed:
+    def finalise(self) -> None:
+        """Finalise the chunk and update the header and format data."""
+        if (not self.read_only) and (not self.fp.closed):
             self.write_fmt()
-        Chunk.close(self)
+        Chunk.finalise(self)
 
 
 class WavFmtExtensibleChunk(WavFmtChunk):
+    """Wave extensible format chunk read and write"""
 
     _min_size = 22
     _extension_size_size: int = 2
@@ -423,18 +424,19 @@ class WavFmtExtensibleChunk(WavFmtChunk):
     _channel_mask_size: int = 4
     _sub_format_size: int = 16
 
-    def __init__(self, fp: BinaryIO) -> None:
+    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
         :param fp: Open file pointer.
+        :param mode: File read/write mode.
         """
         self._audio_fmt = WavFormat.EXTENSIBLE
         self.sub_data_format: WavFormatExSubformat = WavFormatExSubformat.PCM
         self.extension_size: int = 0
         self.valid_bits_per_sample: int = 0
         self.channel_mask: int = 0
-        super().__init__(fp)
+        super().__init__(fp, mode=mode)
 
     def _read(self) -> None:
         """Read metadata from the chunk"""
@@ -500,15 +502,17 @@ class WavFmtExtensibleChunk(WavFmtChunk):
 class WavDataChunk(Chunk):
     """Wave data chunk read and write"""
 
-    def __init__(self, fp: BinaryIO, fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk) -> None:
+    def __init__(self, fp: Readable | Writable, fmt_chunk: WavFmtChunk | WavFmtExtensibleChunk,
+                 mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
         :param fp: Open file pointer.
         :param fmt_chunk: The associated format chunk.
+        :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.DATA_CHUNK
-        Chunk.__init__(self, fp, bigendian=False)
+        Chunk.__init__(self, fp, bigendian=False, mode=mode)
 
         self.__did_warn = False
         self.fmt_chunk = fmt_chunk
@@ -525,10 +529,16 @@ class WavDataChunk(Chunk):
         except ZeroDivisionError:
             return 0
 
-    def close(self) -> None:
-        """Close the chunk and update the header and format data."""
-        self.fmt_chunk.close()
-        Chunk.close(self)
+    def finalise(self) -> None:
+        """Finalise the chunk and update the header and format data."""
+        self.fmt_chunk.finalise()
+        if not self.read_only:
+            num_align_bytes = self.size % Chunk.align
+            if num_align_bytes > 0:
+                self.skip(include_pad=False)
+                self.write(bytearray(num_align_bytes), update_size=False)
+
+        Chunk.finalise(self)
 
     def read_sample(self) -> int | float:
         """Read a sample from the chunk."""
@@ -693,17 +703,16 @@ class WavDataChunk(Chunk):
 class ListChunk(Chunk):
     """List chunk read and write"""
 
-    info: dict[str, int | str] | None
-
-    def __init__(self, fp: BinaryIO) -> None:
+    def __init__(self, fp: Readable | Writable, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer.
 
         :param fp: Open file pointer.
+        :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.LIST_CHUNK
-        Chunk.__init__(self, fp, bigendian=False)
-        self.info = None
+        Chunk.__init__(self, fp, bigendian=False, mode=mode)
+        self.info: dict[str, int | str] | None = None
 
         if self.read_only:
             if self.chunk_id != ChunkID.LIST_CHUNK:

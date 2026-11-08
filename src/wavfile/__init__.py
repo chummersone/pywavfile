@@ -5,55 +5,55 @@ The library currently supports PCM (integer) and IEEE float formats, and support
 precision, including: 16-, 24-, 32-, and 64-bit samples.
 """
 import os.path
-from typing import overload, AnyStr, BinaryIO, Literal
-
+from typing import overload, AnyStr, Literal
 
 from . import chunk
 from . import wavread
 from . import wavwrite
+from .base import Readable, Writable
 from .exception import Error, ReadError, WriteError
 from .version import __VERSION__
 
 
 @overload
 def open(
-    f: str | os.PathLike[AnyStr] | BinaryIO,
+    f: str | os.PathLike[AnyStr] | Readable,
     mode: Literal["r"] = "r",
     *,
     sample_rate: int = 44100,
     num_channels: int | None = None,
     bits_per_sample: int = 16,
-    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM
 ) -> wavread.WavRead: ...
 
 
 @overload
 def open(
-    f: str | os.PathLike[AnyStr] | BinaryIO,
+    f: str | os.PathLike[AnyStr] | Readable,
     mode: Literal["w"] = "w",
     *,
     sample_rate: int = 44100,
     num_channels: int | None = None,
     bits_per_sample: int = 16,
-    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM
 ) -> wavwrite.WavWrite: ...
 
 
 @overload
 def open(
-    f: str | os.PathLike[AnyStr] | BinaryIO,
+    f: str | os.PathLike[AnyStr] | Readable | Writable,
     mode: str,
     *,
     sample_rate: int = 44100,
     num_channels: int | None = None,
     bits_per_sample: int = 16,
-    fmt: chunk.WavFormat = chunk.WavFormat.PCM,
+    fmt: chunk.WavFormat = chunk.WavFormat.PCM
 ) -> wavread.WavRead | wavwrite.WavWrite: ...
 
 
 def open(
-    f: str | os.PathLike[AnyStr] | BinaryIO,
-    mode: str = "r",
+    f: str | os.PathLike[AnyStr] | Readable | Writable,
+    mode: str | Literal["r", "w"] = "r",
     *,
     sample_rate: int = 44100,
     num_channels: int | None = None,

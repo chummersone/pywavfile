@@ -5,8 +5,8 @@ The WavWrite class is returned by wavfile.open() when opening a file in write
 mode.
 """
 import os
-import sys
-from typing import cast, AnyStr, BinaryIO, Sequence
+from typing import cast, AnyStr, Sequence
+from warnings import warn
 
 from . import base
 from . import chunk
@@ -16,9 +16,7 @@ from . import exception
 class WavWrite(base.Wavfile):
     """Class for writing a wave file"""
 
-    _is_open: bool
-
-    def __init__(self, fp: str | os.PathLike[AnyStr] | BinaryIO, sample_rate: int = 44100,
+    def __init__(self, fp: str | os.PathLike[AnyStr] | base.Writable, sample_rate: int = 44100,
                  num_channels: int | None = None, bits_per_sample: int = 16,
                  fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
         """
@@ -34,34 +32,49 @@ class WavWrite(base.Wavfile):
         """
         base.Wavfile.__init__(self)
 
-        self._is_open = True
-        self._init_fp(fp, 'wb')
+        self._init_fp(fp, mode="w")
         if self.fp is None:
             raise exception.WriteError('Failed to open audio file')
 
-        # initialise each of the riff chunks
-        self._riff_chunk = chunk.RiffChunk(self.fp)
+        try:
+            # initialise each of the riff chunks
+            self._init_chunks(sample_rate, num_channels, bits_per_sample, fmt)
+
+            # go to data chunk content start ready to write samples
+            self.fp.seek(self._data_chunk.content_start)
+        except Exception:
+            if self._should_close_file:
+                self.fp.close()
+            raise
+
+    def _init_chunks(self, sample_rate: int = 44100,
+                     num_channels: int | None = None, bits_per_sample: int = 16,
+                     fmt: chunk.WavFormat = chunk.WavFormat.PCM) -> None:
+        """
+        Initialise the file chunks.
+        """
+        if self.fp is None:
+            raise exception.WriteError('Failed to open audio file')
+
+        self._riff_chunk = chunk.RiffChunk(self.fp, mode="w")
         if bits_per_sample > 16 or (num_channels is not None and num_channels > 2) or \
                 fmt == chunk.WavFormat.EXTENSIBLE:
-            fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp)
+            fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp, mode="w")
             fmt_chunk.valid_bits_per_sample = bits_per_sample
             # ensure the container holds whole bytes
             if bits_per_sample % 8 != 0:
                 bits_per_sample = bits_per_sample + (8 - (bits_per_sample % 8))
         else:
-            fmt_chunk = chunk.WavFmtChunk(self.fp)
+            fmt_chunk = chunk.WavFmtChunk(self.fp, mode="w")
         if fmt == chunk.WavFormat.EXTENSIBLE:
             fmt = chunk.WavFormat.PCM
         fmt_chunk.audio_fmt = fmt
-        self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
+        self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk, mode="w")
         self._data_chunk.fmt_chunk.sample_rate = int(sample_rate)
         if num_channels is not None:
             self._data_chunk.fmt_chunk.num_channels = int(num_channels)
         self._data_chunk.fmt_chunk.bits_per_sample = int(bits_per_sample)
         self._list_chunk = None
-
-        # go to data chunk content start ready to write samples
-        self.fp.seek(self._data_chunk.content_start)
 
     def __repr__(self) -> str:
         """
@@ -90,6 +103,7 @@ class WavWrite(base.Wavfile):
         )
         self._data_chunk.write_frames(audio, convert)
 
+    @base.requires_open
     def write_float(self, audio: Sequence[Sequence[float]]) -> None:
         """
         Write float data to the file. If the file format is `PCM` then the data will be converted to
@@ -116,6 +130,7 @@ class WavWrite(base.Wavfile):
         )
         self._data_chunk.write_frames(audio, convert)
 
+    @base.requires_open
     def write_int(self, audio: Sequence[Sequence[int]]) -> None:
         """
         Write integer data to the file. If the file format is `IEEE_FLOAT` then the data will be
@@ -131,6 +146,7 @@ class WavWrite(base.Wavfile):
             raise TypeError("Audio samples must be integers")
         self.__write_int(audio)
 
+    @base.requires_open
     def write(self, audio: Sequence[Sequence[int | float]]) -> None:
         """
         Write audio data to the file. The data should be a list of lists with dimensions `(N,C)`,
@@ -182,29 +198,21 @@ class WavWrite(base.Wavfile):
                 self._data_chunk.size +
                 self._data_chunk.pad
             )
-        self._list_chunk = chunk.ListChunk(self.fp)
+        self._list_chunk = chunk.ListChunk(self.fp, mode="w")
         self._list_chunk.info = kwargs
         self._list_chunk.write_info()
         if recreate_data_chunk:
             # recreate data chunk
             fmt_chunk = self._data_chunk.fmt_chunk
-            self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk)
+            self._data_chunk = chunk.WavDataChunk(self.fp, fmt_chunk, mode="w")
         self._riff_chunk.size = self._get_total_size()
         self.fp.seek(self._data_chunk.content_start)
 
     def close(self) -> None:
         """Close the file."""
-        num_align_bytes = self._data_chunk.size % chunk.Chunk.align
-        if num_align_bytes > 0:
-            self._data_chunk.skip(include_pad=False)
-            self._data_chunk.write(bytearray(num_align_bytes), update_size=False)
+        if self._closed:
+            return
         base.Wavfile.close(self)
-        if self._should_close_file:
-            self.fp.close()
-        self._should_close_file = False
-        if self.format != chunk.WavFormat.EXTENSIBLE and \
-                self.num_channels > 2:
-            print('More than two audio channels are present, but the file does not use the '
-                  'EXTENSIBLE format. The file may not be readable in some software.',
-                  file=sys.stderr
-                  )
+        if self.format != chunk.WavFormat.EXTENSIBLE and self.num_channels > 2:
+            warn('More than two audio channels are present, but the file does not use the '
+                 'EXTENSIBLE format. The file may not be readable in some software.')

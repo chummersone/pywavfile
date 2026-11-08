@@ -6,7 +6,7 @@ mode.
 """
 from __future__ import annotations
 import os
-from typing import cast, AnyStr, BinaryIO, Generator
+from typing import cast, AnyStr, Generator
 
 from . import base
 from . import chunk
@@ -16,14 +16,14 @@ from . import exception
 class WavRead(base.Wavfile):
     """Class for reading a wave file"""
 
-    def __init__(self, f: str | os.PathLike[AnyStr] | BinaryIO) -> None:
+    def __init__(self, f: str | os.PathLike[AnyStr] | base.Readable) -> None:
         """
         Initialise the WavRead object.
 
         :param f: Either a path to a wave file or a pointer to an open file.
         """
         base.Wavfile.__init__(self)
-        self._init_fp(f, 'rb')
+        self._init_fp(f)
 
         self._riff_chunk: chunk.RiffChunk | None = None
         self._data_chunk: chunk.WavDataChunk | None = None
@@ -34,11 +34,11 @@ class WavRead(base.Wavfile):
         # read the file header
         try:
             self._init_file()
-        except BaseException:
-            self.close()
+            self.fp.seek(self._data_chunk.content_start)
+        except Exception:
+            if self._should_close_file:
+                self.fp.close()
             raise
-
-        self.fp.seek(self._data_chunk.content_start)
 
     def __repr__(self) -> str:
         """
@@ -164,16 +164,7 @@ class WavRead(base.Wavfile):
             else:
                 return
 
-    def close(self) -> None:
-        """Close the wav file."""
-        try:
-            base.Wavfile.close(self)
-        except AttributeError:
-            pass
-        if self._should_close_file:
-            self.fp.close()
-        self._should_close_file = False
-
+    @base.requires_open
     def read_int(self, num_frames: int | None = None) -> list[list[int]]:
         """
         Read, at most, num_frames frames from the audio stream in integer format. The method returns
@@ -190,6 +181,7 @@ class WavRead(base.Wavfile):
                     audio[n][m] = self._convert_float_to_int(audio[n][m])
         return cast(list[list[int]], audio)
 
+    @base.requires_open
     def iter_int(self, num_frames: int | None = None) -> Generator[list[list[int]], None, None]:
         """
         This method is equivalent to :meth:`read_int`, except that it returns a generator rather
@@ -201,6 +193,7 @@ class WavRead(base.Wavfile):
         return cast(Generator[list[list[int]], None, None],
                     self._block_iterator('read_int', num_frames))
 
+    @base.requires_open
     def read_float(self, num_frames: int | None = None) -> list[list[float]]:
         """
         Read, at most, num_frames frames from the audio stream in float format in the range [-1, 1).
@@ -219,6 +212,7 @@ class WavRead(base.Wavfile):
 
         return audio
 
+    @base.requires_open
     def iter_float(self, num_frames: int | None = None) -> \
             Generator[list[list[float]], None, None]:
         """
@@ -230,6 +224,7 @@ class WavRead(base.Wavfile):
         """
         return self._block_iterator('read_float', num_frames)
 
+    @base.requires_open
     def read(self, num_frames: int | None = None) -> list[list[int | float]]:
         """
         Read, at most, `num_frames` frames from the audio stream in its native format. The method
@@ -241,6 +236,7 @@ class WavRead(base.Wavfile):
         """
         return self._data_chunk.read_frames(num_frames)
 
+    @base.requires_open
     def iter(self, num_frames=None) -> Generator[list[list[int | float]], None, None]:
         """
         This method is equivalent to :meth:`read`, except that it returns a generator rather than
