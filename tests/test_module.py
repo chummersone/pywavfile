@@ -78,12 +78,12 @@ class TestModule(TestCaseWithFile):
     def test_repr(self):
         filename = get_file_path("corpus/osc_tri.wav")
         with wavfile.open(filename, "r") as wfp:
-            self.assertEqual(repr(wfp), f"WavRead('{filename}')")
+            self.assertEqual(repr(wfp), f"WavRead('{Path(filename).as_posix()}')")
         filename = get_file_path("corpus/tmp.wav")
         with wavfile.open(filename, "w") as wfp:
             self.assertEqual(
                 repr(wfp),
-                f"WavWrite('{filename}', "
+                f"WavWrite('{Path(filename).as_posix()}', "
                 + "sample_rate=44100, num_channels=0, bits_per_sample=16, "
                 + "fmt=WavFormat.PCM)",
             )
