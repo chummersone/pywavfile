@@ -192,6 +192,7 @@ class WavWrite(base.Wavfile):
         else:
             self.__write_int(cast(Sequence[Sequence[int]], audio))
 
+    @base.requires_open
     def add_metadata(self, **kwargs: str | int) -> None:
         """
         Add metadata to the wav file. Note that this method can only be called once, and the
