@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "wavfile"
-version = "4.7.2"
+version = "5.0.0"
 description = "A lightweight package to read/write wave audio files to/from lists of native Python types."
 readme = { file = "README.rst", content-type = "text/x-rst" }
 requires-python = ">=3.10"
