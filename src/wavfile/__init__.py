@@ -7,6 +7,7 @@ precision, including: 16-, 24-, 32-, and 64-bit samples.
 
 import os.path
 from collections.abc import Sequence
+from contextlib import ExitStack
 from typing import BinaryIO, Literal, overload
 
 from . import chunk, wavread, wavwrite
@@ -170,7 +171,8 @@ def split(path: str | os.PathLike[str]) -> None:
     :param path: Path to the multichannel wave file.
     """
 
-    with open(path, "r") as wfp:
+    with ExitStack() as stack:
+        wfp = stack.enter_context(open(path, "r"))
         num_channels = wfp.num_channels
 
         # filenames for new files
@@ -180,9 +182,8 @@ def split(path: str | os.PathLike[str]) -> None:
             filenames.append(f"{base}_{i:02d}{ext}")
 
         # open the wave files for writing
-        outs = []
-        for i in range(num_channels):
-            outs.append(
+        outs = [
+            stack.enter_context(
                 wavwrite.WavWrite(
                     filenames[i],
                     sample_rate=wfp.sample_rate,
@@ -191,15 +192,13 @@ def split(path: str | os.PathLike[str]) -> None:
                     fmt=wfp.format,
                 )
             )
+            for i in range(num_channels)
+        ]
 
         # read the input file and write to the output files
         for audio in wfp.iter(1):
-            for i in range(num_channels):
-                outs[i].write([[audio[0][i]]])
-
-        # close the output files
-        for i in range(num_channels):
-            outs[i].close()
+            for i, out in enumerate(outs):
+                out.write([[audio[0][i]]])
 
 
 def join(filename: str | os.PathLike[str], *paths: str | os.PathLike[str]) -> None:
@@ -213,6 +212,9 @@ def join(filename: str | os.PathLike[str], *paths: str | os.PathLike[str]) -> No
     :param filename: Name of the output file.
     :param paths: Paths to the wave files.
     """
+    if os.path.abspath(filename) in {os.path.abspath(p) for p in paths}:
+        raise WriteError("Output file must not be an input file")
+
     # determine file properties
     sample_rate = None
     num_frames = []
@@ -223,9 +225,8 @@ def join(filename: str | os.PathLike[str], *paths: str | os.PathLike[str]) -> No
             # check matching sample rates
             if sample_rate is None:
                 sample_rate = fp.sample_rate
-            else:
-                if fp.sample_rate != sample_rate:
-                    raise ReadError("Sample rates of input files do not match")
+            elif fp.sample_rate != sample_rate:
+                raise ReadError("Sample rates of input files do not match")
             num_frames.append(fp.num_frames)
             bits_per_sample = max(bits_per_sample, fp.bits_per_sample)
             num_channels += fp.num_channels
@@ -234,17 +235,18 @@ def join(filename: str | os.PathLike[str], *paths: str | os.PathLike[str]) -> No
         raise ReadError("Sample rates of input files cannot be determined")
 
     # join files
-    with open(
-        filename,
-        mode="w",
-        bits_per_sample=bits_per_sample,
-        sample_rate=sample_rate,
-        num_channels=num_channels,
-    ) as wfp:
+    with ExitStack() as stack:
+        wfp = stack.enter_context(
+            open(
+                filename,
+                mode="w",
+                bits_per_sample=bits_per_sample,
+                sample_rate=sample_rate,
+                num_channels=num_channels,
+            )
+        )
         # open files
-        file_pointers = []
-        for file in paths:
-            file_pointers.append(open(file, "r"))
+        file_pointers = [stack.enter_context(open(file, "r")) for file in paths]
 
         # write each frame
         for frame_num in range(max(num_frames)):
@@ -261,7 +263,3 @@ def join(filename: str | os.PathLike[str], *paths: str | os.PathLike[str]) -> No
                     # keep zeros
                     channel += rfp.num_channels
             wfp.write_float([new_frame])
-
-        # close files
-        for rfp in file_pointers:
-            rfp.close()
