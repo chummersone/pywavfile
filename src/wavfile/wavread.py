@@ -38,9 +38,9 @@ class WavRead(base.Wavfile):
         # read the file header
         try:
             self._init_file()
-            if self.fp is None:
+            if self.fp is None:  # pragma: no cover
                 raise exception.ReadError("Audio file pointer must be initialized")
-            if self._data_chunk is None:
+            if self._data_chunk is None:  # pragma: no cover
                 raise exception.ReadError("Audio data chunk not initialised")
             self.fp.seek(self._data_chunk.content_start)
         except Exception:
@@ -64,7 +64,7 @@ class WavRead(base.Wavfile):
 
     def __parse_chunk(self, chnk: chunk.Chunk) -> None:
         """Parse the chunk."""
-        if self.fp is None:
+        if self.fp is None:  # pragma: no cover
             raise exception.ReadError("Audio file pointer must be initialized")
 
         if chnk.chunk_id == chunk.ChunkID.RIFF_CHUNK:
@@ -97,7 +97,7 @@ class WavRead(base.Wavfile):
         """
         Read the file and initialise the object properties.
         """
-        if self.fp is None:
+        if self.fp is None:  # pragma: no cover
             raise exception.ReadError("Audio file pointer must be initialized")
 
         self.fp.seek(0, 2)
@@ -191,7 +191,7 @@ class WavRead(base.Wavfile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.ReadError("Audio data chunk must be initialised")
         audio = self._data_chunk.read_frames(num_frames)
         if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
@@ -223,7 +223,7 @@ class WavRead(base.Wavfile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.ReadError("Audio data chunk must be initialised")
         audio = []
         if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
@@ -257,7 +257,7 @@ class WavRead(base.Wavfile):
         :param num_frames: Maximum number of frames to read.
         :return: The audio samples as a list of lists.
         """
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.ReadError("Audio data chunk must be initialised")
         return self._data_chunk.read_frames(num_frames)
 

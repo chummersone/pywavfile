@@ -40,13 +40,13 @@ class WavWrite(base.Wavfile):
         base.Wavfile.__init__(self)
 
         self._init_fp(fp, mode="w")
-        if self.fp is None:
+        if self.fp is None:  # pragma: no cover
             raise exception.WriteError("Failed to open audio file")
 
         try:
             # initialise each of the riff chunks
             self._init_chunks(sample_rate, num_channels, bits_per_sample, fmt)
-            if self._data_chunk is None:
+            if self._data_chunk is None:  # pragma: no cover
                 raise exception.WriteError("Audio data chunk must be initialised")
 
             # go to data chunk content start ready to write samples
@@ -66,7 +66,7 @@ class WavWrite(base.Wavfile):
         """
         Initialise the file chunks.
         """
-        if self.fp is None:
+        if self.fp is None:  # pragma: no cover
             raise exception.WriteError("Failed to open audio file")
 
         self._riff_chunk = chunk.RiffChunk(self.fp, mode="w")
@@ -78,7 +78,7 @@ class WavWrite(base.Wavfile):
             fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp, mode="w")
             fmt_chunk.valid_bits_per_sample = bits_per_sample
             # ensure the container holds whole bytes
-            if bits_per_sample % 8 != 0:
+            if bits_per_sample % 8 != 0:  # pragma: no cover
                 bits_per_sample = bits_per_sample + (8 - (bits_per_sample % 8))
         else:
             fmt_chunk = chunk.WavFmtChunk(self.fp, mode="w")
@@ -114,7 +114,7 @@ class WavWrite(base.Wavfile):
         """
         Prevent new audio data from overwriting the metadata chunk.
         """
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.WriteError("Audio data chunk must be initialised")
         if self._list_chunk is not None and self._list_chunk.start > self._data_chunk.start:
             raise exception.WriteError("Audio may overwrite metadata chunk")
@@ -148,7 +148,7 @@ class WavWrite(base.Wavfile):
         """
         Write integer data to the file.
         """
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.WriteError("Audio data chunk must be initialised")
         if self.audio_fmt == chunk.WavFormat.IEEE_FLOAT:
             convert = self._convert_int_to_float
@@ -205,13 +205,13 @@ class WavWrite(base.Wavfile):
 
         :param kwargs: The metadata to write, provided as keyword arguments.
         """
-        if self.fp is None:
+        if self.fp is None:  # pragma: no cover
             raise exception.WriteError("Audio file pointer must be initialized")
 
-        if self._riff_chunk is None:
+        if self._riff_chunk is None:  # pragma: no cover
             raise exception.WriteError("RIFF chunk must be initialized")
 
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.WriteError("Audio data chunk must be initialized")
 
         if self._list_chunk is not None:

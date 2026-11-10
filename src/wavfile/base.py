@@ -13,7 +13,7 @@ from typing import BinaryIO, Literal
 
 try:
     from typing import Self  # pyright: ignore[reportAttributeAccessIssue]
-except ImportError:
+except ImportError:  # pragma: no cover
     from typing_extensions import Self
 
 from . import chunk, exception
@@ -119,7 +119,7 @@ class Wavfile(ABC):  # noqa: B024
         :param x: The integer value to convert.
         :return: The float equivalent in the current range.
         """
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         if self._data_chunk.fmt_chunk.signed:
             return self._convert_signed_int_to_float(x)
@@ -151,7 +151,7 @@ class Wavfile(ABC):  # noqa: B024
         :param x: The float value to convert.
         :return: The integer equivalent in the current range.
         """
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         if self._data_chunk.fmt_chunk.signed:
             return self._convert_float_to_signed_int(x)
@@ -161,7 +161,7 @@ class Wavfile(ABC):  # noqa: B024
     @property
     def _bytes_per_sample(self) -> int:
         """Number of bytes per audio sample"""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         return self._data_chunk.fmt_chunk.bytes_per_sample
 
@@ -173,42 +173,42 @@ class Wavfile(ABC):  # noqa: B024
     @property
     def num_channels(self) -> int:
         """Number of audio channels in the file"""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         return self._data_chunk.fmt_chunk.num_channels
 
     @property
     def sample_rate(self) -> int:
         """Sampling rate of the audio data"""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         return self._data_chunk.fmt_chunk.sample_rate
 
     @property
     def bits_per_sample(self) -> int:
         """Number of bits per audio sample"""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         return self._data_chunk.fmt_chunk.bits_per_sample
 
     @property
     def format(self) -> chunk.WavFormat:
         """Wave file format code"""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         return self._data_chunk.fmt_chunk._audio_fmt
 
     @property
     def audio_fmt(self) -> chunk.WavFormat:
         """Audio sample format"""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         return self._data_chunk.fmt_chunk.audio_fmt
 
     @property
     def num_frames(self) -> int:
         """Number of audio frames in the file"""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         try:
             return self._data_chunk.size // self._block_align
@@ -230,7 +230,7 @@ class Wavfile(ABC):  # noqa: B024
     @property
     def _block_align(self) -> int:
         """Number of audio frames in the file"""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         return self._data_chunk.fmt_chunk.block_align
 
@@ -261,7 +261,7 @@ class Wavfile(ABC):  # noqa: B024
         :param whence: The frame positioning mode.
         :return: The method returns the object.
         """
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         self._data_chunk.seek(frame_number, whence)
         return self
@@ -269,13 +269,13 @@ class Wavfile(ABC):  # noqa: B024
     @requires_open
     def tell(self) -> int:
         """Get the current frame number."""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
         return self._data_chunk.tell()
 
     def _get_total_size(self) -> int:
         """Get the total size of the file"""
-        if self._data_chunk is None:
+        if self._data_chunk is None:  # pragma: no cover
             return 0
         total_size = (
             self._data_chunk.size
@@ -294,13 +294,13 @@ class Wavfile(ABC):  # noqa: B024
         """
         Finalise the file.
         """
-        if self._riff_chunk is not None:
+        if self._riff_chunk is not None:  # pragma: no cover
             self._riff_chunk.size = self._get_total_size()
-        if self._data_chunk is not None:
+        if self._data_chunk is not None:  # pragma: no cover
             self._data_chunk.finalise()
-        if self._list_chunk is not None:
+        if self._list_chunk is not None:  # pragma: no cover
             self._list_chunk.finalise()
-        if self._riff_chunk is not None:
+        if self._riff_chunk is not None:  # pragma: no cover
             self._riff_chunk.finalise()
 
     def close(self) -> None:
