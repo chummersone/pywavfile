@@ -73,12 +73,10 @@ class WavRead(base.Wavfile):
             if self._fmt_chunk is not None:
                 raise exception.ReadError("Second format chunk found")
             # get audio format
+            here = self.fp.tell()
             self.fp.seek(chunk.Chunk.offset, 1)
-            audio_fmt_int = int.from_bytes(
-                self.fp.read(chunk.WavFmtChunk.audio_fmt_size), signed=False, byteorder="little"
-            )
-            audio_fmt = chunk.WavFormat(audio_fmt_int)
-            self.fp.seek(-chunk.Chunk.offset - chunk.WavFmtChunk.audio_fmt_size, 1)
+            audio_fmt = chunk.WavFmtChunk.read_audio_format(self.fp)
+            self.fp.seek(here)
             if audio_fmt == chunk.WavFormat.EXTENSIBLE:
                 self._fmt_chunk = chunk.WavFmtExtensibleChunk(self.fp)
             else:
