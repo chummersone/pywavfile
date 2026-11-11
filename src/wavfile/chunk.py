@@ -424,6 +424,23 @@ class WavFmtChunk(SchemaMixin, Chunk):
         else:
             self.write_fmt()
 
+    @classmethod
+    def read_audio_format(cls, fp: BinaryIO) -> WavFormat:
+        """
+        Find the audio data format for the file. Assumes that the audio format word is the next word
+        in the input stream. Calling the method will advance the stream position.
+
+        :param fp: Stream from which to read the audio data format.
+        :return: The audio data format.
+        """
+        f = next(f for f in fields(cls) if f.name == "_audio_fmt")
+        binfmt = "<" + f.metadata["binary"]
+        size = struct.calcsize(binfmt)
+        data = fp.read(size)
+        if len(data) != size:
+            raise exception.ReadError("Could not read audio format")
+        return WavFormat(struct.unpack(binfmt, data)[0])
+
     def _read(self) -> None:
         """Read metadata from the chunk."""
         if self.chunk_id != ChunkID.FMT_CHUNK:
