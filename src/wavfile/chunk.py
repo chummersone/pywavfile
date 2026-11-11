@@ -85,33 +85,33 @@ class InfoItem(WavEnum):
 class SchemaMixin:
     """Mixin class to provide chunk data parsing based on a schema."""
 
-    @property
-    def _binfmt(self) -> str:
+    @classmethod
+    def _binfmt(cls) -> str:
         """The binary format for the chunk data."""
-        if len(self._schema) == 0:
+        if len(cls._schema()) == 0:
             return ""
-        return "<" + "".join(fld.metadata["binary"] for fld in self._schema)
+        return "<" + "".join(fld.metadata["binary"] for fld in cls._schema())
 
-    @property
-    def _schema_size(self) -> int:
+    @classmethod
+    def _schema_size(cls) -> int:
         """The binary size of the schema."""
-        return struct.calcsize(self._binfmt)
+        return struct.calcsize(cls._binfmt())
 
     @property
     def _min_size(self) -> int:
         """The minimum size of the chunk."""
-        return self._schema_size
+        return self._schema_size()
 
-    @property
-    def _schema(self) -> tuple[Field[Any], ...]:
+    @classmethod
+    def _schema(cls) -> tuple[Field[Any], ...]:
         """The chunk schema."""
-        return fields(self)
+        return fields(cls)
 
     def _deserialize(self, data: bytes) -> None:
         """Deserialize the chunk data to class attributes."""
-        values = struct.unpack(self._binfmt, data)
+        values = struct.unpack(self._binfmt(), data)
 
-        for f, value in zip(self._schema, values, strict=True):
+        for f, value in zip(self._schema(), values, strict=True):
             if "decode" in f.metadata:
                 value = f.metadata["decode"](value)
             setattr(self, f.name, value)
@@ -119,17 +119,18 @@ class SchemaMixin:
     def _serialize(self) -> bytes:
         """Serialize the class attributes to chunk data bytes."""
         values = []
-        for f in self._schema:
+        for f in self._schema():
             value = getattr(self, f.name)
             if "encode" in f.metadata:
                 value = f.metadata["encode"](value)
             values.append(value)
 
-        return struct.pack(self._binfmt, *values)
+        return struct.pack(self._binfmt(), *values)
 
-    def _field_size(self, name: str) -> int:
+    @classmethod
+    def _field_size(cls, name: str) -> int:
         """Get the size of the field with the given name."""
-        f = next(f for f in fields(self) if f.name == name)
+        f = next(f for f in cls._schema() if f.name == name)
         return struct.calcsize(f.metadata["binary"])
 
 
@@ -445,11 +446,11 @@ class WavFmtChunk(SchemaMixin, Chunk):
         """Read metadata from the chunk."""
         if self.chunk_id != ChunkID.FMT_CHUNK:
             raise exception.ReadError("Chunk is not a FMT chunk")
-
-        self._deserialize(self.read(self._schema_size))
-
-        if self.size < self._schema_size:
+        if self.size < self._schema_size():
             raise exception.ReadError("FMT chunk is too small")
+
+        self._deserialize(self.read(self._schema_size()))
+
         if self.num_channels == 0:
             raise exception.ReadError("Number of channels is 0")
         if self.sample_rate == 0:
@@ -525,13 +526,13 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         self._audio_fmt = WavFormat.EXTENSIBLE
         super().__init__(fp, mode=mode)
 
-    @property
-    def _min_extension_size(self) -> int:
+    @classmethod
+    def _min_extension_size(cls) -> int:
         """Minimum chunk extension size."""
         return (
-            self._field_size("valid_bits_per_sample")
-            + self._field_size("channel_mask")
-            + self._field_size("sub_data_format")
+            cls._field_size("valid_bits_per_sample")
+            + cls._field_size("channel_mask")
+            + cls._field_size("sub_data_format")
         )
 
     def _read(self) -> None:
@@ -539,11 +540,10 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         super()._read()
 
         # verify metadata
-        if self.extension_size < self._min_extension_size:
+        if self.extension_size < self._min_extension_size():
             raise exception.ReadError("Extension size is too small")
-        _FMT_BASE_SIZE = 16
-        _FMT_EXT_OFFSET = _FMT_BASE_SIZE + self._field_size("extension_size")
-        if _FMT_EXT_OFFSET + self.extension_size > self.size:
+        fmt_ext_offset = WavFmtChunk._schema_size() + self._field_size("extension_size")
+        if fmt_ext_offset + self.extension_size > self.size:
             raise exception.ReadError("Extension size exceeds chunk size")
         if self.valid_bits_per_sample == 0:
             raise exception.ReadError("Valid bits per sample is 0.")
@@ -556,15 +556,13 @@ class WavFmtExtensibleChunk(WavFmtChunk):
                 raise exception.ReadError("Valid bits must equal container width for IEEE_FLOAT")
         if self.channel_mask != 0:
             # the channel count mask must have a number of bits set equal to the number of channels
-            channel_count = 0
-            for i in range(self._field_size("channel_mask") * 8):
-                channel_count += (self.channel_mask >> i) & 0x1
+            channel_count = self.channel_mask.bit_count()
             if channel_count != self.num_channels:
                 raise exception.ReadError("Invalid channel mask")
 
     def write_fmt(self) -> None:
         """Write the format data to the file."""
-        self.extension_size = self._min_extension_size
+        self.extension_size = self._min_extension_size()
 
         if self.valid_bits_per_sample == 0:
             warn(
