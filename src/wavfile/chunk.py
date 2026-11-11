@@ -6,8 +6,9 @@ import struct
 import sys
 import uuid
 from collections.abc import Callable, Sequence
+from dataclasses import Field, dataclass, field, fields
 from enum import Enum
-from typing import BinaryIO, Literal, TypeVar
+from typing import Any, BinaryIO, ClassVar, Literal, TypeVar
 from warnings import warn
 
 try:
@@ -21,7 +22,7 @@ T = TypeVar("T", int, float)
 
 
 class WavEnum(Enum):
-    """Enum class for wave file chunks"""
+    """Enum class for wave file chunks."""
 
     @classmethod
     def _missing_(cls, value):
@@ -32,13 +33,13 @@ class WavEnum(Enum):
 
 
 class RiffFormat(WavEnum):
-    """RIFF file format"""
+    """RIFF file format."""
 
     WAVE = b"WAVE"
 
 
 class ChunkID(WavEnum):
-    """RIFF chunk identifiers"""
+    """RIFF chunk identifiers."""
 
     RIFF_CHUNK = b"RIFF"
     FMT_CHUNK = b"fmt "
@@ -48,7 +49,7 @@ class ChunkID(WavEnum):
 
 
 class WavFormat(WavEnum):
-    """Wav audio data format"""
+    """Wav audio data format."""
 
     PCM = 0x0001
     IEEE_FLOAT = 0x0003
@@ -56,20 +57,20 @@ class WavFormat(WavEnum):
 
 
 class WavFormatExSubformat(WavEnum):
-    """Extensible WAVE sub-format"""
+    """Extensible WAVE sub-format."""
 
     PCM = uuid.UUID("00000001-0000-0010-8000-00AA00389B71")
     IEEE = uuid.UUID("00000003-0000-0010-8000-00AA00389B71")
 
 
 class ListType(WavEnum):
-    """LIST chunk list types"""
+    """LIST chunk list types."""
 
     INFO = b"INFO"
 
 
 class InfoItem(WavEnum):
-    """Items of the INFO chunk"""
+    """Items of the INFO chunk."""
 
     track = b"INAM"
     album = b"IPRD"
@@ -80,13 +81,70 @@ class InfoItem(WavEnum):
     genre = b"IGNR"
 
 
-class Chunk:
-    """Chunk read and write"""
+@dataclass
+class SchemaMixin:
+    """Mixin class to provide chunk data parsing based on a schema."""
 
-    align: int = 2
-    offset: int = 8
-    _min_size: int = 0
-    word_size: int = 4
+    @property
+    def _binfmt(self) -> str:
+        """The binary format for the chunk data."""
+        if len(self._schema) == 0:
+            return ""
+        return "<" + "".join(fld.metadata["binary"] for fld in self._schema)
+
+    @property
+    def _schema_size(self) -> int:
+        """The binary size of the schema."""
+        return struct.calcsize(self._binfmt)
+
+    @property
+    def _min_size(self) -> int:
+        """The minimum size of the chunk."""
+        return self._schema_size
+
+    @property
+    def _schema(self) -> tuple[Field[Any], ...]:
+        """The chunk schema."""
+        return fields(self)
+
+    def _deserialize(self, data: bytes) -> None:
+        """Deserialize the chunk data to class attributes."""
+        values = struct.unpack(self._binfmt, data)
+
+        for f, value in zip(self._schema, values, strict=True):
+            if "decode" in f.metadata:
+                value = f.metadata["decode"](value)
+            setattr(self, f.name, value)
+
+    def _serialize(self) -> bytes:
+        """Serialize the class attributes to chunk data bytes."""
+        values = []
+        for f in self._schema:
+            value = getattr(self, f.name)
+            if "encode" in f.metadata:
+                value = f.metadata["encode"](value)
+            values.append(value)
+
+        return struct.pack(self._binfmt, *values)
+
+    def _field_size(self, name: str) -> int:
+        """Get the size of the field with the given name."""
+        f = next(f for f in fields(self) if f.name == name)
+        return struct.calcsize(f.metadata["binary"])
+
+
+def enum_value(e: Enum) -> Any:
+    """Get the value of an enum item."""
+    return e.value
+
+
+@dataclass
+class Chunk:
+    """Chunk read and write."""
+
+    align: ClassVar[int] = 2
+    offset: ClassVar[int] = 8
+    word_size: ClassVar[int] = 4
 
     def __init__(
         self, fp: BinaryIO, bigendian: bool = False, mode: Literal["r", "w"] = "r"
@@ -118,8 +176,13 @@ class Chunk:
             self.write_header()
 
     @property
+    def _min_size(self) -> int:
+        """The minimum size of the chunk."""
+        return 0
+
+    @property
     def read_only(self) -> bool:
-        """Check whether the file is read-only"""
+        """Check whether the file is read-only."""
         return "r" == self.mode
 
     @property
@@ -132,17 +195,17 @@ class Chunk:
 
     @property
     def content_start(self) -> int:
-        """The start position of the chunk content"""
+        """The start position of the chunk content."""
         return self.start + self.offset
 
     @property
     def pad(self) -> int:
-        """Size of any trailing padding required to align the chunk"""
+        """Size of any trailing padding required to align the chunk."""
         return self.size % self.align
 
     @property
     def end(self) -> int:
-        """The end position of the chunk content after any padding"""
+        """The end position of the chunk content after any padding."""
         return self.content_start + self.size + self.pad
 
     def skip(self, include_pad: bool = True) -> None:
@@ -297,9 +360,7 @@ class Chunk:
 
 
 class RiffChunk(Chunk):
-    """Riff container chunk read and write"""
-
-    _min_size = 4
+    """Riff container chunk read and write."""
 
     def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
@@ -320,6 +381,11 @@ class RiffChunk(Chunk):
         else:
             self.write(RiffFormat.WAVE.value)
 
+    @property
+    def _min_size(self) -> int:
+        """Minimum chunk size."""
+        return 4
+
     def finalise(self) -> None:
         """Finalise the chunk and update the header."""
         if self.format is None:
@@ -327,16 +393,20 @@ class RiffChunk(Chunk):
         Chunk.finalise(self)
 
 
-class WavFmtChunk(Chunk):
-    """Wave format chunk read and write"""
+@dataclass
+class WavFmtChunk(SchemaMixin, Chunk):
+    """Wave format chunk read and write."""
 
-    _min_size = 16
-    audio_fmt_size: int = 2
-    _num_channels_size: int = 2
-    _sample_rate_size: int = 4
-    _byte_rate_size: int = 4
-    _block_align_size: int = 2
-    _bits_per_sample_size: int = 2
+    _audio_fmt: WavFormat = field(
+        default=WavFormat.PCM,
+        metadata={"binary": "H", "decode": WavFormat, "encode": enum_value},
+        init=False,
+    )
+    num_channels: int = field(default=0, metadata={"binary": "H"})
+    sample_rate: int = field(default=0, metadata={"binary": "I"})
+    byte_rate: int = field(default=0, metadata={"binary": "I"})
+    block_align: int = field(default=0, metadata={"binary": "H"})
+    bits_per_sample: int = field(default=0, metadata={"binary": "H"})
 
     def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
@@ -346,13 +416,6 @@ class WavFmtChunk(Chunk):
         :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.FMT_CHUNK
-        if not hasattr(self, "_audio_fmt"):
-            self._audio_fmt: WavFormat = WavFormat.PCM
-        self.num_channels: int = 0
-        self.sample_rate: int = 0
-        self.byte_rate: int = 0
-        self.block_align: int = 0
-        self.bits_per_sample: int = 0
 
         Chunk.__init__(self, fp, bigendian=False, mode=mode)
 
@@ -362,16 +425,14 @@ class WavFmtChunk(Chunk):
             self.write_fmt()
 
     def _read(self) -> None:
-        """Read metadata from the chunk"""
+        """Read metadata from the chunk."""
         if self.chunk_id != ChunkID.FMT_CHUNK:
             raise exception.ReadError("Chunk is not a FMT chunk")
-        self._audio_fmt = WavFormat(self.read_int(self.audio_fmt_size, signed=False))
-        self.num_channels = self.read_int(self._num_channels_size, signed=False)
-        self.sample_rate = self.read_int(self._sample_rate_size, signed=False)
-        self.byte_rate = self.read_int(self._byte_rate_size, signed=False)
-        self.block_align = self.read_int(self._block_align_size, signed=False)
-        self.bits_per_sample = self.read_int(self._bits_per_sample_size, signed=False)
 
+        self._deserialize(self.read(self._schema_size))
+
+        if self.size < self._schema_size:
+            raise exception.ReadError("FMT chunk is too small")
         if self.num_channels == 0:
             raise exception.ReadError("Number of channels is 0")
         if self.sample_rate == 0:
@@ -401,23 +462,18 @@ class WavFmtChunk(Chunk):
 
     @property
     def bytes_per_sample(self) -> int:
-        """Number of bytes per audio sample"""
+        """Number of bytes per audio sample."""
         return self.bits_per_sample // 8
 
     @property
     def signed(self) -> bool:
-        """Whether the integer representation is signed"""
+        """Whether the integer representation is signed."""
         return self.bytes_per_sample > 1
 
     def write_fmt(self) -> None:
         """Write the format data to the file."""
         self.fp.seek(self.content_start)
-        self.write_int(self._audio_fmt.value, self.audio_fmt_size, signed=False)
-        self.write_int(self.num_channels, self._num_channels_size, signed=False)
-        self.write_int(self.sample_rate, self._sample_rate_size, signed=False)
-        self.write_int(self.byte_rate, self._byte_rate_size, signed=False)
-        self.write_int(self.block_align, self._block_align_size, signed=False)
-        self.write_int(self.bits_per_sample, self._bits_per_sample_size, signed=False)
+        self.write(self._serialize())
 
     def finalise(self) -> None:
         """Finalise the chunk and update the header and format data."""
@@ -426,14 +482,21 @@ class WavFmtChunk(Chunk):
         Chunk.finalise(self)
 
 
+@dataclass
 class WavFmtExtensibleChunk(WavFmtChunk):
-    """Wave extensible format chunk read and write"""
+    """Wave extensible format chunk read and write."""
 
-    _min_size = 22
-    _extension_size_size: int = 2
-    _valid_bits_per_sample_size: int = 2
-    _channel_mask_size: int = 4
-    _sub_format_size: int = 16
+    extension_size: int = field(default=0, metadata={"binary": "H"})
+    valid_bits_per_sample: int = field(default=0, metadata={"binary": "H"})
+    channel_mask: int = field(default=0, metadata={"binary": "I"})
+    sub_data_format: WavFormatExSubformat = field(
+        default=WavFormatExSubformat.PCM,
+        metadata={
+            "binary": "16s",
+            "decode": lambda x: WavFormatExSubformat(uuid.UUID(bytes_le=x)),
+            "encode": lambda x: enum_value(x).bytes_le,
+        },
+    )
 
     def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
@@ -443,33 +506,32 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         :param mode: File read/write mode.
         """
         self._audio_fmt = WavFormat.EXTENSIBLE
-        self.sub_data_format: WavFormatExSubformat = WavFormatExSubformat.PCM
-        self.extension_size: int = 0
-        self.valid_bits_per_sample: int = 0
-        self.channel_mask: int = 0
         super().__init__(fp, mode=mode)
 
+    @property
+    def _min_extension_size(self) -> int:
+        """Minimum chunk extension size."""
+        return (
+            self._field_size("valid_bits_per_sample")
+            + self._field_size("channel_mask")
+            + self._field_size("sub_data_format")
+        )
+
     def _read(self) -> None:
-        """Read metadata from the chunk"""
+        """Read metadata from the chunk."""
         super()._read()
-        self.extension_size = self.read_int(self._extension_size_size, signed=False)
-        if self.extension_size < self._min_size:
-            raise exception.ReadError("Extension size is too small")
-        here = self.fp.tell()
-        if (here + self.extension_size) > self.end:
-            raise exception.ReadError("Extension size exceeds chunk size")
-        self.valid_bits_per_sample = self.read_int(self._valid_bits_per_sample_size, signed=False)
-        self.channel_mask = self.read_int(self._channel_mask_size, signed=False)
-        sub_format = uuid.UUID(bytes_le=self.read(self._sub_format_size))
 
         # verify metadata
-        self.sub_data_format = WavFormatExSubformat(sub_format)
+        if self.extension_size < self._min_extension_size:
+            raise exception.ReadError("Extension size is too small")
+        _FMT_BASE_SIZE = 16
+        _FMT_EXT_OFFSET = _FMT_BASE_SIZE + self._field_size("extension_size")
+        if _FMT_EXT_OFFSET + self.extension_size > self.size:
+            raise exception.ReadError("Extension size exceeds chunk size")
         if self.valid_bits_per_sample == 0:
             raise exception.ReadError("Valid bits per sample is 0.")
         if self.valid_bits_per_sample > self.bits_per_sample:
-            raise exception.ReadError(
-                "Valid bits per sample is exceeds the container's bit per sample"
-            )
+            raise exception.ReadError("Valid bits per sample exceeds container bits per sample")
         if self.audio_fmt == WavFormat.IEEE_FLOAT:
             if self.valid_bits_per_sample not in (32, 64):
                 raise exception.ReadError("valid_bits_per_sample should be 32 or 64 for IEEE_FLOAT")
@@ -478,27 +540,23 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         if self.channel_mask != 0:
             # the channel count mask must have a number of bits set equal to the number of channels
             channel_count = 0
-            for i in range(self._channel_mask_size * 8):
+            for i in range(self._field_size("channel_mask") * 8):
                 channel_count += (self.channel_mask >> i) & 0x1
             if channel_count != self.num_channels:
                 raise exception.ReadError("Invalid channel mask")
 
     def write_fmt(self) -> None:
         """Write the format data to the file."""
-        super().write_fmt()
-        extension_size = (
-            self._valid_bits_per_sample_size + self._channel_mask_size + self._sub_format_size
-        )
-        self.write_int(extension_size, self._extension_size_size, signed=False)
+        self.extension_size = self._min_extension_size
+
         if self.valid_bits_per_sample == 0:
             warn(
                 "valid_bits_per_sample is 0. Interpreting this as full container precision.",
                 stacklevel=2,
             )
             self.valid_bits_per_sample = self.bits_per_sample
-        self.write_int(self.valid_bits_per_sample, self._valid_bits_per_sample_size, signed=False)
-        self.write_int(self.channel_mask, self._channel_mask_size, signed=False)
-        self.write(self.sub_data_format.value.bytes_le)
+
+        super().write_fmt()
 
     @property
     def audio_fmt(self) -> WavFormat:
@@ -517,7 +575,7 @@ class WavFmtExtensibleChunk(WavFmtChunk):
 
 
 class WavDataChunk(Chunk):
-    """Wave data chunk read and write"""
+    """Wave data chunk read and write."""
 
     def __init__(
         self,
@@ -543,7 +601,7 @@ class WavDataChunk(Chunk):
 
     @property
     def num_frames(self) -> int:
-        """Number of audio frames in the file"""
+        """Number of audio frames in the file."""
         try:
             return self.size // self.fmt_chunk.block_align
         except ZeroDivisionError:
@@ -594,7 +652,7 @@ class WavDataChunk(Chunk):
 
     @property
     def _max_val(self) -> float | int:
-        """Maximum value"""
+        """Maximum value."""
         bits_per_sample = self.fmt_chunk.bits_per_sample
         if isinstance(self.fmt_chunk, WavFmtExtensibleChunk):
             bits_per_sample = self.fmt_chunk.valid_bits_per_sample
@@ -610,7 +668,7 @@ class WavDataChunk(Chunk):
 
     @property
     def _min_val(self) -> float | int:
-        """Minimum value"""
+        """Minimum value."""
         if self.fmt_chunk.audio_fmt == WavFormat.PCM:
             if self.fmt_chunk.signed:
                 return -self._max_val - 1
@@ -638,7 +696,7 @@ class WavDataChunk(Chunk):
 
     @property
     def _padding_bits(self):
-        """Sample padding bits for extensible format"""
+        """Sample padding bits for extensible format."""
         padding_bits = 0
         if isinstance(self.fmt_chunk, WavFmtExtensibleChunk):
             padding_bits = self.fmt_chunk.bits_per_sample - self.fmt_chunk.valid_bits_per_sample
@@ -720,7 +778,7 @@ class WavDataChunk(Chunk):
 
 
 class ListChunk(Chunk):
-    """List chunk read and write"""
+    """List chunk read and write."""
 
     def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
@@ -772,9 +830,7 @@ class ListChunk(Chunk):
                         raise exception.ReadError("Reading beyond the end of the file")
 
     def write_info(self):
-        """
-        Write the INFO to the LIST chunk.
-        """
+        """Write the INFO to the LIST chunk."""
         if self.info is not None:
             self.fp.seek(self.content_start)
             self.write(ListType.INFO.value)
