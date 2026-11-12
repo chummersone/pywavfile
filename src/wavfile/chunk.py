@@ -840,6 +840,7 @@ class ListChunk(Chunk):
                         self.info[_field] = data
                         self.fp.seek(pad, 1)
                     else:
+                        warn(f"Unknown LIST subchunk {key}", stacklevel=2)
                         self.fp.seek(size + pad, 1)
 
     def write_info(self):

@@ -156,6 +156,31 @@
       "expected": "ReadError",
       "note": "IEEE float extensible format should use supported float container width.",
       "size_bytes": 70
+    },
+    "bad_list_exceeds_file.wav": {
+      "expected": "ReadError",
+      "note": "LIST declares 12 payload bytes but only the four-byte INFO list type is physically present before EOF.",
+      "size_bytes": 72
+    },
+    "bad_short_list_type.wav": {
+      "expected": "valid",
+      "note": "LIST declares only two payload bytes, too short for the four-byte list type. Chunk parsing skipped.",
+      "size_bytes": 70
+    },
+    "bad_subchunk_exceeds_list.wav": {
+      "expected": "ReadError",
+      "note": "The LIST payload declares 13 bytes. Its INFO/JUNK subchunk declares eight data bytes, taking the parser beyond the LIST's declared payload boundary.",
+      "size_bytes": 88
+    },
+    "bad_subchunk_runs_past_file.wav": {
+      "expected": "ReadError",
+      "note": "The LIST payload declares 13 bytes and has no final LIST alignment byte.",
+      "size_bytes": 81
+    },
+    "bad_list_unknown_list_subchunk.wav": {
+      "expected": "valid",
+      "note": "The LIST contains an unknown LIST subchunk.",
+      "size_bytes": 92
     }
   }
 }
