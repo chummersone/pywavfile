@@ -710,7 +710,7 @@ class WavDataChunk(Chunk):
         return val
 
     @property
-    def _padding_bits(self):
+    def _padding_bits(self) -> int:
         """Sample padding bits for extensible format."""
         padding_bits = 0
         if isinstance(self.fmt_chunk, WavFmtExtensibleChunk):
@@ -770,18 +770,22 @@ class WavDataChunk(Chunk):
         :param whence: The frame positioning mode.
         :return: The method returns the object.
         """
-        if frame_number > self.num_frames:
-            raise exception.Error("Frame number exceeds number of frames in file")
-        relative_pos = self.content_start
+        if self.fmt_chunk.block_align == 0:
+            raise exception.Error("No frames written yet")
         if whence == 0:
-            pass
+            relative_pos = self.content_start
         elif whence == 1:
             relative_pos = self.fp.tell()
         elif whence == 2:
             relative_pos = self.content_start + self.size
         else:
             raise exception.Error("Invalid whence parameter")
-        self.fp.seek(relative_pos + (frame_number * self.fmt_chunk.block_align))
+
+        new_pos = relative_pos + (frame_number * self.fmt_chunk.block_align)
+        if not self.content_start <= new_pos <= self.content_start + self.size:
+            raise exception.Error("Requested frame exceeds data chunk")
+
+        self.fp.seek(new_pos)
         return self
 
     def tell(self) -> int:
@@ -818,22 +822,27 @@ class ListChunk(Chunk):
                 raise exception.ReadError("Chunk exceeds file size")
             self.fp.seek(file_pos)
 
+            # check there are words to read
+            if self.size < self.word_size:
+                warn("LIST chunk content is too small, skipping", stacklevel=2)
+                return
+
             # read the INFO content of the LIST
             subchnk = self.read(self.word_size)
             if subchnk == ListType.INFO.value:
                 self.info = {}
                 while self.fp.tell() < self.content_start + self.size:
                     key = self.read(self.word_size)
-                    size = self.read_int(self.word_size)
+                    size = self.read_int(self.word_size, signed=False)
                     pad = size % self.align
-                    if key in [e.value for e in InfoItem]:
-                        field: str = InfoItem(key).name
+                    if key in {e.value for e in InfoItem}:
+                        _field: str = InfoItem(key).name
                         data = self.read(size).decode("ascii").rstrip("\x00")
                         try:
                             data = int(data)
                         except ValueError:
                             pass
-                        self.info[field] = data
+                        self.info[_field] = data
                         self.fp.seek(pad, 1)
                     else:
                         self.fp.seek(size + pad, 1)
@@ -870,6 +879,6 @@ class ListChunk(Chunk):
                 self.write_int(size, self.word_size)
                 self.write(data)
                 # align next item
-                pad = self.fp.tell() % self.align
+                pad = size % self.align
                 if pad > 0:
                     self.write(bytes(bytearray(pad)), update_size=False)
