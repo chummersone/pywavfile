@@ -5,6 +5,7 @@ Provides test cases for the main module.
 import os
 import pathlib
 import unittest
+from io import BytesIO
 from pathlib import Path
 
 import wavfile
@@ -75,7 +76,7 @@ class TestModule(TestCaseWithFile):
                 self.fail("Invalid metadata")
             self.assertDictEqual(metadata, wf.metadata)
 
-    def test_repr(self):
+    def test_repr_write(self):
         filename = get_file_path("corpus/osc_tri.wav")
         with wavfile.open(filename, "r") as wfp:
             self.assertEqual(repr(wfp), f"WavRead('{Path(filename).as_posix()}')")
@@ -86,6 +87,45 @@ class TestModule(TestCaseWithFile):
                 f"WavWrite('{Path(filename).as_posix()}', "
                 + "sample_rate=44100, num_channels=0, bits_per_sample=16, "
                 + "fmt=WavFormat.PCM)",
+            )
+
+    def test_repr_write_open_file(self):
+        filename = get_file_path("corpus/tmp.wav")
+        with open(filename, "wb") as fp:
+            with wavfile.open(fp, "w") as wfp:
+                self.assertEqual(
+                    repr(wfp),
+                    f"WavWrite('{Path(filename).as_posix()}', "
+                    + "sample_rate=44100, num_channels=0, bits_per_sample=16, "
+                    + "fmt=WavFormat.PCM)",
+                )
+
+    def test_repr_write_bytes_io(self):
+        fp = BytesIO()
+        with wavfile.open(fp, "w") as wfp:
+            self.assertEqual(
+                repr(wfp),
+                "WavWrite(BytesIO, "
+                + "sample_rate=44100, num_channels=0, bits_per_sample=16, "
+                + "fmt=WavFormat.PCM)",
+            )
+
+    def test_repr_read_open_file(self):
+        filename = get_file_path("corpus/osc_tri.wav")
+        with open(filename, "rb") as fp:
+            with wavfile.open(fp, mode="r") as wfp:
+                self.assertEqual(
+                    repr(wfp),
+                    f"WavRead('{Path(filename).as_posix()}')",
+                )
+
+    def test_repr_read_open_file_bytes_io(self):
+        filename = get_file_path("corpus/osc_tri.wav")
+        fp = BytesIO(Path(filename).read_bytes())
+        with wavfile.open(fp, mode="r") as wfp:
+            self.assertEqual(
+                repr(wfp),
+                "WavRead(BytesIO)",
             )
 
     def test_join(self):

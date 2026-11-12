@@ -85,33 +85,31 @@ class InfoItem(WavEnum):
 class SchemaMixin:
     """Mixin class to provide chunk data parsing based on a schema."""
 
-    @property
-    def _binfmt(self) -> str:
+    @classmethod
+    def _binfmt(cls) -> str:
         """The binary format for the chunk data."""
-        if len(self._schema) == 0:
-            return ""
-        return "<" + "".join(fld.metadata["binary"] for fld in self._schema)
+        return "<" + "".join(fld.metadata["binary"] for fld in cls._schema())
 
-    @property
-    def _schema_size(self) -> int:
+    @classmethod
+    def _schema_size(cls) -> int:
         """The binary size of the schema."""
-        return struct.calcsize(self._binfmt)
+        return struct.calcsize(cls._binfmt())
 
     @property
     def _min_size(self) -> int:
         """The minimum size of the chunk."""
-        return self._schema_size
+        return self._schema_size()
 
-    @property
-    def _schema(self) -> tuple[Field[Any], ...]:
+    @classmethod
+    def _schema(cls) -> tuple[Field[Any], ...]:
         """The chunk schema."""
-        return fields(self)
+        return fields(cls)
 
     def _deserialize(self, data: bytes) -> None:
         """Deserialize the chunk data to class attributes."""
-        values = struct.unpack(self._binfmt, data)
+        values = struct.unpack(self._binfmt(), data)
 
-        for f, value in zip(self._schema, values, strict=True):
+        for f, value in zip(self._schema(), values, strict=True):
             if "decode" in f.metadata:
                 value = f.metadata["decode"](value)
             setattr(self, f.name, value)
@@ -119,17 +117,18 @@ class SchemaMixin:
     def _serialize(self) -> bytes:
         """Serialize the class attributes to chunk data bytes."""
         values = []
-        for f in self._schema:
+        for f in self._schema():
             value = getattr(self, f.name)
             if "encode" in f.metadata:
                 value = f.metadata["encode"](value)
             values.append(value)
 
-        return struct.pack(self._binfmt, *values)
+        return struct.pack(self._binfmt(), *values)
 
-    def _field_size(self, name: str) -> int:
+    @classmethod
+    def _field_size(cls, name: str) -> int:
         """Get the size of the field with the given name."""
-        f = next(f for f in fields(self) if f.name == name)
+        f = next(f for f in cls._schema() if f.name == name)
         return struct.calcsize(f.metadata["binary"])
 
 
@@ -145,22 +144,19 @@ class Chunk:
     align: ClassVar[int] = 2
     offset: ClassVar[int] = 8
     word_size: ClassVar[int] = 4
+    endianness: ClassVar[Literal["little"]] = "little"
 
-    def __init__(
-        self, fp: BinaryIO, bigendian: bool = False, mode: Literal["r", "w"] = "r"
-    ) -> None:
+    def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
-        Initialise the chunk from a file pointer.
+        Initialise the chunk from a file pointer. Chunks are little endian.
 
         :param fp: Open file pointer.
-        :param bigendian: Is the file bid endian?
         :param mode: File read/write mode.
         """
         self.fp: BinaryIO = fp
         if mode not in ("r", "w"):
             raise ValueError(f"Invalid mode: {mode}")
         self.mode: Literal["r", "w"] = mode
-        self.bigendian: bool = bigendian
         if not hasattr(self, "chunk_id"):
             self.chunk_id: ChunkID = ChunkID.UNKNOWN_CHUNK
         self.size: int = 0
@@ -184,14 +180,6 @@ class Chunk:
     def read_only(self) -> bool:
         """Check whether the file is read-only."""
         return "r" == self.mode
-
-    @property
-    def endianness(self) -> Literal["big", "little"]:
-        """The endianness in text form."""
-        if self.bigendian:
-            return "big"
-        else:
-            return "little"
 
     @property
     def content_start(self) -> int:
@@ -372,7 +360,7 @@ class RiffChunk(Chunk):
         self.chunk_id = ChunkID.RIFF_CHUNK
         self.format: RiffFormat = RiffFormat.WAVE
 
-        Chunk.__init__(self, fp, bigendian=False, mode=mode)
+        Chunk.__init__(self, fp, mode=mode)
 
         if self.read_only:
             if self.chunk_id != ChunkID.RIFF_CHUNK:
@@ -417,7 +405,7 @@ class WavFmtChunk(SchemaMixin, Chunk):
         """
         self.chunk_id = ChunkID.FMT_CHUNK
 
-        Chunk.__init__(self, fp, bigendian=False, mode=mode)
+        Chunk.__init__(self, fp, mode=mode)
 
         if self.read_only:
             self._read()
@@ -445,11 +433,11 @@ class WavFmtChunk(SchemaMixin, Chunk):
         """Read metadata from the chunk."""
         if self.chunk_id != ChunkID.FMT_CHUNK:
             raise exception.ReadError("Chunk is not a FMT chunk")
-
-        self._deserialize(self.read(self._schema_size))
-
-        if self.size < self._schema_size:
+        if self.size < self._schema_size():
             raise exception.ReadError("FMT chunk is too small")
+
+        self._deserialize(self.read(self._schema_size()))
+
         if self.num_channels == 0:
             raise exception.ReadError("Number of channels is 0")
         if self.sample_rate == 0:
@@ -525,13 +513,13 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         self._audio_fmt = WavFormat.EXTENSIBLE
         super().__init__(fp, mode=mode)
 
-    @property
-    def _min_extension_size(self) -> int:
+    @classmethod
+    def _min_extension_size(cls) -> int:
         """Minimum chunk extension size."""
         return (
-            self._field_size("valid_bits_per_sample")
-            + self._field_size("channel_mask")
-            + self._field_size("sub_data_format")
+            cls._field_size("valid_bits_per_sample")
+            + cls._field_size("channel_mask")
+            + cls._field_size("sub_data_format")
         )
 
     def _read(self) -> None:
@@ -539,11 +527,10 @@ class WavFmtExtensibleChunk(WavFmtChunk):
         super()._read()
 
         # verify metadata
-        if self.extension_size < self._min_extension_size:
+        if self.extension_size < self._min_extension_size():
             raise exception.ReadError("Extension size is too small")
-        _FMT_BASE_SIZE = 16
-        _FMT_EXT_OFFSET = _FMT_BASE_SIZE + self._field_size("extension_size")
-        if _FMT_EXT_OFFSET + self.extension_size > self.size:
+        fmt_ext_offset = WavFmtChunk._schema_size() + self._field_size("extension_size")
+        if fmt_ext_offset + self.extension_size > self.size:
             raise exception.ReadError("Extension size exceeds chunk size")
         if self.valid_bits_per_sample == 0:
             raise exception.ReadError("Valid bits per sample is 0.")
@@ -556,15 +543,13 @@ class WavFmtExtensibleChunk(WavFmtChunk):
                 raise exception.ReadError("Valid bits must equal container width for IEEE_FLOAT")
         if self.channel_mask != 0:
             # the channel count mask must have a number of bits set equal to the number of channels
-            channel_count = 0
-            for i in range(self._field_size("channel_mask") * 8):
-                channel_count += (self.channel_mask >> i) & 0x1
+            channel_count = self.channel_mask.bit_count()
             if channel_count != self.num_channels:
                 raise exception.ReadError("Invalid channel mask")
 
     def write_fmt(self) -> None:
         """Write the format data to the file."""
-        self.extension_size = self._min_extension_size
+        self.extension_size = self._min_extension_size()
 
         if self.valid_bits_per_sample == 0:
             warn(
@@ -608,7 +593,7 @@ class WavDataChunk(Chunk):
         :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.DATA_CHUNK
-        Chunk.__init__(self, fp, bigendian=False, mode=mode)
+        Chunk.__init__(self, fp, mode=mode)
 
         self.__did_warn = False
         self.fmt_chunk = fmt_chunk
@@ -642,7 +627,7 @@ class WavDataChunk(Chunk):
             return sample >> self._padding_bits
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return self.read_float(self.fmt_chunk.bytes_per_sample)
-        raise exception.ReadError("File is invalid")
+        raise exception.ReadError("File is invalid")  # pragma: no cover
 
     def read_frames(self, nframes: int | None = None) -> list[list[int | float]]:
         """
@@ -681,7 +666,7 @@ class WavDataChunk(Chunk):
             return (2 ** (bits_per_sample - sign_correction)) - 1
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return 1.0
-        raise exception.ReadError("File is invalid")
+        raise exception.ReadError("File is invalid")  # pragma: no cover
 
     @property
     def _min_val(self) -> float | int:
@@ -693,7 +678,7 @@ class WavDataChunk(Chunk):
                 return 0
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return -1.0
-        raise exception.ReadError("File is invalid")
+        raise exception.ReadError("File is invalid")  # pragma: no cover
 
     def __saturation_warning(self) -> None:
         """Print a warning to stderr about out-of-range sample values."""
@@ -712,7 +697,7 @@ class WavDataChunk(Chunk):
         return val
 
     @property
-    def _padding_bits(self):
+    def _padding_bits(self) -> int:
         """Sample padding bits for extensible format."""
         padding_bits = 0
         if isinstance(self.fmt_chunk, WavFmtExtensibleChunk):
@@ -772,18 +757,22 @@ class WavDataChunk(Chunk):
         :param whence: The frame positioning mode.
         :return: The method returns the object.
         """
-        if frame_number > self.num_frames:
-            raise exception.Error("Frame number exceeds number of frames in file")
-        relative_pos = self.content_start
+        if self.fmt_chunk.block_align == 0:
+            raise exception.Error("No frames written yet")
         if whence == 0:
-            pass
+            relative_pos = self.content_start
         elif whence == 1:
             relative_pos = self.fp.tell()
         elif whence == 2:
             relative_pos = self.content_start + self.size
         else:
             raise exception.Error("Invalid whence parameter")
-        self.fp.seek(relative_pos + (frame_number * self.fmt_chunk.block_align))
+
+        new_pos = relative_pos + (frame_number * self.fmt_chunk.block_align)
+        if not self.content_start <= new_pos <= self.content_start + self.size:
+            raise exception.Error("Requested frame exceeds data chunk")
+
+        self.fp.seek(new_pos)
         return self
 
     def tell(self) -> int:
@@ -805,7 +794,7 @@ class ListChunk(Chunk):
         :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.LIST_CHUNK
-        Chunk.__init__(self, fp, bigendian=False, mode=mode)
+        Chunk.__init__(self, fp, mode=mode)
         self.info: dict[str, int | str] | None = None
 
         if self.read_only:
@@ -820,31 +809,39 @@ class ListChunk(Chunk):
                 raise exception.ReadError("Chunk exceeds file size")
             self.fp.seek(file_pos)
 
+            # check there are words to read
+            if self.size < self.word_size:
+                warn("LIST chunk content is too small, skipping", stacklevel=2)
+                return
+
             # read the INFO content of the LIST
             subchnk = self.read(self.word_size)
             if subchnk == ListType.INFO.value:
                 self.info = {}
-                while self.fp.tell() < self.content_start + self.size:
+                list_end = self.content_start + self.size
+                while self.fp.tell() < list_end:
+                    if list_end - self.fp.tell() < 2 * self.word_size:
+                        raise exception.ReadError("Incomplete LIST subchunk header")
+
                     key = self.read(self.word_size)
-                    size = self.read_int(self.word_size)
+                    size = self.read_int(self.word_size, signed=False)
                     pad = size % self.align
-                    if key in [e.value for e in InfoItem]:
-                        field: str = InfoItem(key).name
+
+                    if size + pad > list_end - self.fp.tell():
+                        raise exception.ReadError("LIST subchunk exceeds LIST chunk")
+
+                    if key in {e.value for e in InfoItem}:
+                        _field: str = InfoItem(key).name
                         data = self.read(size).decode("ascii").rstrip("\x00")
                         try:
                             data = int(data)
                         except ValueError:
                             pass
-                        self.info[field] = data
+                        self.info[_field] = data
                         self.fp.seek(pad, 1)
                     else:
+                        warn(f"Unknown LIST subchunk {key}", stacklevel=2)
                         self.fp.seek(size + pad, 1)
-
-                    # check boundary
-                    if self.fp.tell() > self.end:
-                        raise exception.ReadError("Reading beyond the end of the LIST chunk")
-                    if self.fp.tell() > file_size:
-                        raise exception.ReadError("Reading beyond the end of the file")
 
     def write_info(self):
         """Write the INFO to the LIST chunk."""
@@ -869,9 +866,8 @@ class ListChunk(Chunk):
                 else:
                     raise exception.WriteError("Unknown metadata type")
                 size = len(data)
-                self.write_int(size, self.word_size)
+                self.write_int(size, self.word_size, signed=False)
                 self.write(data)
                 # align next item
-                pad = self.fp.tell() % self.align
-                if pad > 0:
-                    self.write(bytes(bytearray(pad)), update_size=False)
+                pad = size % self.align
+                self.write(bytes(pad))
