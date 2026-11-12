@@ -831,10 +831,18 @@ class ListChunk(Chunk):
             subchnk = self.read(self.word_size)
             if subchnk == ListType.INFO.value:
                 self.info = {}
-                while self.fp.tell() < self.content_start + self.size:
+                list_end = self.content_start + self.size
+                while self.fp.tell() < list_end:
+                    if list_end - self.fp.tell() < 2 * self.word_size:
+                        raise exception.ReadError("Incomplete LIST subchunk header")
+
                     key = self.read(self.word_size)
                     size = self.read_int(self.word_size, signed=False)
                     pad = size % self.align
+
+                    if size + pad > list_end - self.fp.tell():
+                        raise exception.ReadError("LIST subchunk exceeds LIST chunk")
+
                     if key in {e.value for e in InfoItem}:
                         _field: str = InfoItem(key).name
                         data = self.read(size).decode("ascii").rstrip("\x00")
@@ -846,12 +854,6 @@ class ListChunk(Chunk):
                         self.fp.seek(pad, 1)
                     else:
                         self.fp.seek(size + pad, 1)
-
-                    # check boundary
-                    if self.fp.tell() > self.end:
-                        raise exception.ReadError("Reading beyond the end of the LIST chunk")
-                    if self.fp.tell() > file_size:
-                        raise exception.ReadError("Reading beyond the end of the file")
 
     def write_info(self):
         """Write the INFO to the LIST chunk."""
@@ -876,9 +878,9 @@ class ListChunk(Chunk):
                 else:
                     raise exception.WriteError("Unknown metadata type")
                 size = len(data)
-                self.write_int(size, self.word_size)
+                self.write_int(size, self.word_size, signed=False)
                 self.write(data)
                 # align next item
                 pad = size % self.align
                 if pad > 0:
-                    self.write(bytes(bytearray(pad)), update_size=False)
+                    self.write(bytes(pad), update_size=True)
