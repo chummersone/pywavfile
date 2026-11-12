@@ -88,8 +88,6 @@ class SchemaMixin:
     @classmethod
     def _binfmt(cls) -> str:
         """The binary format for the chunk data."""
-        if len(cls._schema()) == 0:
-            return ""
         return "<" + "".join(fld.metadata["binary"] for fld in cls._schema())
 
     @classmethod
@@ -146,22 +144,21 @@ class Chunk:
     align: ClassVar[int] = 2
     offset: ClassVar[int] = 8
     word_size: ClassVar[int] = 4
+    endianness: ClassVar[Literal["little"]] = "little"
 
     def __init__(
-        self, fp: BinaryIO, bigendian: bool = False, mode: Literal["r", "w"] = "r"
+        self, fp: BinaryIO, mode: Literal["r", "w"] = "r"
     ) -> None:
         """
-        Initialise the chunk from a file pointer.
+        Initialise the chunk from a file pointer. Chunks are little endian.
 
         :param fp: Open file pointer.
-        :param bigendian: Is the file bid endian?
         :param mode: File read/write mode.
         """
         self.fp: BinaryIO = fp
         if mode not in ("r", "w"):
             raise ValueError(f"Invalid mode: {mode}")
         self.mode: Literal["r", "w"] = mode
-        self.bigendian: bool = bigendian
         if not hasattr(self, "chunk_id"):
             self.chunk_id: ChunkID = ChunkID.UNKNOWN_CHUNK
         self.size: int = 0
@@ -185,14 +182,6 @@ class Chunk:
     def read_only(self) -> bool:
         """Check whether the file is read-only."""
         return "r" == self.mode
-
-    @property
-    def endianness(self) -> Literal["big", "little"]:
-        """The endianness in text form."""
-        if self.bigendian:
-            return "big"
-        else:
-            return "little"
 
     @property
     def content_start(self) -> int:
@@ -373,7 +362,7 @@ class RiffChunk(Chunk):
         self.chunk_id = ChunkID.RIFF_CHUNK
         self.format: RiffFormat = RiffFormat.WAVE
 
-        Chunk.__init__(self, fp, bigendian=False, mode=mode)
+        Chunk.__init__(self, fp, mode=mode)
 
         if self.read_only:
             if self.chunk_id != ChunkID.RIFF_CHUNK:
@@ -418,7 +407,7 @@ class WavFmtChunk(SchemaMixin, Chunk):
         """
         self.chunk_id = ChunkID.FMT_CHUNK
 
-        Chunk.__init__(self, fp, bigendian=False, mode=mode)
+        Chunk.__init__(self, fp, mode=mode)
 
         if self.read_only:
             self._read()
@@ -606,7 +595,7 @@ class WavDataChunk(Chunk):
         :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.DATA_CHUNK
-        Chunk.__init__(self, fp, bigendian=False, mode=mode)
+        Chunk.__init__(self, fp, mode=mode)
 
         self.__did_warn = False
         self.fmt_chunk = fmt_chunk
@@ -640,7 +629,7 @@ class WavDataChunk(Chunk):
             return sample >> self._padding_bits
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return self.read_float(self.fmt_chunk.bytes_per_sample)
-        raise exception.ReadError("File is invalid")
+        raise exception.ReadError("File is invalid")  # pragma: no cover
 
     def read_frames(self, nframes: int | None = None) -> list[list[int | float]]:
         """
@@ -679,7 +668,7 @@ class WavDataChunk(Chunk):
             return (2 ** (bits_per_sample - sign_correction)) - 1
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return 1.0
-        raise exception.ReadError("File is invalid")
+        raise exception.ReadError("File is invalid")  # pragma: no cover
 
     @property
     def _min_val(self) -> float | int:
@@ -691,7 +680,7 @@ class WavDataChunk(Chunk):
                 return 0
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
             return -1.0
-        raise exception.ReadError("File is invalid")
+        raise exception.ReadError("File is invalid")  # pragma: no cover
 
     def __saturation_warning(self) -> None:
         """Print a warning to stderr about out-of-range sample values."""
@@ -807,7 +796,7 @@ class ListChunk(Chunk):
         :param mode: File read/write mode.
         """
         self.chunk_id = ChunkID.LIST_CHUNK
-        Chunk.__init__(self, fp, bigendian=False, mode=mode)
+        Chunk.__init__(self, fp, mode=mode)
         self.info: dict[str, int | str] | None = None
 
         if self.read_only:
