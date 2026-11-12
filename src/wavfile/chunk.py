@@ -146,9 +146,7 @@ class Chunk:
     word_size: ClassVar[int] = 4
     endianness: ClassVar[Literal["little"]] = "little"
 
-    def __init__(
-        self, fp: BinaryIO, mode: Literal["r", "w"] = "r"
-    ) -> None:
+    def __init__(self, fp: BinaryIO, mode: Literal["r", "w"] = "r") -> None:
         """
         Initialise the chunk from a file pointer. Chunks are little endian.
 
