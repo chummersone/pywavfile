@@ -882,5 +882,4 @@ class ListChunk(Chunk):
                 self.write(data)
                 # align next item
                 pad = size % self.align
-                if pad > 0:
-                    self.write(bytes(pad), update_size=True)
+                self.write(bytes(pad))
