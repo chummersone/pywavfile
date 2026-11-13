@@ -220,7 +220,7 @@ class Chunk:
             raise exception.ReadError("Could not read enough bytes. Maybe EOF.")
         return data
 
-    def write(self, data: bytes, update_size: bool = True) -> None:
+    def write(self, data: bytes | bytearray, update_size: bool = True) -> None:
         """
         Write data to the chunk. Adjust the chunk size accordingly.
 
@@ -771,19 +771,25 @@ class WavDataChunk(Chunk):
         bytes_per_sample = self.fmt_chunk.bytes_per_sample
         signed = self.fmt_chunk.signed
 
+        output = bytearray()
+
         if self.fmt_chunk.audio_fmt == WavFormat.PCM:
 
-            def write(_sample: int | float) -> None:
+            def append(_sample: int | float) -> None:
                 """Write the sample"""
+                nonlocal output
                 _sample = self._saturate(_sample, min_val, max_val)
-                self.write_int(int(_sample) << padding_bits, bytes_per_sample, signed=signed)
+                output.extend(
+                    self.int_to_bytes(int(_sample) << padding_bits, bytes_per_sample, signed)
+                )
 
         elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
 
-            def write(_sample: int | float) -> None:
+            def append(_sample: int | float) -> None:
                 """Write the sample"""
+                nonlocal output
                 _sample = self._saturate(_sample, min_val, max_val)
-                self.write_float(_sample, bytes_per_sample)
+                output.extend(self.float_to_bytes(_sample, bytes_per_sample))
         else:
             raise exception.ReadError("File is invalid")
 
@@ -791,7 +797,9 @@ class WavDataChunk(Chunk):
             for sample in frame:
                 if sample_transform is not None:
                     sample = sample_transform(sample)
-                write(sample)
+                append(sample)
+
+        self.write(output)
 
     def seek(self, frame_number: int, whence: int = 0) -> Self:
         """
