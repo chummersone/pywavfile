@@ -220,7 +220,7 @@ class Chunk:
             raise exception.ReadError("Could not read enough bytes. Maybe EOF.")
         return data
 
-    def write(self, data: bytes, update_size: bool = True) -> None:
+    def write(self, data: bytes | bytearray, update_size: bool = True) -> None:
         """
         Write data to the chunk. Adjust the chunk size accordingly.
 
@@ -310,16 +310,6 @@ class Chunk:
         """
         return struct.unpack(self._get_float_struct_fmt(len(data)), data)[0]
 
-    def read_float(self, nbytes: int) -> float:
-        """
-        Read a float from the chunk.
-
-        :param nbytes: Number of bytes encoding the float.
-        :return: The float value.
-        """
-        data = self.read(nbytes)
-        return self.bytes_to_float(data)
-
     def float_to_bytes(self, data: float, nbytes: int) -> bytes:
         """
         Convert a float to bytes.
@@ -329,15 +319,6 @@ class Chunk:
         :return: The bytes.
         """
         return struct.pack(self._get_float_struct_fmt(nbytes), data)
-
-    def write_float(self, data: float, nbytes: int) -> None:
-        """
-        Write a float to the chunk.
-
-        :param data: The float to encode.
-        :param nbytes: Number of bytes encoding the float.
-        """
-        self.write(self.float_to_bytes(data, nbytes))
 
     def finalise(self) -> None:
         """Finalise the chunk and update the header."""
@@ -620,15 +601,6 @@ class WavDataChunk(Chunk):
 
         Chunk.finalise(self)
 
-    def read_sample(self) -> int | float:
-        """Read a sample from the chunk."""
-        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
-            sample = self.read_int(self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
-            return sample >> self._padding_bits
-        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
-            return self.read_float(self.fmt_chunk.bytes_per_sample)
-        raise exception.ReadError("File is invalid")  # pragma: no cover
-
     def read_frames(self, nframes: int | None = None) -> list[list[int | float]]:
         """
         Read a number of audio frames from the chunk. A frame is a collection of samples, from each
@@ -644,11 +616,47 @@ class WavDataChunk(Chunk):
 
         # do not try to read past the end
         num_frames = min(nframes, self.num_frames - self.tell())
+        if num_frames < 0:
+            raise exception.ReadError("Unexpected read error")
 
-        audio = [
-            [self.read_sample() for _ in range(self.fmt_chunk.num_channels)]
-            for _ in range(num_frames)
-        ]
+        audio_fmt = self.fmt_chunk.audio_fmt
+        num_channels = self.fmt_chunk.num_channels
+        padding_bits = self._padding_bits
+        bytes_per_sample = self.fmt_chunk.bytes_per_sample
+        signed = self.fmt_chunk.signed
+
+        data = self.read(num_frames * num_channels * bytes_per_sample)
+        offset = 0
+
+        convert: Callable[[], int | float]
+
+        if audio_fmt == WavFormat.PCM:
+
+            def convert_pcm() -> int:
+                """Read the sample"""
+                nonlocal offset
+                out = (
+                    self.bytes_to_int(data[offset : offset + bytes_per_sample], signed=signed)
+                    >> padding_bits
+                )
+                offset += bytes_per_sample
+                return out
+
+            convert = convert_pcm
+        elif audio_fmt == WavFormat.IEEE_FLOAT:
+
+            def convert_float_sample() -> float:
+                """Read the sample"""
+                nonlocal offset
+                out = self.bytes_to_float(data[offset : offset + bytes_per_sample])
+                offset += bytes_per_sample
+                return out
+
+            convert = convert_float_sample
+        else:
+            raise exception.ReadError("File is invalid")  # pragma: no cover
+
+        audio = [[convert() for _ in range(num_channels)] for _ in range(num_frames)]
 
         return audio
 
@@ -686,15 +694,14 @@ class WavDataChunk(Chunk):
             self.__did_warn = True
             print("Saturating one of more sample values that are out-of-range", file=sys.stderr)
 
-    def _saturate(self, val: float) -> int | float:
+    def _saturate(
+        self, val: float | int, min_val: float | int, max_val: float | int
+    ) -> int | float:
         """Saturate out-of-range sample values."""
-        if val > self._max_val:
-            val = self._max_val
+        retval = min(max(val, min_val), max_val)
+        if retval != val:
             self.__saturation_warning()
-        elif val < self._min_val:
-            val = self._min_val
-            self.__saturation_warning()
-        return val
+        return retval
 
     @property
     def _padding_bits(self) -> int:
@@ -703,21 +710,6 @@ class WavDataChunk(Chunk):
         if isinstance(self.fmt_chunk, WavFmtExtensibleChunk):
             padding_bits = self.fmt_chunk.bits_per_sample - self.fmt_chunk.valid_bits_per_sample
         return padding_bits
-
-    def write_sample(self, sample: float) -> None:
-        """
-        Write a sample to the chunk.
-
-        :param sample: An audio sample.
-        """
-        sample = self._saturate(sample)
-        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
-            sample = int(sample) << self._padding_bits
-            self.write_int(sample, self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
-        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
-            self.write_float(sample, self.fmt_chunk.bytes_per_sample)
-        else:
-            raise exception.ReadError("File is invalid")
 
     def write_frames(
         self, audio: Sequence[Sequence[T]], sample_transform: Callable[[T], int | float] | None
@@ -742,11 +734,41 @@ class WavDataChunk(Chunk):
             )
             self.fmt_chunk.byte_rate = self.fmt_chunk.block_align * self.fmt_chunk.sample_rate
 
+        min_val = self._min_val
+        max_val = self._max_val
+        padding_bits = self._padding_bits
+        bytes_per_sample = self.fmt_chunk.bytes_per_sample
+        signed = self.fmt_chunk.signed
+
+        output = bytearray()
+
+        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
+
+            def append(_sample: int | float) -> None:
+                """Write the sample"""
+                nonlocal output
+                _sample = self._saturate(_sample, min_val, max_val)
+                output.extend(
+                    self.int_to_bytes(int(_sample) << padding_bits, bytes_per_sample, signed)
+                )
+
+        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
+
+            def append(_sample: int | float) -> None:
+                """Write the sample"""
+                nonlocal output
+                _sample = self._saturate(_sample, min_val, max_val)
+                output.extend(self.float_to_bytes(_sample, bytes_per_sample))
+        else:
+            raise exception.ReadError("File is invalid")
+
         for frame in audio:
             for sample in frame:
                 if sample_transform is not None:
                     sample = sample_transform(sample)
-                self.write_sample(sample)
+                append(sample)
+
+        self.write(output)
 
     def seek(self, frame_number: int, whence: int = 0) -> Self:
         """
