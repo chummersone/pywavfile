@@ -310,16 +310,6 @@ class Chunk:
         """
         return struct.unpack(self._get_float_struct_fmt(len(data)), data)[0]
 
-    def read_float(self, nbytes: int) -> float:
-        """
-        Read a float from the chunk.
-
-        :param nbytes: Number of bytes encoding the float.
-        :return: The float value.
-        """
-        data = self.read(nbytes)
-        return self.bytes_to_float(data)
-
     def float_to_bytes(self, data: float, nbytes: int) -> bytes:
         """
         Convert a float to bytes.
@@ -329,15 +319,6 @@ class Chunk:
         :return: The bytes.
         """
         return struct.pack(self._get_float_struct_fmt(nbytes), data)
-
-    def write_float(self, data: float, nbytes: int) -> None:
-        """
-        Write a float to the chunk.
-
-        :param data: The float to encode.
-        :param nbytes: Number of bytes encoding the float.
-        """
-        self.write(self.float_to_bytes(data, nbytes))
 
     def finalise(self) -> None:
         """Finalise the chunk and update the header."""
@@ -620,15 +601,6 @@ class WavDataChunk(Chunk):
 
         Chunk.finalise(self)
 
-    def read_sample(self) -> int | float:
-        """Read a sample from the chunk."""
-        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
-            sample = self.read_int(self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
-            return sample >> self._padding_bits
-        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
-            return self.read_float(self.fmt_chunk.bytes_per_sample)
-        raise exception.ReadError("File is invalid")  # pragma: no cover
-
     def read_frames(self, nframes: int | None = None) -> list[list[int | float]]:
         """
         Read a number of audio frames from the chunk. A frame is a collection of samples, from each
@@ -738,21 +710,6 @@ class WavDataChunk(Chunk):
         if isinstance(self.fmt_chunk, WavFmtExtensibleChunk):
             padding_bits = self.fmt_chunk.bits_per_sample - self.fmt_chunk.valid_bits_per_sample
         return padding_bits
-
-    def write_sample(self, sample: float) -> None:
-        """
-        Write a sample to the chunk.
-
-        :param sample: An audio sample.
-        """
-        sample = self._saturate(sample, self._min_val, self._max_val)
-        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
-            sample = int(sample) << self._padding_bits
-            self.write_int(sample, self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
-        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
-            self.write_float(sample, self.fmt_chunk.bytes_per_sample)
-        else:
-            raise exception.ReadError("File is invalid")
 
     def write_frames(
         self, audio: Sequence[Sequence[T]], sample_transform: Callable[[T], int | float] | None
