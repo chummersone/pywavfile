@@ -644,11 +644,35 @@ class WavDataChunk(Chunk):
 
         # do not try to read past the end
         num_frames = min(nframes, self.num_frames - self.tell())
+        if num_frames < 0:
+            raise exception.ReadError("Unexpected read error")
 
-        audio = [
-            [self.read_sample() for _ in range(self.fmt_chunk.num_channels)]
-            for _ in range(num_frames)
-        ]
+        audio_fmt = self.fmt_chunk.audio_fmt
+        num_channels = self.fmt_chunk.num_channels
+        padding_bits = self._padding_bits
+        bytes_per_sample = self.fmt_chunk.bytes_per_sample
+        signed = self.fmt_chunk.signed
+
+        read: Callable[[], int | float]
+
+        if audio_fmt == WavFormat.PCM:
+
+            def read_pcm() -> int:
+                """Read the sample"""
+                return self.read_int(bytes_per_sample, signed=signed) >> padding_bits
+
+            read = read_pcm
+        elif audio_fmt == WavFormat.IEEE_FLOAT:
+
+            def read_float_sample() -> float:
+                """Read the sample"""
+                return self.read_float(bytes_per_sample)
+
+            read = read_float_sample
+        else:
+            raise exception.ReadError("File is invalid")  # pragma: no cover
+
+        audio = [[read() for _ in range(num_channels)] for _ in range(num_frames)]
 
         return audio
 
@@ -686,15 +710,14 @@ class WavDataChunk(Chunk):
             self.__did_warn = True
             print("Saturating one of more sample values that are out-of-range", file=sys.stderr)
 
-    def _saturate(self, val: float) -> int | float:
+    def _saturate(
+        self, val: float | int, min_val: float | int, max_val: float | int
+    ) -> int | float:
         """Saturate out-of-range sample values."""
-        if val > self._max_val:
-            val = self._max_val
+        retval = min(max(val, min_val), max_val)
+        if retval != val:
             self.__saturation_warning()
-        elif val < self._min_val:
-            val = self._min_val
-            self.__saturation_warning()
-        return val
+        return retval
 
     @property
     def _padding_bits(self) -> int:
@@ -710,7 +733,7 @@ class WavDataChunk(Chunk):
 
         :param sample: An audio sample.
         """
-        sample = self._saturate(sample)
+        sample = self._saturate(sample, self._min_val, self._max_val)
         if self.fmt_chunk.audio_fmt == WavFormat.PCM:
             sample = int(sample) << self._padding_bits
             self.write_int(sample, self.fmt_chunk.bytes_per_sample, signed=self.fmt_chunk.signed)
@@ -742,11 +765,33 @@ class WavDataChunk(Chunk):
             )
             self.fmt_chunk.byte_rate = self.fmt_chunk.block_align * self.fmt_chunk.sample_rate
 
+        min_val = self._min_val
+        max_val = self._max_val
+        padding_bits = self._padding_bits
+        bytes_per_sample = self.fmt_chunk.bytes_per_sample
+        signed = self.fmt_chunk.signed
+
+        if self.fmt_chunk.audio_fmt == WavFormat.PCM:
+
+            def write(_sample: int | float) -> None:
+                """Write the sample"""
+                _sample = self._saturate(_sample, min_val, max_val)
+                self.write_int(int(_sample) << padding_bits, bytes_per_sample, signed=signed)
+
+        elif self.fmt_chunk.audio_fmt == WavFormat.IEEE_FLOAT:
+
+            def write(_sample: int | float) -> None:
+                """Write the sample"""
+                _sample = self._saturate(_sample, min_val, max_val)
+                self.write_float(_sample, bytes_per_sample)
+        else:
+            raise exception.ReadError("File is invalid")
+
         for frame in audio:
             for sample in frame:
                 if sample_transform is not None:
                     sample = sample_transform(sample)
-                self.write_sample(sample)
+                write(sample)
 
     def seek(self, frame_number: int, whence: int = 0) -> Self:
         """
