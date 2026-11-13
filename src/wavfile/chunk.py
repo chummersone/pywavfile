@@ -653,26 +653,38 @@ class WavDataChunk(Chunk):
         bytes_per_sample = self.fmt_chunk.bytes_per_sample
         signed = self.fmt_chunk.signed
 
-        read: Callable[[], int | float]
+        data = self.read(num_frames * num_channels * bytes_per_sample)
+        offset = 0
+
+        convert: Callable[[], int | float]
 
         if audio_fmt == WavFormat.PCM:
 
-            def read_pcm() -> int:
+            def convert_pcm() -> int:
                 """Read the sample"""
-                return self.read_int(bytes_per_sample, signed=signed) >> padding_bits
+                nonlocal offset
+                out = (
+                    self.bytes_to_int(data[offset : offset + bytes_per_sample], signed=signed)
+                    >> padding_bits
+                )
+                offset += bytes_per_sample
+                return out
 
-            read = read_pcm
+            convert = convert_pcm
         elif audio_fmt == WavFormat.IEEE_FLOAT:
 
-            def read_float_sample() -> float:
+            def convert_float_sample() -> float:
                 """Read the sample"""
-                return self.read_float(bytes_per_sample)
+                nonlocal offset
+                out = self.bytes_to_float(data[offset : offset + bytes_per_sample])
+                offset += bytes_per_sample
+                return out
 
-            read = read_float_sample
+            convert = convert_float_sample
         else:
             raise exception.ReadError("File is invalid")  # pragma: no cover
 
-        audio = [[read() for _ in range(num_channels)] for _ in range(num_frames)]
+        audio = [[convert() for _ in range(num_channels)] for _ in range(num_frames)]
 
         return audio
 
