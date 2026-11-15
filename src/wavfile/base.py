@@ -210,10 +210,7 @@ class Wavfile(ABC):  # noqa: B024
         """Number of audio frames in the file"""
         if self._data_chunk is None:  # pragma: no cover
             raise exception.Error("Audio data chunk is not initialised.")
-        try:
-            return self._data_chunk.size // self._block_align
-        except ZeroDivisionError:
-            return 0
+        return self._data_chunk.num_frames
 
     @property
     def duration(self) -> float:

@@ -13,7 +13,7 @@ from warnings import warn
 
 try:
     from typing import Self  # pyright: ignore[reportAttributeAccessIssue]
-except ImportError:
+except ImportError:  # pragma: no cover
     from typing_extensions import Self
 
 from . import exception
@@ -154,7 +154,7 @@ class Chunk:
         :param mode: File read/write mode.
         """
         self.fp: BinaryIO = fp
-        if mode not in ("r", "w"):
+        if mode not in ("r", "w"):  # pragma: no cover
             raise ValueError(f"Invalid mode: {mode}")
         self.mode: Literal["r", "w"] = mode
         if not hasattr(self, "chunk_id"):
@@ -759,7 +759,7 @@ class WavDataChunk(Chunk):
                 nonlocal output
                 _sample = self._saturate(_sample, min_val, max_val)
                 output.extend(self.float_to_bytes(_sample, bytes_per_sample))
-        else:
+        else:  # pragma: no cover
             raise exception.ReadError("File is invalid")
 
         for frame in audio:
