@@ -52,13 +52,13 @@ class WavRead(base.Wavfile):
         """
         Return the object representation in string format.
         """
-        if self.fp is None:
+        if self.fp is None:  # pragma: no cover
             source = "closed"
         elif isinstance(self.fp, (io.BufferedReader, io.BufferedWriter)):
-            source = repr(Path(self.fp.name).as_posix())
+            source = repr(str(Path(self.fp.name).as_posix()))
         elif isinstance(self.fp, io.BytesIO):
             source = "BytesIO"
-        else:
+        else:  # pragma: no cover
             source = type(self.fp).__name__
         return f"{self.__class__.__name__}({source})"
 
